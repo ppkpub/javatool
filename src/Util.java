@@ -535,24 +535,20 @@ public class Util {
   }  
 
   public static String getMinVersion() {
-    /*
     String minVersion = getPage(Config.minVersionPage);
     if (minVersion == null || minVersion.equals("")) {
-      minVersion = getPage(Config.minVersionPage2).trim();
-      if (minVersion == null || minVersion.equals("")) {
-        return Config.version;
-      }
+      return "0.0";
     }
     minVersion = minVersion.trim();
     return minVersion;
-    } */
-    return Config.minVersion;
   }
+  
   public static Integer getMinMajorVersion() {
     String minVersion = getMinVersion();
     String[] pieces = minVersion.split("\\.");
     return Integer.parseInt(pieces[0].trim());
   }
+  
   public static Integer getMinMinorVersion() {
     String minVersion = getMinVersion();
     String[] pieces = minVersion.split("\\.");

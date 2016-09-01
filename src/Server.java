@@ -78,7 +78,7 @@ public class Server implements Runnable {
     for (String addr : Util.getAddresses()) {
       HashMap<String,Object> map = new HashMap<String,Object>();  
       map.put("address", addr);
-            //map.put("balance_BTC", Util.getBalance(addr, "BTC").doubleValue() / Config.btc_unit.doubleValue());
+      //map.put("balance_BTC", Util.getBalance(addr, "BTC").doubleValue() / Config.btc_unit.doubleValue());
       addresses.add(map);
     }
     attributes.put("address", address);        
