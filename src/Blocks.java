@@ -126,8 +126,9 @@ public class Blocks implements Runnable {
   }
 
   public void versionCheck() {
-    versionCheck(true);
+    versionCheck(false);
   }
+  
   public void versionCheck(Boolean autoUpdate) {
     Integer minMajorVersion = Util.getMinMajorVersion();
     Integer minMinorVersion = Util.getMinMinorVersion();
@@ -168,18 +169,10 @@ public class Blocks implements Runnable {
       params = MainNetParams.get();
         
       try {
-        
+        /*
         //test
         //OdinUpdate.parse(52,Blocks.getPPkMessageFromTransaction("U426137.1411                   T.{\"cmd\":\"CU\",\"tx_list\":[\"427493.1073\"],\"ver\":1}"));
         //System.exit(0);
-        //
-        /*
-        byte[] tmp_key=Util.generateValidPubkey("U0123456.234445");
-        
-        System.out.println("tmp_key="+Util.bytesToHexString(tmp_key));
-          
-        System.exit(0);
-        //end test
         */
         
         if ((new File(walletFile)).exists()) {
@@ -275,9 +268,6 @@ public class Blocks implements Runnable {
         working = true;
       }
       try {
-        //parseBlock( 426903,1472194415);
-        //System.exit(0);
-        
         //catch ODIN up to Bitcoin
         Integer blockHeight = blockStore.getChainHead().getHeight();
         Integer lastBlock = Util.getLastBlock();
@@ -831,16 +821,16 @@ public class Blocks implements Runnable {
       System.out.println(tx.toString());
 
       byte[] rawTxBytes = tx.bitcoinSerialize();
-            
+      
+      //for debug
+      /*
       System.out.println("The Raw TX:");
       for(int kk=0;kk<rawTxBytes.length;kk++){
           System.out.printf("%02x",rawTxBytes[kk]);
       }
-            
-      
+      */
       
       Blocks blocks = Blocks.getInstance();
-      //blocks.wallet.commitTx(txBet);
       TransactionBroadcast future = null;
       try {
         logger.info("Broadcasting transaction: "+tx.getHashAsString());
@@ -913,17 +903,6 @@ public class Blocks implements Runnable {
                  matched_ppk_odin_prefix=true;
                  isFirstMultiSigTx=true;
                }
-                 
-               /*
-               byte[] ppkMarkBytes = Util.hexStringToBytes(Config.PPK_ODIN_MARK_PUBKEY_HEX);
-               
-               for (int i=0; i<asm.get(2).data.length; i++) {
-                  if( asm.get(2).data[i] != ppkMarkBytes[i])
-                    return false;
-               }
-               
-               matched_ppk_odin_prefix=true;
-               */
              }
           }
           
@@ -963,7 +942,6 @@ public class Blocks implements Runnable {
         if (in.isCoinBase()) return false;
         try {
             Script script = in.getScriptSig();
-            //fee = fee.add(in.getValue()); //TODO, turn this on
             Address address = script.getFromAddress(params);
             if (source.equals("")) {
                 source = address.toString();
@@ -1032,56 +1010,4 @@ public class Blocks implements Runnable {
     }
     return message;
   }
-    
-  /*
-    //Ascii/Unicode字符串转换成16进制表示
-    public String stringToHex(String str){
-        String val="";
-        for(int i = 0; i < str.length; i++){
-            String tmpstr=str.charCodeAt(i).toString(16);  //Unicode
-            val += tmpstr.length==1? '0'+tmpstr : tmpstr;  
-        }
-        return val;
-    }
-    String hex = Integer.toHexString(b & 0xFF);
-   */
-   /*
-  public void createAddress()
-  {
-        String source;
-        String destination;
-        BigInteger btcAmount=BigInteger.ZERO;
-        BigInteger fee=BigInteger.ZERO;
-        String dataString=Config.PPK_PREFIX+"RT";
-        String destAddress="1PPk1ThePeerPeerPublicGroup";
-    Transaction tx = new Transaction(params);
-
-        try{
-      byte[] data = null;
-      List<Byte> dataArrayList = new ArrayList<Byte>();
-      try {
-        data = dataString.getBytes(Config.BINARY_DATA_CHARSET);
-        dataArrayList = Util.toByteArrayList(data);
-      } catch (UnsupportedEncodingException e) {
-      }
-
-      for (int i = 0; i < dataArrayList.size(); i+=32) {
-        List<Byte> chunk = new ArrayList<Byte>(dataArrayList.subList(i, Math.min(i+32, dataArrayList.size())));
-        chunk.add(0, (byte) chunk.size());
-        while (chunk.size()<32+1) {
-          chunk.add((byte) 0);
-        }
-                
-                ECKey  tmpECKey=new ECKey(null, Util.toByteArray(chunk));
-                String tmpAddress=tmpECKey.toAddress(params).toString();
-                System.out.println("tmpAddress="+tmpAddress);
-
-      }
-
-        }catch(Exception e){
-            System.out.println(e.toString());
-        }
-        System.exit(0);    
-  }
-    */
 }
