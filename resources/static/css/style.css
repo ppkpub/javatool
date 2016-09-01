@@ -1,0 +1,209 @@
+* {
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0 auto;
+	line-height: 1.7em;
+}
+
+h1 { font-size: 2em; font-weight: bold; }
+h2 { font-size: 1.5em; font-weight: bold; }
+h3 { font-size: 1.17em; font-weight: bold; }
+h5 { font-size: .83em; font-weight: bold; }
+h6 { font-size: .75em; font-weight: bold; }
+
+.logo {
+	background-image: url('/images/logo.png');
+	background-repeat: no-repeat;
+	background-position: left top;
+	background-size: contain;
+	width: 210px;
+	text-align: center;
+}
+
+.content {
+	padding: 0;
+	margin-top: -2em;
+	width: 100%;
+}
+
+.row {
+	padding-top: 0em;
+	width: 100%;
+}
+
+.half {
+	width: 50%;
+}
+
+.footer {
+	background: #eee;
+	color: #000;
+	text-align: center;
+	padding: 1em;
+	font-size: 1em;
+}
+
+.float_right {
+	float: right;
+	padding-left: 1em;
+	padding-bottom: 1em;
+}
+
+.section {
+	border-bottom: 1px solid #ccc;
+	padding-top: 0;
+	padding-bottom: 0;
+	padding-right: 0;
+	padding-left: 2em;
+}
+
+.padding-bottom {
+	padding-bottom: 1em;
+}
+
+.segment {
+	text-align: center;
+	padding-right: 1em;
+	padding-left: 0em;
+}
+
+.border-right {
+	border-right: 1px solid #ccc;
+}
+
+.one-third {
+	width: 32%;
+}
+
+.one-fourth {
+	width: 24%;
+}
+
+.one-half {
+	width: 49%;
+}
+
+.two-thirds {
+	width: 65%;
+}
+
+.one-fifth {
+	width: 19%;
+}
+
+.vert-bottom {
+	vertical-align: bottom;
+}
+
+.inline {
+	margin-right: 0.5em;
+	vertical-align: middle;
+}
+
+.padding-bottom {
+	padding-bottom: 1em;
+}
+.padding-top {
+	padding-top: 1em;
+}
+
+input {
+	border: 1px solid #ccc;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
+	font-size: 1em;
+	padding: 4px;
+	outline: 0;
+	-webkit-appearance: none;
+}
+
+.input-group input {
+	border-left: 0px;
+	border-top-left-radius: 0px;
+	border-bottom-left-radius: 0px;
+	-moz-border-top-left-radius: 0px;
+	-moz-border-bottom-left-radius: 0px;
+	-webkit-border-top-left-radius: 0px;
+	-webkit-border-bottom-left-radius: 0px;
+	display: block;
+}
+
+.input-group {
+	margin: 0 auto;
+	display: block-inline;
+	width: 1px;
+	margin-bottom: 1em;
+}
+
+.center {
+	margin: 1em auto;
+}
+
+blockquote {
+  background: #f9f9f9;
+  border-left: 10px solid #ccc;
+  margin: 1.5em 10px;
+  padding: 0.5em 10px;
+  quotes: "\201C""\201D""\2018""\2019";
+}
+blockquote:before {
+  color: #ccc;
+  content: open-quote;
+  font-size: 4em;
+  line-height: 0.1em;
+  margin-right: 0.25em;
+  vertical-align: -0.4em;
+}
+blockquote p {
+  display: inline;
+}
+
+.messages {
+	padding-top: 2em;
+}
+
+.game {
+	padding-top: 2em;
+}
+
+table {
+	text-align: left;
+}
+
+.card {
+	width: 60px;
+}
+
+.casino-icon {
+	height: 100px;
+	margin-right: 1em;
+	margin-top: 1em;
+	margin-bottom: 1em;
+}
+
+#hide_chat {
+	width: 17px;
+	height: 17px;
+	top: 5px;
+	left: -2px;
+	position: absolute;
+	z-index: 100000000;
+	cursor: pointer;
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";       /* IE 8 */
+	filter: alpha(opacity=0);  /* IE 5-7 */
+	-moz-opacity: 0;          /* Netscape */
+	-khtml-opacity: 0;        /* Safari 1.x */
+	opacity: 0;               /* Good browsers */
+}
+
+#show_chat {
+	padding: 3px 12px;
+    background: rgb(54, 25, 25); /* Fall-back for browsers that don't support rgba */
+    background: rgba(54, 25, 25, .15);
+	border: 1px #BBBBBB solid;
+}

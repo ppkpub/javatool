@@ -1,0 +1,33 @@
+<#import "template.html" as template>
+<@template.content>
+    <div class="row section">
+        <h2>My unspent outputs</h2>
+        <p>Available balance: ${ unspent_total?string(",##0.00000000") } BTC</p>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Transaction hash</th>
+                    <th>Vout</th>
+                    <th>Amount</th>
+                    <th>Type</th>
+                    <th>Confirmations</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <#if unspents??>
+                <#list unspents as unspent>
+                <tr>
+                    <td><a href="http://blockchain.info/tx/${unspent["tx_hash"]}/${unspent["vout"]}">${ unspent["tx_hash"] }</a></td>
+                    <td>${ unspent["vout"] }</td>
+                    <td>${ unspent["amount"]?string(",##0.00000000") }</td>
+                    <td>${ unspent["type"] }</td>
+                    <td>${ unspent["confirmations"] }</td>
+                </tr>
+                </#list>
+                </#if>
+            </tbody>
+        </table>
+        <p>Source: <a href="${ unspent_address }">${ unspent_address }</a></p>
+    </div>
+</@template.content>

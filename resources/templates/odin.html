@@ -1,0 +1,261 @@
+<#import "template.html" as template>
+<@template.content>
+		<div class="row section">
+			<table border="0" width="100%">
+			<tr>
+				<td><h2>${LANG_ODIN}(Open Data Index Name)</h2></td>
+				<td align="right"><a class="btn btn-success btn-lg" role="button" href="/odin-add">${LANG_REGIST_NEW_ODIN}...</a></td>
+			</tr>
+			</table>
+		</div>
+		<div class="row section padding-top">
+		    <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+				<li class="active"><a href="#recent_odins" data-toggle="tab">${LANG_RECENT_ODINS}</a></li>
+				<li><a href="#my_registed_odins" data-toggle="tab">${LANG_MY_REGISTED_ODINS}</a></li>
+				<li><a href="#my_admin_odins" data-toggle="tab">${LANG_MY_ADMIN_ODINS}</a></li>
+        <li><a href="#my_update_logs" data-toggle="tab">${LANG_MY_UPDATE_LOGS}</a></li>
+		    </ul>
+
+		    <div id="my-tab-content" class="tab-content">
+		        <div class="tab-pane active" id="recent_odins">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>${LANG_FULL_ODIN}</th>
+								<th>${LANG_SHORT_ODIN}</th>
+								<th>${LANG_TIME}</th>
+								<th>${LANG_ODIN_TITLE}</th>
+								<th>${LANG_ADMIN_REGISTER}</th>
+								<th>${LANG_AP_LIST}</th>
+								<th>${LANG_STATUS}</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<#if my_pending_odins??>
+							<#list my_pending_odins as odin>
+								<tr>
+									<td>${LANG_PENDING}</td>
+									<td>${LANG_PENDING}</td>
+									<td>${LANG_PENDING}</td>
+									<td>${odin["title"]}</td>
+									<td>
+                  ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
+                  ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+                  </td>
+									<td>${odin["ap_set_debug"]}</td>
+									<td>${LANG_PENDING}
+									</td>
+								</tr>
+							</#list>
+							</#if>
+							
+							<#if recent_odins??>
+							<#list recent_odins as odin>
+								<tr>
+									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+                                    <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+								    <td><a href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+									<td>${odin["title"]}</td>
+									<td>
+                  ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
+                  ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+                  </td>
+									<td>${odin["ap_set_debug"]}</td>
+									<td>
+										${odin["validity"]}<br>
+                    <#if odin["me_updatable"]??>
+                    <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
+                    </#if>
+									</td>
+								</tr>
+							</#list>
+							</#if>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="tab-pane" id="my_registed_odins">
+					<table class="table table-striped">
+					<thead>
+						<tr>
+							<th>${LANG_FULL_ODIN}</th>
+							<th>${LANG_SHORT_ODIN}</th>
+							<th>${LANG_TIME}</th>
+							<th>${LANG_ODIN_TITLE}</th>
+              <th>${LANG_ADMIN_REGISTER}</th>
+              <th>${LANG_AP_LIST}</th>
+							<th>${LANG_STATUS}</th>
+						</tr>
+					</thead>
+
+					<tbody>
+						<#if my_pending_odins??>
+						<#list my_pending_odins as odin>
+							<tr>
+								<td>${LANG_PENDING}</td>
+								<td>${LANG_PENDING}</td>
+								<td>${LANG_PENDING}</td>
+								<td>${odin["title"]}</td>
+                <td>
+                ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
+                ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+                </td>
+                <td>${odin["ap_set_debug"]}</td>
+								<td>${LANG_PENDING}
+								</td>
+							</tr>
+						</#list>
+						</#if>
+						
+						<#if my_registed_odins??>
+						<#list my_registed_odins as odin>
+							<tr>
+                <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+                <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+								<td><a  href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+								<td>${odin["title"]}</td>
+                <td>
+                ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
+                ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+                </td>
+                <td>${odin["ap_set_debug"]}</td>
+								<td>
+									${odin["validity"]}
+                  <br>
+                  <#if odin["me_updatable"]??>
+                  <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
+                  </#if>
+								</td>
+							</tr>
+						</#list>
+						</#if>
+					</tbody>
+					</table>
+				</div>
+				
+				<div class="tab-pane" id="my_admin_odins">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>${LANG_FULL_ODIN}</th>
+								<th>${LANG_SHORT_ODIN}</th>
+								<th>${LANG_TIME}</th>
+								<th>${LANG_ODIN_TITLE}</th>
+                <th>${LANG_ADMIN_REGISTER}</th>
+                <th>${LANG_AP_LIST}</th>
+								<th>${LANG_STATUS}</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<#if my_admin_odins??>
+							<#list my_admin_odins as odin>
+								<tr>
+									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+                  <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+                  <td><a  href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+									<td>${odin["title"]}</td>
+									<td>
+                  ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
+                  ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+                  </td>
+									<td>${odin["ap_set_debug"]}</td>
+									<td>
+										${odin["validity"]}<br>
+                    <#if odin["me_updatable"]??>
+                    <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
+                    </#if>
+									</td>
+								</tr>
+							</#list>
+							</#if>
+						</tbody>
+					</table>
+				</div>
+                
+        <div class="tab-pane" id="my_update_logs">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>${LANG_FULL_ODIN}</th>
+								<th>${LANG_SHORT_ODIN}</th>
+								<th>${LANG_TIME}</th>
+								<th>${LANG_UPDATE_DESC}</th>
+								<th>${LANG_STATUS}</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<#if my_pending_update_logs??>
+							<#list my_pending_update_logs as odin>
+								<tr>
+									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+                  <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+									<td>${LANG_PENDING}</td>
+									<td>${odin["update_desc"]}
+                  <hr>
+                    <p align="right">Submit time:  ${odin["block_time"]}</p>
+                  </td>
+									<td>${LANG_PENDING}</td>
+								</tr>
+							</#list>
+							</#if>
+              
+              <#if my_receipting_updates??>
+							<#list my_receipting_updates as odin>
+								<tr>
+									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+                  <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+								  <td><a href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+									<td>${odin["update_desc"]}</td>
+									<td>
+										${odin["validity"]}<br>
+                    <#if odin["awaiting_my_receipting"]??>
+                    <a class="btn btn-danger" role="button" href='/odin-detail?odin=${odin["short_odin"]}&awaiting_update_log_id=${odin["log_id"]}'>${LANG_AWAIT_YOUR_RECEIPT}...</a>
+                    </#if>
+									</td>
+								</tr>
+							</#list>
+							</#if>
+                            
+              <#if my_awaiting_updates??>
+							<#list my_awaiting_updates as odin>
+								<tr>
+									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+                  <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+								  <td><a href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+									<td>${odin["update_desc"]}</td>
+									<td>
+										${odin["validity"]}<br>
+                    <#if odin["awaiting_my_confirm"]??>
+                    <a class="btn btn-danger" role="button" href='/odin-detail?odin=${odin["short_odin"]}&awaiting_update_log_id=${odin["log_id"]}'>${LANG_AWAIT_YOUR_CONFIRM}...</a>
+                    </#if>
+									</td>
+								</tr>
+							</#list>
+							</#if>
+							
+							<#if my_update_logs??>
+							<#list my_update_logs as odin>
+								<tr>
+									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+                  <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+								  <td><a href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+									<td>
+                    ${odin["update_desc"]}
+                    <hr>
+                    <p align="right">Updated by  ${odin["updater"]}</p>
+                  </td>
+									<td>
+										${odin["validity"]}
+									</td>
+								</tr>
+							</#list>
+							</#if>
+						</tbody>
+					</table>
+				</div>
+		</div>
+
+</@template.content>

@@ -1,0 +1,113 @@
+<#import "template.html" as template>
+<@template.content>
+<#if !success??  && !error??>
+<div class="row section">
+    <div class="row section">
+    <table border="0" width="100%">
+    <tr>
+        <td><h2>${LANG_UPDATE_THE_VD_SET_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2></td>
+        <td align="right">
+        <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
+        <a class="btn btn-warning" role="button" href='/odin-update-ap?odin=${odin["short_odin"]}'>${LANG_UPDATE_AP_SET}...</a>
+        <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
+        </td>
+    </tr>
+    </table>
+    </div>
+    
+    <h3>${LANG_UPDATE_VD_SET}</h3>
+    
+    <h3>Current Validtion Setting</h3>
+    <div class="input-group">
+        <span class="input-group-addon">URI</span>
+        <textarea rows=1 cols=80 ><#if odin["vd_set_cert_uri"]??>${odin["vd_set_cert_uri"]}</#if></textarea>
+    </div>
+    <div class="input-group">
+        <span class="input-group-addon">Algo</span>
+        <textarea rows=1 cols=80 ><#if odin["vd_set_algo"]??>${odin["vd_set_algo"]}</#if></textarea>
+    </div>
+    <!--
+    <div class="input-group">
+        <span class="input-group-addon">Format</span>
+        <textarea rows=1 cols=80 ><#if odin["vd_set_format"]??>${odin["vd_set_format"]}</#if></textarea>
+    </div>
+    -->
+    <div class="input-group">
+        <span class="input-group-addon">Public key</span>
+        <textarea rows=3 cols=80 ><#if odin["vd_set_pubkey"]??>${odin["vd_set_pubkey"]}</#if></textarea>
+    </div>
+    
+    <#if odin["vd_set_debug"]??>${odin["vd_set_debug"]}</#if>
+
+    <h3>Update Validtion Setting</h3>
+    1.
+    <form action="/odin-update-vd" class="form-inline" method="post">
+      <input type="hidden" name="form" value="update-odin-vdset">
+      <input type="hidden" name="odin" value='${odin["short_odin"]}'>
+      <input type="hidden" name="updater" value="${address}">
+      <div class="input-group">
+          <span class="input-group-addon">URI</span>
+          <input type="text" name="new_vd_set_cert_uri" size="40" value='<#if new_vd_set_cert_uri??>${new_vd_set_cert_uri}</#if>'>
+      </div>
+      <div class="input-group">
+          <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+          <span class="input-group-btn">
+              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_UPDATE_VD_SET}</button>
+          </span>
+      </div>
+    </form>
+    <hr size="1">
+    2.
+    <form action="/odin-update-vd" class="form-inline" method="post">
+      <input type="hidden" name="form" value="update-odin-vdset">
+      <input type="hidden" name="odin" value='${odin["short_odin"]}'>
+      <input type="hidden" name="updater" value="${address}">
+      <div class="input-group">
+          <span class="input-group-addon">Algorithm</span>
+          <input type="text" name="new_vd_set_algo" size="40" value='<#if new_vd_set_algo??>${new_vd_set_algo}</#if>'>
+      </div>
+      <div class="input-group">
+          <span class="input-group-addon">Public key</span>
+          <textarea rows=3 cols=80 name="new_vd_set_pubkey"><#if new_vd_set_pubkey??>${new_vd_set_pubkey}</#if></textarea>
+      </div>
+      <#if new_vd_set_prvkey??>
+      <div class="input-group">
+          <span class="input-group-addon">Private key</span>
+          <textarea rows=3 cols=80 name="new_vd_set_pubkey">${new_vd_set_prvkey}</textarea>
+          Please backup the private key.
+      </div>
+      </#if>
+      <div class="input-group">
+          <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+          <span class="input-group-btn">
+              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_UPDATE_VD_SET}</button>
+          </span>
+      </div>
+    </form>
+<!--
+    <hr>
+    <p>
+说明：<br>
+a）从网上下载openssl工具:http://www.slproweb.com/products/Win32OpenSSL.html<br>
+b）生成密钥<br>
+进入到openssl的bin目录下，执行以下命令：<br>
+openssl genrsa -out rsa_private_key.pem 1024<br>
+openssl rsa -in rsa_private_key.pem -pubout -out rsa_public_key.pem<br>
+openssl pkcs8 -topk8 -inform PEM -in rsa_private_key.pem -outform PEM -nocrypt<br>
+<br>
+在bin目录下看到新生成的公钥文件rsa_public_key.pem，文件内容如下：<br>
+-----BEGIN PUBLIC KEY-----<br>
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDtd1lKsX6ylsAEWFi7E/ut8krJ<br>
+y9PQ7sGYKhIm9TvIdZiq5xzyaw8NOLzKZ1k486MePYG4tSuoaxSbwuPLwVUzYFvn<br>
+UZo7aWCIGKn16UWTM4nxc/+dwce+bhcKrlLbTWi8l580LTE7GxclTh8z7gHq59iv<br>
+haoGbK7FNxlUfB4TSQIDAQAB<br>
+-----END PUBLIC KEY-----<br>
+将第一行和最后一行之间的部分并删除换行符后复制粘贴到这里作为内容验证用的rsa公钥<br>
+
+将私钥文件pkcs8_rsa_private_key保存好，并配置到AP上对数据内容进行签名使用。<br>
+    </p>
+    -->
+</div>
+</#if>
+
+</@template.content>

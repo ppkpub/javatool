@@ -1,0 +1,29 @@
+<#import "template.html" as template>
+<@template.content>
+<#if !success??  >
+<div class="row section">
+    <h2>${LANG_TRANSFER_THE_REGISTER_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2>
+    <form action="/odin-trans" class="form-inline" method="post">
+            <input type="hidden" name="form" value="trans-register">
+            <input type="hidden" name="odin" value="${odin["short_odin"]}">
+            <input type="hidden" name="updater" value="${address}">
+
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_ODIN_REGISTER_ADDRESS}</span>
+                ${odin["register"]}
+            </div>
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_ODIN_NEW_REGISTER_ADDRESS}</span>
+                <input type="text" placeholder="${LANG_ODIN_NEW_REGISTER_ADDRESS}" name="new_register" value="" size="40">
+            </div>
+            <div class="input-group">
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                <span class="input-group-btn">
+                    <button class="btn btn-danger btn-lg" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_TRANSFER_REGISTER}</button>
+                </span>
+            </div>
+    </form>
+</div>
+</#if>
+
+</@template.content>

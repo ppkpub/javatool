@@ -1,0 +1,85 @@
+<#import "template.html" as template>
+<@template.content>
+    <div class="row section">
+            <div class="col-xs-4 segment one-third">
+                    <h2><#if own??>${LANG_MY}<#else>${LANG_HIS}</#if>${LANG_BALANCE}</h2>
+                    <ul class="list-group">
+                    <p>${address}</p>
+                    <#if balanceBTC?? && own??>
+                    <li class="list-group-item">
+                    <span class="badge">${LANG_BTC}</span>
+					<a href="http://qukuai.com/address/${address}">${balanceBTC?string(",##0.00000000")}</a>
+                    </li>
+                    </#if>
+                    </ul>
+                    <!--
+                    <form class="pure-form pure-form-stacked" action="/wallet" method="post">
+                            <div class="input-group">
+                                    <input type="hidden" name="form" value="delete">
+                                    <input type="hidden" name="address" value="${address}">
+                                    <button type="submit" class="btn btn-default">Delete this address</button>
+                            </div>
+                    </form>
+                    <form class="pure-form pure-form-stacked" action="/wallet" method="post">
+                            <div class="input-group">
+                                    <input type="hidden" name="form" value="reimport">
+                                    <input type="hidden" name="address" value="${address}">
+                                    <button type="submit" class="btn btn-default" onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();">Reimport transactions</button>
+                            </div>
+                    </form> -->
+            </div>
+            
+            <#if own??>
+            <div class="col-xs-4 segment one-third">
+                    <h2>${LANG_IMPORT_PRIVATE_KEY}</h2>
+                    <form action="/wallet" method="post">
+                            <input type="hidden" name="form" value="import">
+
+                            <div class="input-group">
+                                <span class="input-group-addon">PK</span>
+                                <input type="text" placeholder="${LANG_PRIVATE_KEY}" name="privatekey" data-toggle="tooltip" data-placement="bottom" title="${LANG_YOUR_PRIVATE_KEY_SHOULD_BE}">
+                            </div>
+                            <script>
+                            $('input[type=text][name=privatekey]').tooltip({
+                            placement: "bottom",
+                            trigger: "hover"
+                            });
+                            </script>
+
+                            <div class="input-group">
+                                <span class="input-group-btn">
+                                    <button class="btn btn-default" type="submit" onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();">${LANG_IMPORT_PRIVATE_KEY}</button>
+                                </span>
+                            </div>
+                    </form>
+            </div>
+            <div class="col-xs-4 segment one-third">
+                    <h2>${LANG_SEND}</h2>
+                    <form action="/wallet" method="post">
+                            <input type="hidden" name="form" value="send">
+                            <input type="hidden" name="source" value="${address}">
+
+                            <div class="input-group">
+                                <span class="input-group-addon">@</span>
+                                <input type="text" placeholder="${LANG_DESTINATION_ADDRESS}" name="destination">
+                            </div>
+
+                            <div class="input-group">
+                              <span class="input-group-addon">#</span>
+                              <input type="text" placeholder="${LANG_QUANTITY_BTC}" name="quantity">
+                            </div>
+
+                            <div class="input-group">
+                          <span class="input-group-btn">
+                            <button class="btn btn-default" type="submit" onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();">${LANG_SEND}</button>
+                          </span>
+                        </div>
+                    </form>
+            </div>
+            </#if>
+    </div>
+
+<!-- Just for debug-->
+<!--<#if testShowKey??>${testShowKey}</#if>-->
+
+</@template.content>

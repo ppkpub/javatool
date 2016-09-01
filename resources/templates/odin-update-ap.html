@@ -1,0 +1,44 @@
+<#import "template.html" as template>
+<@template.content>
+<#if !success??  && !error??>
+<div class="row section">
+    <div class="row section">
+    <table border="0" width="100%">
+    <tr>
+        <td><h2>${LANG_UPDATE_THE_ADMIN_SET_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2></td>
+        <td align="right">
+        <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
+        <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
+        <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
+        </td>
+    </tr>
+    </table>
+    </div>
+    
+    <h3>${LANG_UPDATE_AP_SET}</h3>
+    <form action="/odin-update-ap" class="form-inline" method="post">
+      <input type="hidden" name="form" value="update-odin-aplist">
+      <input type="hidden" name="odin" value='${odin["short_odin"]}'>
+      <input type="hidden" name="updater" value="${address}">
+      
+      <#assign apids=0..4/>
+      <#list apids as apid>
+      <div class="input-group">
+          <span class="input-group-addon">${apid}:</span>
+          <input type="text" placeholder="${LANG_ODIN_AP_URL_SHOULD_BE}" name='ap${apid}_url' value='<#if odin["ap"+apid+"_url"]??>${odin["ap"+apid+"_url"]}</#if>'  size="50">
+      </div>
+      </#list>
+
+      <div class="input-group">
+          <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+          <span class="input-group-btn">
+              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_UPDATE_AP_SET}</button>
+          </span>
+      </div>
+    </form>
+    <hr>
+    
+</div>
+</#if>
+
+</@template.content>

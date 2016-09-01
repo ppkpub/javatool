@@ -1,0 +1,43 @@
+<#import "template.html" as template>
+<@template.content>
+  <div class="row section">
+    <h2>${LANG_REGISTE_A_NEW_ODIN}</h2>
+    <form action="/odin" class="form-inline" method="post">
+        <input type="hidden" name="form" value="add-odin">
+        <input type="hidden" name="register" value="${address}">
+        
+        <div class="input-group">
+          <span class="input-group-addon">${LANG_ODIN_ADMIN_ADDRESS}</span>
+          <input type="text" placeholder="${LANG_ODIN_ADMIN_ADDRESS}" name="admin_address" id="admin_address" value="" size="40"><button type="text"  class="btn btn-success" onclick='document.getElementById("admin_address").value="${address}";return false;'>${LANG_ADMIN_SAME_AS_REGISTER}</button>
+        </div>
+        
+        <div class="input-group">
+          <span class="input-group-addon">${LANG_ODIN_TITLE}</span>
+          <input type="text" placeholder="${LANG_ODIN_TITLE}" name="title" value=""  size="35">
+        </div>
+                
+        <div class="input-group">
+          <span class="input-group-addon">${LANG_EMAIL}(${LANG_OPTIONAL})</span>
+          <input type="text" placeholder="${LANG_THE_PUBLIC_EMAIL_FOR}" name="email" value=""  size="35">
+        </div>
+
+        <div class="input-group">
+          <span class="input-group-addon">${LANG_ODIN_AUTHORITY}</span>
+          <select name="auth" id="auth">
+              <option value="0" selected="selected">${LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE}</option>
+              <option value="1">${LANG_ONLY_THE_ADMIN_CAN_UPDATE}</option>
+              <option value="2">${LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER}</option>
+          </select>
+        </div>
+                
+        <div class="input-group">
+          <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+          <span class="input-group-btn">
+            <button class="btn btn-success btn-lg" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_REGIST_IT}</button>
+          </span>
+        </div>
+    </form>
+  </div>
+  
+
+</@template.content>

@@ -1,0 +1,59 @@
+<#import "template.html" as template>
+<@template.content>
+<#if !success??  && !error??>
+<div class="row section">
+    <div class="row section">
+    <table border="0" width="100%">
+    <tr>
+        <td><h2>${LANG_UPDATE_THE_ADMIN_SET_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2></td>
+        <td align="right">
+        <a class="btn btn-warning" role="button" href='/odin-update-ap?odin=${odin["short_odin"]}'>${LANG_UPDATE_AP_SET}...</a>
+        <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
+        <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
+        </td>
+    </tr>
+    </table>
+    </div>
+    <h3>${LANG_UPDATE_BASEINFO}</h3>
+    <form action="/odin-update" class="form-inline" method="post">
+      <input type="hidden" name="form" value="update-odin-baseinfo">
+      <input type="hidden" name="odin" value="${odin["short_odin"]}">
+      <input type="hidden" name="updater" value="${address}">
+      
+      <div class="input-group">
+          <span class="input-group-addon">${LANG_ODIN_ADMIN_ADDRESS}</span>
+          <input type="text" placeholder="${LANG_ODIN_ADMIN_ADDRESS}" name="admin" value="${odin["admin"]}" size="40">
+      </div>
+
+      <div class="input-group">
+          <span class="input-group-addon">${LANG_ODIN_TITLE}</span>
+          <input type="text" placeholder="${LANG_ODIN_TITLE}" name="title" value="${odin["title"]}"  size="35">
+      </div>
+      
+      <div class="input-group">
+          <span class="input-group-addon">${LANG_EMAIL}(${LANG_OPTIONAL})</span>
+          <input type="text" placeholder="${LANG_THE_PUBLIC_EMAIL_FOR}" name="email" value="${odin["email"]}"  size="35">
+      </div>
+      
+      <div class="input-group">
+          <span class="input-group-addon">${LANG_ODIN_AUTHORITY}</span>
+          <select name="auth" id="auth">
+              <option value="0" <#if odin["auth"]="0">selected="selected"</#if>>${LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE}</option>
+              <option value="1" <#if odin["auth"]="1">selected="selected"</#if>>${LANG_ONLY_THE_ADMIN_CAN_UPDATE}</option>
+              <option value="2" <#if odin["auth"]="2">selected="selected"</#if>>${LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER}</option>
+          </select>
+      </div>
+            
+      <div class="input-group">
+          <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+          <span class="input-group-btn">
+              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_UPDATE_BASEINFO}</button>
+          </span>
+      </div>
+    </form>
+    <hr>
+    
+</div>
+</#if>
+
+</@template.content>

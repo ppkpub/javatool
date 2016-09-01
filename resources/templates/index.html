@@ -1,0 +1,62 @@
+<#import "template.html" as template>
+<@template.content>
+
+<div class="row section">
+		<a href="/community"><img src="/images/t-topic.jpg" style="height: 250px;" class="float_right" /></a>
+		<div class="page-header">
+		  <h1>${LANG_PPKPUB} <small>${LANG_A_UNIQUE_GROUP}</small></h1>
+		</div>
+		<p>${LANG_MADE_FOR_A_LITTLE_JOY} ${LANG_SOFTWARE_INCLUDING}</p>
+		<p>${LANG_BUILT_ON_BITCOIN_BLOCKCHAIN}</p>
+		<p><a class="btn btn-primary btn-lg" role="button" href="/community">${LANG_LEARN_MORE}</a></p>
+</div>
+<div class="row section">
+<h2>${LANG_NEWS}</h2>
+<iframe width="100%" height="50" scrolling="auto" frameborder="no" name="news_content" id="news_content" src="${news_url}"></iframe>
+</div>
+
+<div class="row section">
+<table border="0" width="100%">
+<tr>
+	<td><h2>${LANG_ODIN}</h2></td>
+	<td align="right"><a class="btn btn-success btn-lg" role="button" href="/odin-add">${LANG_REGISTE_A_NEW_ODIN}...</a></td>
+</tr>
+</table>
+<#if recent_odins??>
+<table class="table table-striped">
+<thead>
+    <tr>
+        <th>${LANG_FULL_ODIN}</th>
+        <th>${LANG_SHORT_ODIN}</th>
+        <th>${LANG_TIME}</th>
+        <th>${LANG_ODIN_TITLE}</th>
+        <th>${LANG_ADMIN_REGISTER}</th>
+        <th>${LANG_STATUS}</th>
+    </tr>
+</thead>
+
+<tbody>
+<#list recent_odins as odin>
+    <tr>
+        <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+        <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+        <td><a href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+        <td>${odin["title"]}</td>
+        <td>
+        ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
+        ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+        </td>
+        <td>
+            ${odin["validity"]}<br>
+            <#if odin["me_updatable"]??>
+            <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
+            </#if>
+        </td>
+    </tr>
+</#list>
+</tbody>
+</table>
+</#if>
+</div>
+
+</@template.content>
