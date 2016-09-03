@@ -34,7 +34,8 @@
 			<#if is_my_wallet?? && is_my_wallet != "My">
 					<li>${LANG_VIEWING_OTHER_ADDRESS} ${address}<br>${LANG_VIEWING_OTHER_ADDRESS_NOTICE}</li>
 			<#else>
-                    <li <#if title?? && title=="Odin">class="active"</#if>><a href="/odin">${LANG_ODIN}</a></li>
+          <li <#if title?? && title=="Odin">class="active"</#if>><a href="/odin">${LANG_ODIN}</a></li>
+          <li <#if title?? && title=="Browser">class="active"</#if>><a href="/?ppk-uri=ppk:0/">${LANG_BROWSER}</a></li>
 					<li <#if title?? && title=="Wallet">class="active"</#if>><a href="/wallet">${LANG_WALLET}</a></li>
 					<li <#if title?? && title=="Community">class="active"</#if>><a href="/community">${LANG_COMMUNITY}</a></li>
 			</#if>
@@ -77,7 +78,7 @@
 	</nav>
 
 	<div class="container-fluid content">
-		<#if info?? || error?? || success?? || warning?? || (parsing?? || blocksPPK!=blocksBTC || blocksBTC=0 || blocksPPK=0) || (version_major?? && version_minor?? && min_version_major?? && min_version_minor?? && (version_major?number<min_version_major?number || (version_major?number==min_version_major?number && version_minor?number<min_version_minor?number)))>
+		<#if info?? || error?? || success?? || warning?? || (parsing?? || blocksPPK!=blocksBTC || blocksBTC=0 || blocksPPK=0) >
 		<div class="row section messages">
 			<#if info??>
 			<div class="alert alert-info">${info}</div>
@@ -91,9 +92,6 @@
 			<#if warning??>
 			<div class="alert alert-warning">${warning}</div>
 			</#if>
-			<#if version_major?? && version_minor?? && min_version_major?? && min_version_minor?? && (version_major?number<min_version_major?number || (version_major?number==min_version_major?number && version_minor?number<min_version_minor?number))>
-			<div class="alert alert-danger">${LANG_VERSION_OUT_OF_DATE}</div>
-			</#if>
 			<#if (parsing?? || blocksPPK!=blocksBTC || blocksBTC=0 || blocksPPK=0)>
 			<div class="alert alert-warning">${LANG_PARSING_TRANSACTIONS}</div>
 			</#if>
@@ -103,7 +101,7 @@
 		<#nested/>
 
 	<div class="container-fluid footer">
-	PPkPub &copy; 2015-2016. Released under the <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>. <#if system_charset??>[${system_charset}]</#if>
+	PPkPub &copy; 2015-2016. Released under the <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>. <#if system_charset??>[${system_charset}]</#if> <#if ipfs_status??>[${ipfs_status}]</#if>
 	</div>
 
 	<script src="http://yui.yahooapis.com/3.12.0/build/yui/yui.js"></script>

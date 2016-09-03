@@ -56,14 +56,15 @@ public class Server implements Runnable {
     attributes.put("blocksBTC", blocks.bitcoinBlock);
     attributes.put("blocksPPK", blocks.ppkBlock);
     attributes.put("version", Config.version);
-    attributes.put("min_version", Util.getMinVersion());
-    attributes.put("min_version_major", Util.getMinMajorVersion());
-    attributes.put("min_version_minor", Util.getMinMinorVersion());
     attributes.put("version_major", Config.majorVersion);
     attributes.put("version_minor", Config.minorVersion);
     attributes.put("system_charset", java.nio.charset.Charset.defaultCharset().toString());
     
-    Blocks.getInstance().versionCheck();
+    String str_ipfs_status = Util.isIpfsRuning() ? "IPFS:OK":"IPFS:<font color='#F00'>Not running</font>";
+    
+    attributes.put("ipfs_status", str_ipfs_status);
+    
+    //Blocks.getInstance().versionCheck();
     if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
     
     String address = Util.getAddresses().get(0);
@@ -93,6 +94,7 @@ public class Server implements Runnable {
         
     attributes.put("LANG_PPKPUB", Language.getLangLabel("PPkPub"));
     attributes.put("LANG_ODIN", Language.getLangLabel("ODIN"));
+    attributes.put("LANG_BROWSER", Language.getLangLabel("Browser"));
     attributes.put("LANG_WALLET", Language.getLangLabel("Wallet"));
     attributes.put("LANG_TECHNICAL", Language.getLangLabel("Technical"));
     attributes.put("LANG_COMMUNITY", Language.getLangLabel("Community"));
@@ -162,7 +164,7 @@ public class Server implements Runnable {
           blocks.reparse();
         }
 
-        String ppk_uri=request.queryParams("ppk_uri");
+        String ppk_uri=request.queryParams(Config.JSON_KEY_PPK_URI);
         if(ppk_uri!=null){
           Map<String, Object> attributes = handleOdinBrowserRequest(request,ppk_uri);
           return modelAndView(attributes, "odin-browser.html");
@@ -432,50 +434,7 @@ public class Server implements Runnable {
         Map<String, Object> attributes = handleOdinCheckApVdRequest(request);
         return modelAndView(attributes, "odin-check-ap-vd.html");
       }
-    });  
-    post(new FreeMarkerRoute("/odin-debug") {
-      @Override
-      public ModelAndView handle(Request request, Response response) {
-        setConfiguration(configuration);
-        Map<String, Object> attributes = handleOdinDebugRequest(request);
-        return modelAndView(attributes, "odin-debug.html");
-      }
-    });  
-    get(new FreeMarkerRoute("/odin-debug") {
-      @Override
-      public ModelAndView handle(Request request, Response response) {
-        setConfiguration(configuration);
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        request.session(true);
-        attributes = updateCommonStatus(request, attributes);
-        attributes.put("title", "Debug odin");
-
-        try{
-          String address=(String)attributes.get("address");
-
-          attributes.put("LANG_REGISTE_A_NEW_ODIN", Language.getLangLabel("Registe a new ODIN"));
-          attributes.put("LANG_ODIN_ADMIN_ADDRESS", Language.getLangLabel("Admin BTC address"));
-          attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
-          attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
-          attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
-          attributes.put("LANG_ODIN_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
-          attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
-          attributes.put("LANG_ODIN_AUTHORITY", Language.getLangLabel("Authority"));  
-          attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
-          attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
-          attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
-          
-          attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
-          attributes.put("LANG_REGIST_IT", Language.getLangLabel("Regist it"));  
-          attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
-                    
-          return modelAndView(attributes, "odin-debug.html");
-        }catch(Exception e){
-          return null;
-        }
-      }
-    });  
-        
+    });          
     get(new FreeMarkerRoute("/error") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -1263,8 +1222,8 @@ public class Server implements Runnable {
           {
               if( new_vd_set_cert_uri!=null && new_vd_set_cert_uri.length()>0 ){
                   JSONObject new_vd_set=new JSONObject();
-                  new_vd_set.put("algo",new_vd_set_algo);
-                  new_vd_set.put("cert_uri",new_vd_set_cert_uri);
+                  new_vd_set.put(Config.JSON_KEY_PPK_ALGO,new_vd_set_algo);
+                  new_vd_set.put(Config.JSON_KEY_PPK_CERT_URI,new_vd_set_cert_uri);
                   Transaction tx = OdinUpdate.updateOdinVdSet(odinInfo.fullOdin,address,new_vd_set);
                   blocks.sendTransaction(address,tx);
                   attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
@@ -1633,67 +1592,54 @@ public class Server implements Runnable {
     try{
       JSONObject odin_set = odinInfo.odinSet; 
       map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
-
+      attributes.put("odin", map);
+      
       String ap_url=(String)map.get("ap"+apid+"_url");
       
       String vd_set_algo=(String)map.get("vd_set_algo");
-      String vd_set_format=(String)map.get("vd_set_format");
       String vd_set_pubkey=(String)map.get("vd_set_pubkey");
       
-      attributes.put("odin", map);
-      
-      if(vd_set_pubkey==null){
-        attributes.put("error", "Invalid pubkey. Please update the validtion setting.");
+      if(vd_set_algo==null || vd_set_pubkey==null){
+        attributes.put("error", "Invalid algorithm or pubkey. Please update the validtion setting.");
         return attributes;
       }
       
-      System.out.println("vd_set_pubkey["+java.nio.charset.Charset.defaultCharset().toString()+"]="+Util.bytesToHexString(vd_set_pubkey.getBytes() ));
+      JSONObject obj_ap_resp=PPkURI.fetchAndValidationAP(
+            Config.PPK_URI_PREFIX+odinInfo.fullOdin+"/",
+            odinInfo.fullOdin,
+            odin_set.getJSONObject("ap_set").getJSONObject(apid) ,
+            odin_set.optJSONObject("vd_set")
+        );
       
-      String ap_check_url=ap_url+"?ppk_uri="+java.net.URLEncoder.encode("ppk:"+odinInfo.fullOdin+"/");
-      System.out.println("ap_check_url="+ap_check_url);
-      
-      String str_resp=Util.fetchURI(ap_check_url);
       String ap_resp_content="";
       String ap_resp_ppk_uri="";
-      String ap_resp_sign_base64="";
+      String ap_resp_url="";
+      String ap_resp_sign="";
       String ap_resp_validate_result="<font color='#F00'>Invalid</font>";
       
-      if(str_resp!=null && str_resp.length()>0){
-        System.out.println("str_resp["+java.nio.charset.Charset.defaultCharset().toString()+"]="+Util.bytesToHexString(str_resp.getBytes() ));
-
-        String ppk_sign_mark="<!--ppk_sign:";
-        int sign_start=str_resp.lastIndexOf(ppk_sign_mark);
-        //System.out.println("sign_start="+sign_start);
-        if(sign_start>0){
-          ap_resp_content=str_resp.substring(0,sign_start);
-          //System.out.println("ap_resp_content="+ap_resp_content);
-          sign_start += ppk_sign_mark.length();
-          //System.out.println("sign_start="+sign_start);
-          int sign_end=str_resp.indexOf("-->",sign_start);
-          //System.out.println("sign_end="+sign_end);
-          if(sign_end>sign_start){
-            JSONObject obj_ppk_sign=new JSONObject(str_resp.substring(sign_start,sign_end));
-
-            ap_resp_ppk_uri = obj_ppk_sign.optString("uri");
-            ap_resp_sign_base64=obj_ppk_sign.optString("sign_base64");
-            //System.out.println("ap_resp_sign_base64="+ap_resp_sign_base64);
-
-            if(RSACoder.verify(ap_resp_content.getBytes(), vd_set_pubkey,ap_resp_sign_base64,vd_set_algo ))
-               ap_resp_validate_result="<font color='#0F0'>Valiade OK using algorithm: "+vd_set_algo+"</font>";
-            else
-               ap_resp_validate_result="<font color='#F00'>Valiade failed using algorithm: "+vd_set_algo+" ! Please check the related setting.</font>";
-          }
-        }
+      if(obj_ap_resp!=null){
+        ap_resp_url=obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_URL,"");
+        if( "text/html".equalsIgnoreCase(obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"")) )
+          ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
+        else
+          ap_resp_content = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"");
+        
+        ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI);
+        ap_resp_sign = obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN);
+        
+        if( obj_ap_resp.optBoolean(Config.JSON_KEY_PPK_VALIDATION,false) )
+           ap_resp_validate_result="<font color='#0F0'>Valiade OK using algorithm: "+vd_set_algo+"</font>";
+        else
+           ap_resp_validate_result="<font color='#F00'>Valiade failed using algorithm: "+vd_set_algo+" ! Please check the related setting.</font>";
       }
       
       attributes.put("apid", apid);   
       attributes.put("ap_url", ap_url);   
-      attributes.put("ap_check_url", ap_check_url);         
       
-      attributes.put("ap_resp", str_resp);   
       attributes.put("ap_resp_content", ap_resp_content);   
       attributes.put("ap_resp_ppk_uri", ap_resp_ppk_uri);   
-      attributes.put("ap_resp_sign", ap_resp_sign_base64);   
+      attributes.put("ap_resp_url", ap_resp_url);   
+      attributes.put("ap_resp_sign", ap_resp_sign);   
       attributes.put("vd_set_pubkey", vd_set_pubkey);   
       attributes.put("ap_resp_validate_result", ap_resp_validate_result);        
       
@@ -1711,6 +1657,14 @@ public class Server implements Runnable {
     attributes.put("LANG_UPDATE_AP_SET", Language.getLangLabel("Update AP list")); 
     attributes.put("LANG_UPDATE_VD_SET", Language.getLangLabel("Validtion setting"));  
     attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
+    
+    attributes.put("LANG_RESPONSE_URI", Language.getLangLabel("Response URI"));
+    attributes.put("LANG_RESPONSE_URL", Language.getLangLabel("Response URL"));
+    attributes.put("LANG_RESPONSE_CONTENT", Language.getLangLabel("Response content"));
+    attributes.put("LANG_RESPONSE_SIGNATURE", Language.getLangLabel("Response signature"));
+    attributes.put("LANG_VALIDATE_PUBKEY", Language.getLangLabel("Validate pubkey"));
+    attributes.put("LANG_VALIDATE_RESULT", Language.getLangLabel("Validate result"));
+
         
     return attributes;
   }
@@ -1720,199 +1674,59 @@ public class Server implements Runnable {
     request.session(true);
     
     attributes = updateCommonStatus(request, attributes);
-    attributes.put("title", "Browse an PPk URI");
+    attributes.put("title", "Browser");
     
     if(ppk_uri==null){
-        attributes.put("error", "no ppk_uri.");
+        attributes.put("error", "no ppk-uri.");
         return attributes;
     } 
     
     attributes.put("ppk_uri", ppk_uri);
     
-    String[] uri_chunks=ppk_uri.split("/");
-    if(!uri_chunks[0].toLowerCase().startsWith("ppk:")){
-      attributes.put("error", "Incorrect ppk_uri:"+ppk_uri);
-      return attributes;
-    }
-    
-    String root_odin=uri_chunks[0].substring(4,uri_chunks[0].length());
-    String address=(String)attributes.get("address");
-    
-    OdinInfo odinInfo=Odin.getOdinInfo(root_odin);
-    if(odinInfo==null){
-      attributes.put("error", "Invalid root odin:"+root_odin);
-      return attributes;
-    }
-    
-    HashMap<String,Object> map = new HashMap<String,Object>();
-    map.put("full_odin", odinInfo.fullOdin);
-    map.put("short_odin", odinInfo.shortOdin);
-    map.put("register", odinInfo.register);
-    map.put("admin", odinInfo.admin);
-    map.put("tx_index",odinInfo.txIndex.toString());
-    map.put("tx_hash", odinInfo.txHash);
-    map.put("block_index", odinInfo.blockIndex.toString());
-    map.put("block_time", Util.timeFormat(odinInfo.blockTime));
-    map.put("validity",odinInfo.validity);
-    
     try{
-      JSONObject odin_set = odinInfo.odinSet; 
-      map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
-
-      boolean foundValidAP=false;
-      for(int apid=0;apid<10;apid++){
-        if(map.containsKey("ap"+apid+"_url")){
-          String ap_url=(String)map.get("ap"+apid+"_url");
-          
-          String vd_set_algo=(String)map.get("vd_set_algo");
-          String vd_set_format=(String)map.get("vd_set_format");
-          String vd_set_pubkey=(String)map.get("vd_set_pubkey");
-          
-          String ap_check_url=ap_url+"?ppk_uri="+java.net.URLEncoder.encode(ppk_uri);
-          System.out.println("ap_check_url="+ap_check_url);
-          
-          String str_resp=Util.fetchURI(ap_check_url);
-          String ap_resp_content="";
-          String ap_resp_ppk_uri="";
-          String ap_resp_sign_base64="";
-          String ap_resp_validate_result="Invalid";
-          
-          if(str_resp!=null && str_resp.length()>0){
-            System.out.println("str_resp="+str_resp);
-            
-            String ppk_sign_mark="<!--ppk_sign:";
-            int sign_start=str_resp.lastIndexOf(ppk_sign_mark);
-            //System.out.println("sign_start="+sign_start);
-            if(sign_start>0){
-              ap_resp_content=str_resp.substring(0,sign_start);
-              //System.out.println("ap_resp_content="+ap_resp_content);
-              sign_start += ppk_sign_mark.length();
-              //System.out.println("sign_start="+sign_start);
-              int sign_end=str_resp.indexOf("-->",sign_start);
-              //System.out.println("sign_end="+sign_end);
-              if(sign_end>sign_start){
-                JSONObject obj_ppk_sign=new JSONObject(str_resp.substring(sign_start,sign_end));
-                
-                
-                ap_resp_ppk_uri = obj_ppk_sign.optString("uri");
-                ap_resp_sign_base64=obj_ppk_sign.optString("sign_base64");
-                //System.out.println("ap_resp_sign_base64="+ap_resp_sign_base64);
-
-                if(RSACoder.verify(ap_resp_content.getBytes(), vd_set_pubkey,ap_resp_sign_base64,vd_set_algo )){
-                   foundValidAP=true;
-                   ap_resp_validate_result="<font color='#0F0'>Valiade OK using algorithm: "+vd_set_algo+"</font>";
-                }else
-                   ap_resp_validate_result="<font color='#F00'>Valiade failed using algorithm: "+vd_set_algo+" ! Please check the related setting.</font>";
-              }
-            }
-          }
-          attributes.put("apid", apid);   
-          attributes.put("ap_url", ap_url);   
-          attributes.put("ap_check_url", ap_check_url);   
-          
-          
-          attributes.put("ap_resp", str_resp);   
-          attributes.put("ap_resp_content", ap_resp_content);   
-          attributes.put("ap_resp_ppk_uri", ap_resp_ppk_uri);   
-          attributes.put("ap_resp_sign", ap_resp_sign_base64);   
-          attributes.put("vd_set_pubkey", vd_set_pubkey);   
-          attributes.put("ap_resp_validate_result", ap_resp_validate_result);   
-          
-          if(foundValidAP)
-            break;
-        }
+      JSONObject obj_ap_resp=PPkURI.fetchPPkURI( ppk_uri );
+      
+      String ap_resp_content="";
+      String ap_resp_ppk_uri="";
+      String ap_resp_url="";
+      String ap_resp_sign="";
+      String ap_resp_validate_result="";
+      
+      if(obj_ap_resp!=null){
+        ap_resp_url=obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_URL,"");
+        if( "text/html".equalsIgnoreCase(obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"")) )
+          ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
+        else if(obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase().startsWith("image"))
+          ap_resp_content = "<img src='"+ap_resp_url+"'>";
+        else 
+          ap_resp_content =  obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"");
+        
+        ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI);
+        ap_resp_sign = obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN);
+        
+        if( obj_ap_resp.optBoolean(Config.JSON_KEY_PPK_VALIDATION,false) )
+           ap_resp_validate_result="<font color='#0F0'>Valiade OK</font>";
+        else
+           ap_resp_validate_result="<font color='#F00'>Valiade failed!</font>";
+      }else{
+        ap_resp_validate_result="<font color='#F00'>No valid data</font>";
       }
       
-      attributes.put("odin", map);    
+      attributes.put("ap_resp_content", ap_resp_content);   
+      attributes.put("ap_resp_ppk_uri", ap_resp_ppk_uri);   
+      attributes.put("ap_resp_url", ap_resp_url);   
+      attributes.put("ap_resp_sign", ap_resp_sign);   
+      //attributes.put("vd_set_pubkey", vd_set_pubkey);   
+      attributes.put("ap_resp_validate_result", ap_resp_validate_result);     
     }catch (Exception e) {
       logger.error(e.toString());
     }
 
-    attributes.put("LANG_BROWSE_AN_PPK_URI", Language.getLangLabel("Browse PPk URI"));
-    
-    attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
-    attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
-    
-    attributes.put("LANG_CHECK_AP_VD", Language.getLangLabel("Validate the Aeccss Point"));     
-    attributes.put("LANG_UPDATE_BASEINFO", Language.getLangLabel("Update base info")); 
-    attributes.put("LANG_UPDATE_AP_SET", Language.getLangLabel("Update AP list")); 
-    attributes.put("LANG_UPDATE_VD_SET", Language.getLangLabel("Validtion setting"));  
-    attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
+    attributes.put("LANG_BROWSE_PPK_NETWORK", Language.getLangLabel("Browse PPk network"));
+    attributes.put("LANG_RESPONSE_URI", Language.getLangLabel("Response URI"));
+    attributes.put("LANG_RESPONSE_URL", Language.getLangLabel("Response URL"));
+    attributes.put("LANG_VALIDATE_RESULT", Language.getLangLabel("Validate result"));
         
     return attributes;
   }
-    
-
-  public Map<String, Object> handleOdinDebugRequest(Request request) {
-    Map<String, Object> attributes = new HashMap<String, Object>();
-    request.session(true);
-    attributes = updateCommonStatus(request, attributes);
-    attributes.put("title", "Odin batch add");
-    
-    Blocks blocks = Blocks.getInstance();
-    String address=(String)attributes.get("address");
-    
-    if (request.queryParams().contains("form") && request.queryParams("form").equals("add-odin-batch")) {
-      logger.info("************* do add-odin-batch **************");
-    
-      String register = request.queryParams("register");
-      String admin = request.queryParams("admin_address");
-      String titleStr=request.queryParams("title");
-      String emailStr=request.queryParams("email");
-      String authSet=request.queryParams("auth");
-      Integer batchNum=Integer.valueOf(request.queryParams("batch_num"));
-
-      if(admin.length()>0 && titleStr.length()>0 && batchNum>0 ){
-        try {
-          Map mapOdinSet = new HashMap(); 
-                    
-          mapOdinSet.put("title", titleStr); 
-          mapOdinSet.put("auth", authSet); 
-                    
-          if(register.equals(admin))
-            admin="";
-        
-          if(emailStr.length()>0)
-            mapOdinSet.put("email", emailStr); 
-          
-          JSONArray apList = new JSONArray(); 
-          for(int tt=1;tt<=5;tt++){
-            String tmp_ap_url_str = request.queryParams("ap"+tt+"_url");
-          
-            if(tmp_ap_url_str!=null && tmp_ap_url_str.length()>0 ){
-              apList.put(tmp_ap_url_str);
-            }
-          }
-          
-          if( apList.length()==0 ){
-            attributes.put("error", Language.getLangLabel("Please set at least one valid access point."));
-          } else {
-            mapOdinSet.put("ap_set", apList); 
-            JSONObject odin_set = new JSONObject(mapOdinSet); 
-            
-            String result_str="";
-            for(int kk=0;kk<batchNum;kk++){
-                try{
-                    odin_set.put("title", titleStr+"-"+(kk+1)); 
-                    Transaction tx = Odin.createOdin(register, admin,odin_set);
-                    blocks.sendTransaction(register,tx);
-                    result_str+="<li>Request["+kk+"] submited.</li>\n";
-                }catch(Exception e){
-                    result_str+="<li>Request["+kk+"] failed.("+e.toString()+")</li>\n";
-                }
-            }
-            attributes.put("success", result_str);
-          }
-        } catch (Exception e) {
-          logger.error("************* do add-odin error: "+e.getMessage());
-          attributes.put("error", e.getMessage());
-        }
-      } else {
-        attributes.put("error", Language.getLangLabel("Please input valid admin address,title and AP URLs."));
-      }
-    }
-
-    return attributes;
-  }
-    
 }

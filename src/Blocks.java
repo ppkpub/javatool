@@ -169,11 +169,16 @@ public class Blocks implements Runnable {
       params = MainNetParams.get();
         
       try {
-        /*
         //test
+        //PPkURI.fetchPPkURI("ppk:426137.1411/");
+        //PPkURI.fetchPPkURI("ppk:426195.373/");
+        //PPkURI.fetchApByHTTP("http://ppk001.sinaapp.com/ap/?ppk-uri=ppk:426137.1411/");
+        //PPkURI.fetchApByHTTP("http://ppk001.sinaapp.com/ap/ppk_img.php?ppk-uri=ppk:426195.373/");
+        
+
         //OdinUpdate.parse(52,Blocks.getPPkMessageFromTransaction("U426137.1411                   T.{\"cmd\":\"CU\",\"tx_list\":[\"427493.1073\"],\"ver\":1}"));
         //System.exit(0);
-        */
+        //test end
         
         if ((new File(walletFile)).exists()) {
           statusMessage = Language.getLangLabel("Found wallet file"); 
@@ -841,7 +846,7 @@ public class Blocks implements Runnable {
         while (tries>0 && !success) {
           tries--;
           List<UnspentOutput> unspents = Util.getUnspents(source);
-          logger.info("unspents count: " + unspents.size() );  //chenhui,20160107
+          logger.info("unspents count: " + unspents.size() ); 
           for (UnspentOutput unspent : unspents) {
             if (unspent.txid.equals(tx.getHashAsString())) {
               success = true;

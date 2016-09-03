@@ -5,7 +5,7 @@ import java.util.Properties;
 
 public class Config {
   //name
-  public static String appName = "PPkBeta";
+  public static String appName = "PPkTest";
 
   public static String log = appName+".log";
   public static String downloadUrl = "http://ppkpub.org/javatool/";
@@ -13,23 +13,22 @@ public class Config {
   public static String dbPath = "resources/db/";
   public static String newsUrl = downloadUrl+"news.html";
   public static String newsUrlCN = downloadUrl+"news_cn.html";
-  
   public static String downloadZipUrl = downloadUrl+"download.txt"; //Only update package
   public static Integer RPCPort = 44944;
   public static String RPCUsername = "";
   public static String RPCPassword = "";
-  public static String ConfigFile = "./resources/odin.conf";
+  public static String ConfigFile = "./resources/ppk.conf";
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 904;
+  public static Integer minorVersion = 602;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   public static Integer minorVersionDB = 2;
   public static String versionDB = Integer.toString(majorVersionDB)+"."+Integer.toString(minorVersionDB);  
   
   //bitcoin
-  public static Integer dustSize = 5757;// change 780->5750  chenhui,20160131
+  public static Integer dustSize = 5757;// change 780->5750  20160131
   //public static Integer minOrderMatchBTC = 100000;
   public static Integer minFee = 15000;
   public static Integer maxFee = 20000;
@@ -45,7 +44,7 @@ public class Config {
   //--- Test start ---//
   public static int ODIN_PROTOCOL_VER=1; 
   
-  public static String PPK_ODIN_MARK_PUBKEY_HEX="0271e666a57da6c7a339699682eb7ed85afa28eacc92a55de0bbd1b71f0936e471";//1PPkBsYTwhJajmGvDquW7Cxbx9wxLX7ZCN : 
+  public static String PPK_ODIN_MARK_PUBKEY_HEX="0271e666a57da6c7a339699682eb7ed85afa28eacc92a55de0bbd1b71f0936e471";//1PPkBsYTwhJajmGvDquW7Cxbx9wxLX7ZCN : For test
   public static byte PPK_PUBKEY_TYPE_FLAG=(byte)3;  //ODIN协议承载消息内容使用的公钥类型前缀取值
   public static byte PPK_PUBKEY_LENGTH=33;  //ODIN协议承载消息内容使用的单条公钥长度
   public static byte PPK_PUBKEY_EMBED_DATA_MAX_LENGTH=31;  //ODIN协议在单条公钥中最多嵌入的消息数据长度
@@ -70,6 +69,21 @@ public class Config {
   public static String ODIN_CMD_TRANS_REGISTER ="TR";  
   
   public static Byte DATA_CATALOG_UNKNOWN= 0; //Unkown Data,reserved
+  
+  public static String PPK_URI_PREFIX="ppk:";
+  public static String PPK_URI_RESOURCE_MARK="#";
+
+  public static String JSON_KEY_PPK_SIGN="ppk-sign";
+  public static String JSON_KEY_PPK_URI="ppk-uri";
+  public static String JSON_KEY_PPK_ALGO="algo";
+  public static String JSON_KEY_PPK_SIGN_BASE64="sign_base64";
+  public static String JSON_KEY_PPK_PUBKEY="pubkey";
+  public static String JSON_KEY_PPK_CERT_URI="cert_uri";
+  public static String JSON_KEY_PPK_VALIDATION="validation";
+  public static String JSON_KEY_PPK_CHUNK="ppk-chunk";
+  public static String JSON_KEY_PPK_CHUNK_TYPE="ppk-chunk-type";
+  public static String JSON_KEY_PPK_CHUNK_LENGTH="ppk-chunk-length";
+  public static String JSON_KEY_PPK_CHUNK_URL="ppk-chunk-url";
   
   //IPFS
   public static String IPFS_API_ADDRESS="/ip4/127.0.0.1/tcp/5001";

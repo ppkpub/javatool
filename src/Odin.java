@@ -294,12 +294,8 @@ public class Odin {
     byteBuffer.put(odin_set_data_type);
     byteBuffer.put(len_bytes);
     byteBuffer.put(odin_set_byte_array,0,odin_set_length);
-      
-    List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-    //dataArrayList.addAll(0, Util.toByteArrayList(Config.PPK_PREFIX.getBytes())); //test
-    //dataArrayList.addAll(0, Util.toByteArrayList(Util.hexStringToBytes(Config.PPK_ODIN_PREFIX_HEX)));
     
-    byte[] data = Util.toByteArray(dataArrayList);
+    byte[] data = byteBuffer.array();
 
     String dataString = "";
     try {
@@ -373,9 +369,9 @@ public class Odin {
         
         try{
           JSONObject  vd_set = odin_set.getJSONObject("vd_set");
-          map.put("vd_set_algo", vd_set.optString("algo",""));
-          map.put("vd_set_cert_uri", vd_set.optString("cert_uri",""));
-          map.put("vd_set_pubkey", vd_set.optString("pubkey",""));
+          map.put("vd_set_algo", vd_set.optString(Config.JSON_KEY_PPK_ALGO,""));
+          map.put("vd_set_cert_uri", vd_set.optString(Config.JSON_KEY_PPK_CERT_URI,""));
+          map.put("vd_set_pubkey", vd_set.optString(Config.JSON_KEY_PPK_PUBKEY,""));
         }catch(Exception e){
           
         }

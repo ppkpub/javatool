@@ -17,11 +17,12 @@
     
     <h3>AP[${apid}]:${ap_url}</h3>
 
-    Response URI:<form action="/" class="form-inline" method="get"><input name='ppk_uri' type='text' size='80' value='<#if ap_resp_ppk_uri??>${ap_resp_ppk_uri}</#if>'><button class="btn btn-primary" type="submit">Go</button></form><br>
-    <iframe src="${ap_check_url}" width="90%" height="200"></iframe><br>
-    Response content:<br><textarea rows=2 cols=100>${ap_resp}</textarea><br>
-    Validtion pubkey:<br><textarea rows=2 cols=100><#if vd_set_pubkey??>${vd_set_pubkey}</#if></textarea><br>
-    Validate result:${ap_resp_validate_result}<br>
+    ${LANG_RESPONSE_URI}:<form action="/" class="form-inline" method="get"><input name='ppk-uri' type='text' size='100' value='<#if ap_resp_ppk_uri??>${ap_resp_ppk_uri}</#if>'><button class="btn btn-primary" type="submit">Go</button></form><br>
+    ${LANG_RESPONSE_URL}:${ap_resp_url}<br>
+    ${LANG_RESPONSE_CONTENT}:<br><textarea rows=3 cols=100>${ap_resp_content}</textarea><br>
+    ${LANG_RESPONSE_SIGNATURE}:<br><textarea rows=3 cols=100>${ap_resp_sign}</textarea><br>
+    ${LANG_VALIDATE_PUBKEY}:<br><textarea rows=2 cols=100><#if vd_set_pubkey??>${vd_set_pubkey}</#if></textarea><br>
+    ${LANG_VALIDATE_RESULT}:${ap_resp_validate_result}<br>
         
     <hr>
     

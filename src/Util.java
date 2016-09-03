@@ -52,7 +52,7 @@ import java.io.OutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.json.JSONArray;   //2015-07-02 by flyingsee
+import org.json.JSONArray;  
 import org.json.JSONObject;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -72,6 +72,8 @@ import org.ipfs.api.Base58;
 
 public class Util {
   static Logger logger = LoggerFactory.getLogger(Util.class);
+  private static String mMinVersion=null;
+  private static Boolean mIpfsRunning=null;
 
   public static String getPage(String urlString) {
     return getPage(urlString, 1);
@@ -535,12 +537,16 @@ public class Util {
   }  
 
   public static String getMinVersion() {
-    String minVersion = getPage(Config.minVersionPage);
-    if (minVersion == null || minVersion.equals("")) {
-      return "0.0";
-    }
-    minVersion = minVersion.trim();
-    return minVersion;
+    if(mMinVersion!=null && mMinVersion.length()>0)
+      return mMinVersion;
+    
+    mMinVersion = getPage(Config.minVersionPage);
+    if( mMinVersion == null || mMinVersion.trim().length()==0 ) {
+      mMinVersion="0.0";
+    }else
+      mMinVersion = mMinVersion.trim();
+    
+    return mMinVersion;
   }
   
   public static Integer getMinMajorVersion() {
@@ -826,6 +832,21 @@ public class Util {
     */
   } 
   
+  //check the status of IPFS service
+  public static boolean isIpfsRuning(){
+    if(mIpfsRunning!=null)
+      return mIpfsRunning;
+    
+    try{
+      IPFS ipfs = new IPFS(Config.IPFS_API_ADDRESS);
+      mIpfsRunning = true;
+    }catch(Exception e){
+      mIpfsRunning = false;
+    }
+    
+    return mIpfsRunning;
+  }
+  
   //Upload data to IPFS and return the HASH uri
   public static String uploadToIpfs(String data){
     try{
@@ -872,6 +893,8 @@ public class Util {
       
       if(uri_chunks[0].equalsIgnoreCase("ipfs")){
         return getIpfsData(uri_chunks[1]);
+      }else if(uri_chunks[0].equalsIgnoreCase("ppk")){
+        //return fetchPPkURI(uri);
       }else if(uri_chunks[0].equalsIgnoreCase("data")){
         int from=uri_chunks[1].indexOf(",");
         if(from>=0){
@@ -881,57 +904,12 @@ public class Util {
       }else{
         return getPage(uri);
       }
-    
     }catch(Exception e){
       logger.error("Util.fetchURI("+uri+") error:"+e.toString());
-      return null;
     }
-  }
-  /*
-  //Use binary hash bytes in the IPFS URI  for compressing the length
-  public static String  convertIpfsToIpfh(String ipfs_uri){
-    try{
-      String[] uri_chunks=ipfs_uri.split(":");
-      if(uri_chunks.length<2){
-        logger.error("Util.convertIpfsToIpfh() meet invalid uri:"+ipfs_uri);
-        return null;
-      }
-      
-      if(uri_chunks[0].equalsIgnoreCase("ipfs")){
-        byte[] hash_byes=org.ipfs.api.Base58.decode(uri_chunks[1]);
-        return "ipfh:"+(new String(hash_byes,Config.BINARY_DATA_CHARSET));
-      }else{
-        return ipfs_uri;
-      }
-    
-    }catch(Exception e){
-      logger.error("Util.convertIpfsToIpfh("+ipfs_uri+") error:"+e.toString());
-      return null;
-    }
+    return null;
   }
   
-  //Restore the base58 IPFS URI from  binary hash bytes
-  public static String  convertIpfhToIpfs(String ipfsb_uri){
-    try{
-      String[] uri_chunks=ipfsb_uri.split(":");
-      if(uri_chunks.length<2){
-        logger.error("Util.convertIpfhToIpfs() meet invalid uri:"+ipfsb_uri);
-        return null;
-      }
-      
-      if(uri_chunks[0].equalsIgnoreCase("ipfh")){
-        byte[] hash_byes=ipfsb_uri.substring(6).getBytes(Config.BINARY_DATA_CHARSET);
-        return "ipfs:"+org.ipfs.api.Base58.encode(hash_byes);
-      }else{
-        return ipfsb_uri;
-      }
-    
-    }catch(Exception e){
-      logger.error("Util.convertIpfhToIpfs("+ipfsb_uri+") error:"+e.toString());
-      return null;
-    }
-  }
-  */
 }
 
 class AddressInfo {

@@ -241,15 +241,15 @@ public class OdinUpdate {
         }else if(cmd.equals(Config.ODIN_CMD_UPDATE_VD_SET)){
           if(!update_set.isNull("vd_set")){
             JSONObject  update_vd_set = update_set.getJSONObject("vd_set");
-            String vd_set_algo=update_vd_set.optString("algo",RSACoder.DEFAULT_SIGNATURE_ALGORITHM);
-            String vd_set_cert_uri=update_vd_set.optString("cert_uri");
+            String vd_set_algo=update_vd_set.optString(Config.JSON_KEY_PPK_ALGO,RSACoder.DEFAULT_SIGNATURE_ALGORITHM);
+            String vd_set_cert_uri=update_vd_set.optString(Config.JSON_KEY_PPK_CERT_URI);
             
             String tmp_str=Util.fetchURI(vd_set_cert_uri);
             try{
               JSONObject  vd_set_obj = new JSONObject();
-              vd_set_obj.put("algo", vd_set_algo);
-              vd_set_obj.put("cert_uri", vd_set_cert_uri);
-              vd_set_obj.put("pubkey", RSACoder.parseValidPubKey(vd_set_algo,tmp_str)); //需完善适配从不同类型的证书中提取公钥
+              vd_set_obj.put(Config.JSON_KEY_PPK_ALGO, vd_set_algo);
+              vd_set_obj.put(Config.JSON_KEY_PPK_CERT_URI, vd_set_cert_uri);
+              vd_set_obj.put(Config.JSON_KEY_PPK_PUBKEY, RSACoder.parseValidPubKey(vd_set_algo,tmp_str)); //需完善适配从不同类型的证书中提取公钥
 
               new_odin_set.put("vd_set",vd_set_obj);
             }catch(Exception e){
@@ -588,10 +588,8 @@ public class OdinUpdate {
       destination = new_register;
     else
       destination = new_admin ; 
-      
-    List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-    //dataArrayList.addAll(0, Util.toByteArrayList(Config.PPK_PREFIX.getBytes()));
-    byte[] data = Util.toByteArray(dataArrayList);
+
+    byte[] data = byteBuffer.array();
             
     String dataString = "";
     try {
@@ -638,8 +636,8 @@ public class OdinUpdate {
       update_desc+="<li>Validtion</li>\n<ul>\n";
       JSONObject  update_vd_set = update_set.optJSONObject("vd_set");
       if(update_vd_set!=null){
-        update_desc+="<li>Algorithm: "+HtmlRegexpUtil.filterHtml(update_vd_set.optString("algo",""))+"</li>\n";
-        update_desc+="<li>Certificate URI: "+HtmlRegexpUtil.filterHtml(update_vd_set.optString("cert_uri",""))+"</li>\n";
+        update_desc+="<li>Algorithm: "+HtmlRegexpUtil.filterHtml(update_vd_set.optString(Config.JSON_KEY_PPK_ALGO,""))+"</li>\n";
+        update_desc+="<li>Certificate URI: "+HtmlRegexpUtil.filterHtml(update_vd_set.optString(Config.JSON_KEY_PPK_CERT_URI,""))+"</li>\n";
       }
       update_desc+="</ul>";
     }else if(Config.ODIN_CMD_CONFIRM_UPDATE.equals(cmd)){

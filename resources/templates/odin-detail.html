@@ -42,9 +42,9 @@
     <input type="hidden" name="awaiting_update_log_num" value='${awaiting_update_log_num}'>
     
     <#list awaiting_update_logs as update_info>
+    ${update_info["log_sn"]+1}.
     <ul>
     <input type="hidden" name='update_log_id${update_info["log_sn"]}' value='${update_info["log_id"]}'>
-    {update_info["log_sn"].
     <!--<li>update_log_id:${update_info["log_id"]}</li>-->
     <li>Submit time: ${update_info["block_time"]}   Block:${update_info["block_index"]}</li>
     <li>Updater: ${update_info["updater"]}</li>

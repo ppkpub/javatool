@@ -5,22 +5,18 @@
     <div class="row section">
     <table border="0" width="100%">
     <tr>
-        <td><h2>${LANG_BROWSE_AN_PPK_URI}: <#if ppk_uri??>${ppk_uri}</#if></h2></td>
+        <td><h2>${LANG_BROWSE_PPK_NETWORK}</h2></td>
         <td align="right">
-        <a class="btn btn-primary" role="button" href='/'>Back to home</a>
+        <form action="/" class="form-inline" method="get"><input name='ppk-uri' type='text' size='80' value='<#if ppk_uri??>${ppk_uri}</#if>'><button class="btn btn-primary" type="submit">Go</button></form>
         </td>
     </tr>
     </table>
     </div>
-    <#if ap_resp_ppk_uri??>
-    <h3>AP[${apid}]:${ap_url}</h3>
-    </#if>
-    Response URI:<form action="/" class="form-inline" method="get"><input name='ppk_uri' type='text' size='100' value='<#if ap_resp_ppk_uri??>${ap_resp_ppk_uri}</#if>'><button class="btn btn-primary" type="submit">Go</button></form><br>
-    Validtion pubkey:<br><textarea rows=2 cols=100><#if vd_set_pubkey??>${vd_set_pubkey}</#if></textarea><br>
-    Validate result:<#if ap_resp_validate_result??>${ap_resp_validate_result}</#if><br>
-        
+    ${LANG_RESPONSE_URI}:<#if ap_resp_ppk_uri??>${ap_resp_ppk_uri}</#if><br>
+    ${LANG_RESPONSE_URL}:<#if ap_resp_url??>${ap_resp_url}</#if><br>
+    ${LANG_VALIDATE_RESULT}:<#if ap_resp_validate_result??>${ap_resp_validate_result}</#if><br>
     <hr>
-    <#if ap_resp??>${ap_resp}</#if>
+    <#if ap_resp_content??>${ap_resp_content}</#if>
 </div>
 </#if>
 

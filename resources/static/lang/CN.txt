@@ -39,6 +39,7 @@
     "Your transactions have been reimported.":"已重新导入你的交易记录。",
     "Error when reimporting transactions: ":"重新导入交易数据时有错误：",
     
+    "Browser":"浏览器",
     "Technical":"技术资料",
     "Community":"开放社区",
     "blocks":"区块",
@@ -109,6 +110,14 @@
     "Update description":"更新内容",
     "valid":"正常",
     "invalid":"有错误",
+    
+    "Browse PPk network":"浏览PPk网络",
+    "Response URI":"应答URI",
+    "Response URL":"应答URL",
+    "Response content":"返回内容",
+    "Response signature":"内容签名",
+    "Validate pubkey":"验证公钥",
+    "Validate result":"验证结果",
     
     "Please make sure that you have changed some values then submit.":"请确认已做有效修改后再提交",
 }
