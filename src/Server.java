@@ -1619,10 +1619,10 @@ public class Server implements Runnable {
       
       if(obj_ap_resp!=null){
         ap_resp_url=obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_URL,"");
-        if( "text/html".equalsIgnoreCase(obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"")) )
+        if( obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase().startsWith("text") )
           ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
         else
-          ap_resp_content = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"");
+          ap_resp_content = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"No defined content type");
         
         ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI);
         ap_resp_sign = obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN);
@@ -1694,15 +1694,23 @@ public class Server implements Runnable {
       
       if(obj_ap_resp!=null){
         ap_resp_url=obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_URL,"");
-        if( "text/html".equalsIgnoreCase(obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"")) )
+        if( obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase().startsWith("text") ){
           ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
-        else if(obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase().startsWith("image"))
+          
+          //将页面内容中以ppk:起始的href链接替换为适合本地浏览的链接格式
+          String tmp_href_ap_url=Config.PPK_DEFAULT_HREF_AP_URL+"?"+Config.JSON_KEY_PPK_URI+"="+Config.PPK_URI_PREFIX;
+          String tmp_media_ap_url=Config.PPK_DEFAULT_MEDIA_AP_URL+"?"+Config.JSON_KEY_PPK_URI+"="+Config.PPK_URI_PREFIX;
+          ap_resp_content = ap_resp_content.replaceAll("src='"+Config.PPK_URI_PREFIX,"src='"+tmp_media_ap_url)
+                                           .replaceAll("src=\""+Config.PPK_URI_PREFIX,"src=\""+tmp_media_ap_url)
+                                           .replaceAll("'"+Config.PPK_URI_PREFIX,"'"+tmp_href_ap_url)
+                                           .replaceAll("\""+Config.PPK_URI_PREFIX,"\""+tmp_href_ap_url);
+        }else if(obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase().startsWith("image"))
           ap_resp_content = "<img src='"+ap_resp_url+"'>";
         else 
           ap_resp_content =  obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"");
         
         ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI);
-        ap_resp_sign = obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN);
+        ap_resp_sign = obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN,"");
         
         if( obj_ap_resp.optBoolean(Config.JSON_KEY_PPK_VALIDATION,false) )
            ap_resp_validate_result="<font color='#0F0'>Valiade OK</font>";
@@ -1726,7 +1734,8 @@ public class Server implements Runnable {
     attributes.put("LANG_RESPONSE_URI", Language.getLangLabel("Response URI"));
     attributes.put("LANG_RESPONSE_URL", Language.getLangLabel("Response URL"));
     attributes.put("LANG_VALIDATE_RESULT", Language.getLangLabel("Validate result"));
-        
+    attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+    
     return attributes;
   }
 }

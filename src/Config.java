@@ -11,6 +11,7 @@ public class Config {
   public static String downloadUrl = "http://ppkpub.org/javatool/";
   public static String minVersionPage = downloadUrl+"min_version.txt";
   public static String dbPath = "resources/db/";
+  public static String cachePath = "resources/cache/";
   public static String newsUrl = downloadUrl+"news.html";
   public static String newsUrlCN = downloadUrl+"news_cn.html";
   public static String downloadZipUrl = downloadUrl+"download.txt"; //Only update package
@@ -18,6 +19,8 @@ public class Config {
   public static String RPCUsername = "";
   public static String RPCPassword = "";
   public static String ConfigFile = "./resources/ppk.conf";
+  
+
   
   //version
   public static Integer majorVersion = 0;
@@ -88,6 +91,10 @@ public class Config {
   //IPFS
   public static String IPFS_API_ADDRESS="/ip4/127.0.0.1/tcp/5001";
   public static String IPFS_PROXY_URL="https://ipfs.io/ipfs/";
+  
+  //AP
+  public static String PPK_DEFAULT_HREF_AP_URL = "http://0.0.0.0:8087/";
+  public static String PPK_DEFAULT_MEDIA_AP_URL = "http://ppk001.sinaapp.com/ap/";
   
   //Charset
   public static String PPK_TEXT_CHARSET="UTF-8";  //适用文本内容

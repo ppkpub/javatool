@@ -7,7 +7,7 @@
     <tr>
         <td><h2>${LANG_BROWSE_PPK_NETWORK}</h2></td>
         <td align="right">
-        <form action="/" class="form-inline" method="get"><input name='ppk-uri' type='text' size='80' value='<#if ppk_uri??>${ppk_uri}</#if>'><button class="btn btn-primary" type="submit">Go</button></form>
+        <form action="/" class="form-inline" method="get"><input name='ppk-uri' type='text' size='70' value='<#if ppk_uri??>${ppk_uri}</#if>'><button class="btn btn-primary" type="submit" onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();">Go</button></form>
         </td>
     </tr>
     </table>

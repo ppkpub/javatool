@@ -664,6 +664,13 @@ public class Util {
   
   public static boolean exportTextToFile(String text, String fileName) {
     try {
+      String file_path = fileName.substring(0,fileName.lastIndexOf('/'));
+      File fp = new File(file_path);    
+      // 创建目录    
+      if (!fp.exists()) {    
+          fp.mkdirs();// 目录不存在的情况下，创建目录。    
+      } 
+      
       FileWriter fw = new FileWriter(fileName);  
       fw.write(text,0,text.length());  
       fw.flush();  
@@ -697,7 +704,7 @@ public class Util {
     }
   
     public static JSONObject getRSAKeys(String address,boolean auto_generate,boolean auto_save) throws Exception{  
-    String  privateKeyFilename="resources/db/ck-"+address;
+    String  privateKeyFilename="resources/db/keys/"+address+".json";
           
     if (!(new File(privateKeyFilename)).exists() ){
       if(!auto_generate)
@@ -705,7 +712,7 @@ public class Util {
       
       //init a rsa key file for current address
       JSONObject keyMap = RSACoder.initKey();  
-      logger.info("Generated new keys: " + keyMap.toString());  
+      //logger.info("Generated new keys: " + keyMap.toString());  
     
       if(auto_save){
         if(!exportTextToFile(keyMap.toString(),privateKeyFilename)){

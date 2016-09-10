@@ -47,6 +47,9 @@ public class Odin {
       db.executeUpdate("CREATE TABLE IF NOT EXISTS odin_update_logs (log_id TEXT, tx_index INTEGER PRIMARY KEY,block_index INTEGER,full_odin TEXT, updater TEXT,destination TEXT,update_set TEXT, validity TEXT,required_confirmer TEXT);");
       db.executeUpdate("CREATE INDEX IF NOT EXISTS logid_idx ON odin_update_logs (log_id);");
       db.executeUpdate("CREATE INDEX IF NOT EXISTS odin_idx ON odin_update_logs (full_odin);");
+      
+      //db.executeUpdate("CREATE TABLE IF NOT EXISTS ppk_uri_caches (ppk_uri TEXT PRIMARY KEY, resp_json TEXT, validity TEXT)");
+      //db.executeUpdate("CREATE INDEX IF NOT EXISTS ppk_uri_idx ON ppk_uri_caches (ppk_uri)");
 
       /*
       //test chinese encode

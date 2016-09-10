@@ -68,28 +68,84 @@ public class PPkURI {
   static Logger logger = LoggerFactory.getLogger(PPkURI.class);
     
   public static JSONObject  fetchPPkURI(String uri){
+    logger.info("==========================\nPPkURI.fetchPPkURI: "+uri);
+    
     JSONObject  obj_newest_ap_resp=null;
     try{
-      String[] uri_chunks=uri.split("/");
-      if(!uri_chunks[0].toLowerCase().startsWith(Config.PPK_URI_PREFIX)){
+      if(!uri.toLowerCase().startsWith(Config.PPK_URI_PREFIX)){
         logger.error("PPkURI.fetchPPkURI() meet invalid ppk-uri:"+uri);
         return null;
       }
-
-      String root_odin=uri_chunks[0].substring(Config.PPK_URI_PREFIX.length(),uri_chunks[0].length());
-
-      OdinInfo odinInfo=Odin.getOdinInfo(root_odin);
-      if(odinInfo==null){
-        logger.error("PPkURI.fetchPPkURI("+uri+") meet invalid root odin:"+root_odin);
-        return null;
-      }
       
-      uri=Config.PPK_URI_PREFIX+odinInfo.fullOdin+"/";
-      for(int tt=1;tt<uri_chunks.length;tt++){
-        uri += "/"+uri_chunks[tt];
-      }      
+      int resoure_mark_posn=uri.indexOf('#');
+      if(resoure_mark_posn<0)
+        uri+="#";
 
-      JSONObject odin_set = odinInfo.odinSet; 
+      String[] reource_chunks   = uri.substring(Config.PPK_URI_PREFIX.length(),uri.length()).split("#");
+      String   resource_versoin = reource_chunks.length>1 ? reource_chunks[1]:"";
+
+      String parent_odin_path="";
+      String resource_id ="";  
+      System.out.println("reource_chunks[0]="+reource_chunks[0]);
+      if(reource_chunks[0].endsWith("/")){
+        resource_id="";
+        parent_odin_path=reource_chunks[0].substring(0,reource_chunks[0].length()-1);
+      }else{
+        int tmp_posn=reource_chunks[0].lastIndexOf('/');
+        if(tmp_posn>0){
+          resource_id=reource_chunks[0].substring(tmp_posn+1,reource_chunks[0].length());
+          parent_odin_path=reource_chunks[0].substring(0,tmp_posn);
+        }else{
+          parent_odin_path="";
+          resource_id=reource_chunks[0];
+        }
+      }
+      System.out.println("uri="+uri+" , parent_odin_path="+parent_odin_path+", resource_id="+resource_id+"\n");
+      
+      //获取ODIN标识对应访问点和签名验证参数
+      String formated_ppk_uri ="";
+      JSONObject odin_set ;
+      if(parent_odin_path.length()==0){ //resource is root ODIN 
+        OdinInfo odinInfo=Odin.getOdinInfo(resource_id);
+        if(odinInfo==null){
+          logger.error("PPkURI.fetchPPkURI("+uri+") meet invalid root odin:"+resource_id);
+          return null;
+        }
+        formated_ppk_uri=Config.PPK_URI_PREFIX+odinInfo.fullOdin+"#"+resource_versoin;
+        odin_set = odinInfo.odinSet; 
+        
+        //本地直接返回该一级ODIN配置信息
+        obj_newest_ap_resp=new JSONObject();
+        byte[] data=odin_set.toString().getBytes();
+        obj_newest_ap_resp.put(Config.JSON_KEY_PPK_CHUNK,data);
+        obj_newest_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_LENGTH,data.length);
+        obj_newest_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_TYPE,"text/json");
+        obj_newest_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_URL,"");
+
+        obj_newest_ap_resp.put(Config.JSON_KEY_PPK_VALIDATION,true );
+        obj_newest_ap_resp.put(Config.JSON_KEY_PPK_URI,formated_ppk_uri);
+
+        return obj_newest_ap_resp;
+      }else{//sub ODIN
+        JSONObject tmp_resp = fetchPPkURI( Config.PPK_URI_PREFIX+parent_odin_path+"#" ); 
+        
+        if(tmp_resp==null || !tmp_resp.optBoolean(Config.JSON_KEY_PPK_VALIDATION,false) ){
+          logger.error("PPkURI.fetchPPkURI("+uri+") meet invalid odin:"+parent_odin_path);
+          return null;
+        }
+        
+        formated_ppk_uri=tmp_resp.getString(Config.JSON_KEY_PPK_URI);;
+        if(formated_ppk_uri.indexOf('#')>0)
+          formated_ppk_uri=formated_ppk_uri.substring(0,formated_ppk_uri.lastIndexOf('#') );
+        
+        if(!formated_ppk_uri.endsWith("/"))
+          formated_ppk_uri += "/";
+      
+        formated_ppk_uri += resource_id+"#"+resource_versoin;
+        
+        odin_set = new  JSONObject( new String( (byte[])tmp_resp.opt(Config.JSON_KEY_PPK_CHUNK) ));
+      }
+      System.out.println(">>>>> formated_ppk_uri="+formated_ppk_uri+"  odin_set:"+odin_set.toString());
 
       if( !odin_set.isNull("ap_set")  ){
         JSONObject  ap_set = odin_set.getJSONObject("ap_set");
@@ -99,7 +155,7 @@ public class PPkURI {
           String ap_id=(String)it.next();
           JSONObject ap_record=ap_set.getJSONObject(ap_id);
           
-          obj_ap_resp=fetchAndValidationAP(uri,root_odin,ap_record,odin_set.optJSONObject("vd_set"));
+          obj_ap_resp=fetchAndValidationAP(formated_ppk_uri,null,ap_record,odin_set.optJSONObject("vd_set"));
 
           if(obj_ap_resp!=null){
             if( obj_ap_resp.optBoolean(Config.JSON_KEY_PPK_VALIDATION,false) ){
@@ -121,9 +177,13 @@ public class PPkURI {
         }
       }
       
-      if(obj_newest_ap_resp!=null && obj_newest_ap_resp.optBoolean(Config.JSON_KEY_PPK_VALIDATION))
-        System.out.println("Found newst valid chunk:"+obj_newest_ap_resp.optString(Config.JSON_KEY_PPK_URI));
-      else
+      if(obj_newest_ap_resp!=null && obj_newest_ap_resp.optBoolean(Config.JSON_KEY_PPK_VALIDATION)){
+        String ap_resp_ppk_uri = obj_newest_ap_resp.getString(Config.JSON_KEY_PPK_URI);
+        System.out.println("Found newst valid chunk:"+ap_resp_ppk_uri);
+        
+        String cache_filename = Config.cachePath + ap_resp_ppk_uri.substring(Config.PPK_URI_PREFIX.length(),ap_resp_ppk_uri.length());
+        Util.exportTextToFile(obj_newest_ap_resp.toString(),cache_filename);
+      }else
         System.out.println("Received invalid chunk");
     
     }catch(Exception e){
@@ -143,7 +203,7 @@ public class PPkURI {
       
       obj_ap_resp = fetchApByHTTP(ap_check_url);
     }else{
-      logger.error("PPkURI.fetchPPkURI("+uri+") meet not supported ap url:"+ap_url);
+      logger.error("PPkURI.fetchAndValidationAP("+uri+") meet not supported ap url:"+ap_url);
     }
     
      //检查签名
@@ -156,7 +216,7 @@ public class PPkURI {
 
         String ap_resp_ppk_uri = obj_ppk_sign.optString(Config.JSON_KEY_PPK_URI,"");
         String ap_resp_sign_base64=obj_ppk_sign.optString(Config.JSON_KEY_PPK_SIGN_BASE64,"");
-        System.out.println("ap_resp_sign_base64="+ap_resp_sign_base64);
+        //System.out.println("ap_resp_sign_base64="+ap_resp_sign_base64);
         
         obj_ap_resp.put(Config.JSON_KEY_PPK_URI,ap_resp_ppk_uri);
         
@@ -167,10 +227,7 @@ public class PPkURI {
           ByteBuffer byteBuffer = ByteBuffer.allocate(content_data.length+uri_data.length);
           byteBuffer.put(content_data,0,content_data.length);
           byteBuffer.put(uri_data,0,uri_data.length);
-          
-          //System.out.println("byteBuffer.array()="+Util.bytesToHexString(byteBuffer.array()));
-          //System.out.println("vd_set_pubkey="+vd_set_pubkey + ", vd_set_algo="+vd_set_algo);
-          
+
           if(vd_set_algo.length()>0 && vd_set_pubkey.length()==0){
             //动态获取和更新公钥
             String vd_set_cert_uri=vd_set.optString(Config.JSON_KEY_PPK_CERT_URI,"");
@@ -183,6 +240,7 @@ public class PPkURI {
                 vd_set_pubkey=RSACoder.parseValidPubKey(vd_set_algo,tmp_str);
                 vd_set.put(Config.JSON_KEY_PPK_PUBKEY, vd_set_pubkey);
                 
+                /* 待完善
                 OdinInfo odinInfo=Odin.getOdinInfo(root_odin);
                 JSONObject  new_odin_set=odinInfo.odinSet;
                 new_odin_set.put("vd_set",vd_set);
@@ -193,8 +251,8 @@ public class PPkURI {
 
                 ps.setString(1, new_odin_set.toString());
                 ps.setString(2, odinInfo.fullOdin);
-                ps.execute();
-                
+                ps.execute(); 
+                */
               }catch(Exception e){
                 logger.error("Meet invalid vd_set_cert_uri:"+vd_set_cert_uri);
               }
@@ -204,10 +262,15 @@ public class PPkURI {
           if(RSACoder.verify(byteBuffer.array(), vd_set_pubkey,ap_resp_sign_base64,vd_set_algo )){
              obj_ap_resp.put(Config.JSON_KEY_PPK_VALIDATION,true);
              System.out.println("Found valid chunk");
+          }else{
+             System.out.println("Found invalid chunk.Please check the vd setting.");
+             System.out.println("byteBuffer.array()="+Util.bytesToHexString(byteBuffer.array()));
+             System.out.println("vd_set_pubkey="+vd_set_pubkey + ", vd_set_algo="+vd_set_algo);
+             System.out.println("resp_pubkey="+obj_ppk_sign.optString("debug_pubkey","") + "\nresp_algo="+obj_ppk_sign.optString("algo","")+"\nresp_sign_base64="+ap_resp_sign_base64);
           }
         }
       }catch(Exception e){
-        logger.error("PPkURI.fetchPPkURI("+uri+") meet invalid ppk sign:"+obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN));
+        logger.error("PPkURI.fetchAndValidationAP("+uri+") meet invalid ppk sign:"+obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN));
       }
     }
     
