@@ -316,7 +316,7 @@ public class Util {
   public static String transactionAddress(String txHash) {
     return "https://api.biteasy.com/blockchain/v1/transactions/"+txHash;
   }
-  
+  /*
   public static List<UnspentOutput> getUnspents(String address) {
     //return getUnspents2(address);
     
@@ -359,7 +359,36 @@ public class Util {
     return unspents;
    
   }
+  */
+  public static List<UnspentOutput> getUnspents(String address) {
+    String result = getPage( "https://blockchain.info/unspent?active="+address );
+    List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
+    try {
+            JSONObject tempResultObject=new JSONObject(result);
+            JSONArray tempArray=tempResultObject.getJSONArray("unspent_outputs");
+            ArrayList<HashMap<String, Object>> item_set_array = new ArrayList<HashMap<String, Object>>();
+            for(int tt=0;tt<tempArray.length();tt++){
+                JSONObject item_obj=(JSONObject)tempArray.get(tt);
+                
+                UnspentOutput tempUnspentObj=new UnspentOutput();
+                tempUnspentObj.amount=item_obj.getDouble("value")/Config.btc_unit;
+                tempUnspentObj.txid=item_obj.getString("tx_hash_big_endian");
+                tempUnspentObj.vout=item_obj.getInt("tx_output_n");
+                //tempUnspentObj.type=item_obj.getString("");
+                //tempUnspentObj.confirmations=item_obj.getInt("confirmations");
 
+                //tempUnspentObj.scriptPubKeyAsm="Invalid";
+                tempUnspentObj.scriptPubKeyHex=item_obj.getString("script");
+
+                unspents.add(tempUnspentObj);
+            }
+    } catch (Exception e) {
+      logger.error(e.toString());
+      return getUnspents2(address);
+    }
+    return unspents;
+  }
+  
   public static List<UnspentOutput> getUnspents2(String address) {
     String result = getPage( "http://blockmeta.com/api/v1/address/unspent/"+address );
     List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
@@ -386,36 +415,7 @@ public class Util {
     }
     return unspents;
   }
-  
-  /*
-  public static List<UnspentOutput> getUnspents2(String address) {
-    String result = getPage( "https://blockchain.info/unspent?active="+address );
-    List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
-    try {
-            JSONObject tempResultObject=new JSONObject(result);
-            JSONArray tempArray=tempResultObject.getJSONArray("unspent_outputs");
-            ArrayList<HashMap<String, Object>> item_set_array = new ArrayList<HashMap<String, Object>>();
-            for(int tt=0;tt<tempArray.length();tt++){
-                JSONObject item_obj=(JSONObject)tempArray.get(tt);
-                
-                UnspentOutput tempUnspentObj=new UnspentOutput();
-                tempUnspentObj.amount=item_obj.getDouble("value")/Config.btc_unit;
-                tempUnspentObj.txid=item_obj.getString("tx_hash_big_endian");
-                tempUnspentObj.vout=item_obj.getInt("tx_output_n");
-                //tempUnspentObj.type=item_obj.getString("");
-                //tempUnspentObj.confirmations=item_obj.getInt("confirmations");
 
-                //tempUnspentObj.scriptPubKeyAsm="Invalid";
-                tempUnspentObj.scriptPubKeyHex=item_obj.getString("script");
-
-                unspents.add(tempUnspentObj);
-            }
-    } catch (Exception e) {
-      logger.error(e.toString());
-    }
-    return unspents;
-  }
-  */
 
   public static TransactionInfo getTransaction(String txHash) {
     String result = getPage(transactionAddress(txHash));
@@ -430,7 +430,6 @@ public class Util {
     }
   }
 
-  /*
   public static BigInteger getBTCBalance(String address) {
     String result = getPage( "http://blockmeta.com/api/v1/address/info/"+address);
     try {
@@ -442,7 +441,7 @@ public class Util {
       return getBTCBalance2(address);
     }
   }
-  */
+  /*
   public static BigInteger getBTCBalance(String address) {
     String result = getPage( "https://bitcoin.toshi.io/api/v0/addresses/"+address);
     try {
@@ -452,7 +451,7 @@ public class Util {
       return getBTCBalance2(address);
     }
   }
-
+  */
   public static BigInteger getBTCBalance2(String address) {
     String result = getPage( "https://blockchain.info/zh-cn/address/"+address+"?format=json&limit=0" );
     try {
