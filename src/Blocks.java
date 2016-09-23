@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
 
+import org.json.JSONObject;
+
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.TransactionBroadcast;
 import org.bitcoinj.core.Address;
@@ -174,8 +176,14 @@ public class Blocks implements Runnable {
         //PPkURI.fetchPPkURI("ppk:426195.373/");
         //PPkURI.fetchApByHTTP("http://ppk001.sinaapp.com/ap/?ppk-uri=ppk:426137.1411/");
         //PPkURI.fetchApByHTTP("http://ppk001.sinaapp.com/ap/ppk_img.php?ppk-uri=ppk:426195.373/");
-        
-
+        /*
+        JSONObject key_set=Util.getRSAKeys("test",true,true);
+        String tmpstr=RSACoder.sign(
+                        "test".getBytes(), 
+                        key_set.getString("RSAPrivateKey"),
+                        "SHA256withRSA");
+        System.out.println("tmpstr="+tmpstr);
+        */
         //OdinUpdate.parse(52,Blocks.getPPkMessageFromTransaction("U426137.1411                   T.{\"cmd\":\"CU\",\"tx_list\":[\"427493.1073\"],\"ver\":1}"));
         //System.exit(0);
         //test end

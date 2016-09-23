@@ -1,2 +1,2 @@
-java -Dfile.encoding=UTF-8 -jar PPkDaemon.jar
+java  -Dtest=true  -Dfile.encoding=UTF-8 -jar PPkDaemon.jar
 

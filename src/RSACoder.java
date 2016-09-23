@@ -36,7 +36,9 @@ public abstract class RSACoder extends Coder {
      *            加密数据 
      * @param privateKey 
      *            私钥 
-     *  
+     * @param sign_algo 
+     *            指定算法，详见 
+     *            https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#Signature
      * @return 
      * @throws Exception 
      */  

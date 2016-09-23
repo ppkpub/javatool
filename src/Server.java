@@ -220,7 +220,7 @@ public class Server implements Runnable {
           attributes.put("LANG_MADE_FOR_A_LITTLE_JOY", Language.getLangLabel("ODIN is a decentralized DNS based on blockchains (Bitcoin,NXT,Fatcom,etc) . It's made for a little joy."));
           attributes.put("LANG_DOWNLOAD", Language.getLangLabel("Download"));
           attributes.put("LANG_SOFTWARE_INCLUDING", Language.getLangLabel("this opensource software -- including a tool for registing and managing ODIN , a simple bitcoin wallet . Start playing today!"));
-          attributes.put("LANG_BUILT_ON_BITCOIN_BLOCKCHAIN", Language.getLangLabel("Built on top of the blockchain technology, PPkPub will research and develope a few fully open decentralized protocols & tools. There is no central control and central point of failure. It's admin by the people."));
+          attributes.put("LANG_BUILT_ON_BITCOIN_BLOCKCHAIN", Language.getLangLabel("Built on top of the blockchain technology, PPkPub will research and develope a few fully open decentralized protocols & tools. There is no central control and central point of failure. It's owned by the people."));
           attributes.put("LANG_LEARN_MORE", Language.getLangLabel("Learn more"));
           attributes.put("LANG_NEWS", Language.getLangLabel("News"));
 

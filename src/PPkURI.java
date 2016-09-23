@@ -240,7 +240,7 @@ public class PPkURI {
                 vd_set_pubkey=RSACoder.parseValidPubKey(vd_set_algo,tmp_str);
                 vd_set.put(Config.JSON_KEY_PPK_PUBKEY, vd_set_pubkey);
                 
-                /* 待完善
+                // 待完善
                 OdinInfo odinInfo=Odin.getOdinInfo(root_odin);
                 JSONObject  new_odin_set=odinInfo.odinSet;
                 new_odin_set.put("vd_set",vd_set);
@@ -252,7 +252,6 @@ public class PPkURI {
                 ps.setString(1, new_odin_set.toString());
                 ps.setString(2, odinInfo.fullOdin);
                 ps.execute(); 
-                */
               }catch(Exception e){
                 logger.error("Meet invalid vd_set_cert_uri:"+vd_set_cert_uri);
               }

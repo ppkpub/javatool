@@ -5,7 +5,7 @@ import java.util.Properties;
 
 public class Config {
   //name
-  public static String appName = "PPkTest";
+  public static String appName = "PPk";
 
   public static String log = appName+".log";
   public static String downloadUrl = "http://ppkpub.org/javatool/";
@@ -24,7 +24,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 603;
+  public static Integer minorVersion = 605;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   public static Integer minorVersionDB = 2;
@@ -34,7 +34,7 @@ public class Config {
   public static Integer dustSize = 5757;// change 780->5750  20160131
   //public static Integer minOrderMatchBTC = 100000;
   public static Integer minFee = 15000;
-  public static Integer maxFee = 20000;
+  public static Integer maxFee = 30000;
   public static Integer dataValue = 0;
   public static Integer btc_unit = 100000000;
 
@@ -47,7 +47,12 @@ public class Config {
   //--- Test start ---//
   public static int ODIN_PROTOCOL_VER=1; 
   
-  public static String PPK_ODIN_MARK_PUBKEY_HEX="0271e666a57da6c7a339699682eb7ed85afa28eacc92a55de0bbd1b71f0936e471";//1PPkBsYTwhJajmGvDquW7Cxbx9wxLX7ZCN : For test
+  //public static String PPK_ODIN_MARK_PUBKEY_HEX="0271e666a57da6c7a339699682eb7ed85afa28eacc92a55de0bbd1b71f0936e471";//1PPkBsYTwhJajmGvDquW7Cxbx9wxLX7ZCN : For test beta
+  public static String PPK_ODIN_MARK_PUBKEY_HEX_TESTNET="02d173743cd0d94f64d241d82a42c6ca92327c443e489f3842464a4df118d4920a";//1PPkT1hoRbnvSRExCeNoP4s1zr61H12bbg : For testnet
+  public static String PPK_ODIN_MARK_PUBKEY_HEX_MAINNET="0320a0de360cc2ae8672db7d557086a4e7c8eca062c0a5a4ba9922dee0aacf3e12";//1PPkPubRnK2ry9PPVW7HJiukqbSnWzXkbi : For Mainnet
+  
+  public static String PPK_ODIN_MARK_PUBKEY_HEX=null;
+  
   public static byte PPK_PUBKEY_TYPE_FLAG=(byte)3;  //ODIN协议承载消息内容使用的公钥类型前缀取值
   public static byte PPK_PUBKEY_LENGTH=33;  //ODIN协议承载消息内容使用的单条公钥长度
   public static byte PPK_PUBKEY_EMBED_DATA_MAX_LENGTH=31;  //ODIN协议在单条公钥中最多嵌入的消息数据长度

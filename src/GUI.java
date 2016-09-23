@@ -50,33 +50,42 @@ public class GUI extends Application {
 
   @Override public void init() {
     Locale.setDefault(new Locale("en", "US"));
-        
-        String strLang = System.getProperty("lang");
-        if(strLang!=null){
-            Language.setLang(strLang);
-            System.out.println(Language.getLangLabel("PPkPub"));
-            System.out.println(Language.getLangLabel("Loading")+" "+Config.appName+" V"+Config.version);
-        }
-        
-        GUI.bShowGui=true;
-        String strNoGuiSet = System.getProperty("nogui");
-        if(strNoGuiSet!=null){
-            GUI.bShowGui=false;
-        }
-        
-        if(GUI.bShowGui){
-            ImageView splash = new ImageView(new Image("file:./resources/static/images/logo.png"));
-            loadProgress = new ProgressBar();
-            loadProgress.setPrefWidth(SPLASH_WIDTH);
-            progressText = new Label("");
-            splashLayout = new VBox();
-            splashLayout.getChildren().addAll(splash, loadProgress, progressText);
-            progressText.setAlignment(Pos.CENTER);
-            splashLayout.setStyle("-fx-padding: 5; -fx-background-color: linear-gradient(to bottom, #ffffff, #ffffff); -fx-border-width:1; -fx-border-color: black;");
-            splashLayout.setEffect(new DropShadow());
-        }else{
-                        
-        }
+    
+    String strTest = System.getProperty("test");
+    if(strTest!=null && strTest.equalsIgnoreCase("true") ){
+      Config.PPK_ODIN_MARK_PUBKEY_HEX=Config.PPK_ODIN_MARK_PUBKEY_HEX_TESTNET;
+      Config.appName += "Test";
+    }else{
+      Config.PPK_ODIN_MARK_PUBKEY_HEX=Config.PPK_ODIN_MARK_PUBKEY_HEX_MAINNET;
+    }
+    
+    String strLang = System.getProperty("lang");
+    if(strLang!=null){
+        Language.setLang(strLang);
+    }
+    
+    System.out.println(Language.getLangLabel("PPkPub"));
+    System.out.println(Language.getLangLabel("Loading")+" "+Config.appName+" V"+Config.version);
+    
+    GUI.bShowGui=true;
+    String strNoGuiSet = System.getProperty("nogui");
+    if(strNoGuiSet!=null){
+        GUI.bShowGui=false;
+    }
+    
+    if(GUI.bShowGui){
+        ImageView splash = new ImageView(new Image("file:./resources/static/images/logo.png"));
+        loadProgress = new ProgressBar();
+        loadProgress.setPrefWidth(SPLASH_WIDTH);
+        progressText = new Label("");
+        splashLayout = new VBox();
+        splashLayout.getChildren().addAll(splash, loadProgress, progressText);
+        progressText.setAlignment(Pos.CENTER);
+        splashLayout.setStyle("-fx-padding: 5; -fx-background-color: linear-gradient(to bottom, #ffffff, #ffffff); -fx-border-width:1; -fx-border-color: black;");
+        splashLayout.setEffect(new DropShadow());
+    }else{
+                    
+    }
   }
 
   @Override public void start(final Stage initStage) throws Exception {

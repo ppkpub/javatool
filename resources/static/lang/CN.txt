@@ -1,5 +1,6 @@
 {
     "PPkPub":"PPk开放小组",
+    "PPkTest":"PPk测试网络",
     "Bitcoin":"比特币",
     "toolkit":"开放工具",
     "wallet":"钱包",
