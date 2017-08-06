@@ -623,7 +623,6 @@ public class Blocks implements Runnable {
     Transaction tx = new Transaction(params);
 
     if (!destination.equals("") && btcAmount.compareTo(BigInteger.valueOf(Config.dustSize))<0) {
-      System.out.println("aaaa3");
       tx.verify();
       return tx;
     }
@@ -665,52 +664,53 @@ public class Blocks implements Runnable {
        return null;
 
     //组织多重交易来嵌入所需存放的数据
-    int  max_tx_num = Config.MAX_MULTISIG_TX_NUM;
-    int  max_multisig_n = Config.MAX_N;
+    if(odin_data_length>0){
+      int  max_tx_num = Config.MAX_MULTISIG_TX_NUM;
+      int  max_multisig_n = Config.MAX_N;
 
-    int from = 0;
-    for (int tt=0; tt==0 || (tt<max_tx_num && from < odin_data_length - Config.MAX_OP_RETURN_LENGTH);tt++ ) {
-      List<ECKey> keys = new ArrayList<ECKey>();
-      keys.add(register_key);
-      
-      if(tt==0){ //第一条多重交易的第二个公钥固定为指定特征公钥
-        keys.add(new ECKey(null, Util.hexStringToBytes(markPubkeyHexStr)));
-      }
-      
-      for(int mm=keys.size(); 
-          mm<max_multisig_n && ( ( tt==0 && from < odin_data_length ) || ( tt>0 && from < odin_data_length - Config.MAX_OP_RETURN_LENGTH) );
-          mm++,from += Config.PPK_PUBKEY_EMBED_DATA_MAX_LENGTH){
-        int embed_data_length=Math.min(Config.PPK_PUBKEY_EMBED_DATA_MAX_LENGTH, odin_data_length-from); 
+      int from = 0;
+      for (int tt=0; tt==0 || (tt<max_tx_num && from < odin_data_length - Config.MAX_OP_RETURN_LENGTH);tt++ ) {
+        List<ECKey> keys = new ArrayList<ECKey>();
+        keys.add(register_key);
         
-        List<Byte> chunk = new ArrayList<Byte>(dataArrayList.subList(from, from+embed_data_length ));
-        
-        byte[] tmp_pub_key=Util.generateValidPubkey(Util.toByteArray(chunk));
-        
-        if(tmp_pub_key==null){
-          throw new Exception("Unable to generate valid pubkey for embedding data["+dataString+"].Please change your request contents!");
+        if(tt==0){ //第一条多重交易的第二个公钥固定为指定特征公钥
+          keys.add(new ECKey(null, Util.hexStringToBytes(markPubkeyHexStr)));
         }
         
-        keys.add(new ECKey(null,tmp_pub_key));
+        for(int mm=keys.size(); 
+            mm<max_multisig_n && ( ( tt==0 && from < odin_data_length ) || ( tt>0 && from < odin_data_length - Config.MAX_OP_RETURN_LENGTH) );
+            mm++,from += Config.PPK_PUBKEY_EMBED_DATA_MAX_LENGTH){
+          int embed_data_length=Math.min(Config.PPK_PUBKEY_EMBED_DATA_MAX_LENGTH, odin_data_length-from); 
+          
+          List<Byte> chunk = new ArrayList<Byte>(dataArrayList.subList(from, from+embed_data_length ));
+          
+          byte[] tmp_pub_key=Util.generateValidPubkey(Util.toByteArray(chunk));
+          
+          if(tmp_pub_key==null){
+            throw new Exception("Unable to generate valid pubkey for embedding data["+dataString+"].Please change your request contents!");
+          }
+          
+          keys.add(new ECKey(null,tmp_pub_key));
+        }
+
+        Script script = ScriptBuilder.createMultiSigOutputScript(1, keys);
+        tx.addOutput(Coin.valueOf(BigInteger.valueOf(Config.dustSize).longValue()), script);
+        totalOutput = totalOutput.add(BigInteger.valueOf(Config.dustSize));
       }
-
-      Script script = ScriptBuilder.createMultiSigOutputScript(1, keys);
-      tx.addOutput(Coin.valueOf(BigInteger.valueOf(Config.dustSize).longValue()), script);
-      totalOutput = totalOutput.add(BigInteger.valueOf(Config.dustSize));
-    }
     
-    //使用op_return对应的备注脚本空间来嵌入剩余ODIN数据
-    int last_data_length= odin_data_length-from;
-    
-    if(last_data_length>Config.MAX_OP_RETURN_LENGTH){
-      throw new Exception("Too big embed data.(Should be less than "+Config.MAX_ODIN_DATA_LENGTH+" bytes)");
-    }else if( last_data_length>0 ){
-      List<Byte> chunk = new ArrayList<Byte>(dataArrayList.subList(from, odin_data_length));
-      chunk.add(0,(byte) last_data_length);
-      chunk.add(0,(byte) 0x6a);
-      Script script = new Script(Util.toByteArray(chunk));
-      tx.addOutput(Coin.valueOf(BigInteger.valueOf(0).longValue()), script);
+      //使用op_return对应的备注脚本空间来嵌入剩余ODIN数据
+      int last_data_length= odin_data_length-from;
+      
+      if(last_data_length>Config.MAX_OP_RETURN_LENGTH){
+        throw new Exception("Too big embed data.(Should be less than "+Config.MAX_ODIN_DATA_LENGTH+" bytes)");
+      }else if( last_data_length>0 ){
+        List<Byte> chunk = new ArrayList<Byte>(dataArrayList.subList(from, odin_data_length));
+        chunk.add(0,(byte) last_data_length);
+        chunk.add(0,(byte) 0x6a);
+        Script script = new Script(Util.toByteArray(chunk));
+        tx.addOutput(Coin.valueOf(BigInteger.valueOf(0).longValue()), script);
+      }
     }
-
     List<UnspentOutput> unspents = Util.getUnspents(source);
     List<Script> inputScripts = new ArrayList<Script>();      
     List<ECKey> inputKeys = new ArrayList<ECKey>();      

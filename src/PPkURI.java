@@ -81,6 +81,7 @@ public class PPkURI {
       if(resoure_mark_posn<0)
         uri+="#";
 
+      //解析URI资源区段
       String[] reource_chunks   = uri.substring(Config.PPK_URI_PREFIX.length(),uri.length()).split("#");
       String   resource_versoin = reource_chunks.length>1 ? reource_chunks[1]:"";
 
@@ -261,6 +262,9 @@ public class PPkURI {
           if(RSACoder.verify(byteBuffer.array(), vd_set_pubkey,ap_resp_sign_base64,vd_set_algo )){
              obj_ap_resp.put(Config.JSON_KEY_PPK_VALIDATION,true);
              System.out.println("Found valid chunk");
+             //System.out.println("byteBuffer.array()="+Util.bytesToHexString(byteBuffer.array()));
+             //System.out.println("vd_set_pubkey="+vd_set_pubkey + ", vd_set_algo="+vd_set_algo);
+             //System.out.println("resp_pubkey="+obj_ppk_sign.optString("debug_pubkey","") + "\nresp_algo="+obj_ppk_sign.optString("algo","")+"\nresp_sign_base64="+ap_resp_sign_base64);
           }else{
              System.out.println("Found invalid chunk.Please check the vd setting.");
              System.out.println("byteBuffer.array()="+Util.bytesToHexString(byteBuffer.array()));
