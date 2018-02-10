@@ -24,7 +24,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 610;
+  public static Integer minorVersion = 611;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   public static Integer minorVersionDB = 2;
@@ -33,7 +33,7 @@ public class Config {
   //bitcoin
   public static Integer dustSize = 5757;// change 780->5750  20160131
   //public static Integer minOrderMatchBTC = 100000;
-  public static Integer minFee = 50000;
+  public static Integer minFee = 10000;
   public static Integer maxFee = 99999;
   public static Integer dataValue = 0;
   public static Integer btc_unit = 100000000;
@@ -42,7 +42,7 @@ public class Config {
   public static long ppkToolCreationTime = 1400561240-1;  //UTC 2014-5-20 04:47:20
   public static Integer firstBlock = 425153;
   
-  public static Integer ppkStandardDataFee = 50000;
+  public static Integer ppkStandardDataFee = 20000;
   
   //--- Test start ---//
   public static int ODIN_PROTOCOL_VER=1; 

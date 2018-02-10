@@ -7,14 +7,14 @@ import org.bitcoinj.core.Block;
 import org.bitcoinj.core.GetDataMessage;
 import org.bitcoinj.core.Message;
 import org.bitcoinj.core.Peer;
-import org.bitcoinj.core.PeerEventListener;
+import org.bitcoinj.core.listeners.AbstractPeerEventListener;
 import org.bitcoinj.core.Transaction;
 import org.bitcoinj.store.BlockStoreException;
 import org.bitcoinj.core.FilteredBlock;
 import org.bitcoinj.core.PeerAddress;
 import java.util.Set;
 
-public class PPkPeerEventListener implements PeerEventListener {
+public class PPkPeerEventListener extends AbstractPeerEventListener {
     Logger logger = LoggerFactory.getLogger(PPkPeerEventListener.class);
 
   @Override

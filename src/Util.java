@@ -318,34 +318,36 @@ public class Util {
   }
   /*
   public static List<UnspentOutput> getUnspents(String address) {
-    //return getUnspents2(address);
-    
-    String result = getPage( "https://bitcoin.toshi.io/api/v0/addresses/"+address+"/unspent_outputs" );
+    String result = getPage( "http://btc.blockr.io/api/v1/address/unspent/"+address+"?multisigs=1" );
     List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
     try {
-        JSONArray tempArray=new JSONArray(result);
+        JSONObject tempObject=new JSONObject(result);
+        
+        JSONArray tempArray=tempObject.getJSONObject("data").getJSONArray("unspent");
         
         for(int tt=0;tt<tempArray.length();tt++){
             JSONObject item_obj=(JSONObject)tempArray.get(tt);
             
             //check the script is valid
-            String[] chunks=item_obj.getString("script").split(" ");
             boolean is_script_valid=true;
-            for(String chunk : chunks){ 
-              if( ( chunk.length()==65*2 && !chunk.startsWith("04") )
-                 || ( chunk.length()==33*2 && !chunk.startsWith("02") && !chunk.startsWith("03")  ) 
-                ) 
-                is_script_valid=false;
-            }
+
+            //String[] chunks=item_obj.getString("script").split(" ");
             
+            //for(String chunk : chunks){ 
+            //  if( ( chunk.length()==65*2 && !chunk.startsWith("04") )
+            //     || ( chunk.length()==33*2 && !chunk.startsWith("02") && !chunk.startsWith("03")  ) 
+            //    ) 
+            //    is_script_valid=false;
+            //}
+
             if(is_script_valid){
               UnspentOutput tempUnspentObj=new UnspentOutput();
               
-              tempUnspentObj.amount=item_obj.getDouble("amount")/Config.btc_unit;
-              tempUnspentObj.txid=item_obj.getString("transaction_hash");
-              tempUnspentObj.vout=item_obj.getInt("output_index");
+              tempUnspentObj.amount=item_obj.getDouble("amount");
+              tempUnspentObj.txid=item_obj.getString("tx");
+              tempUnspentObj.vout=item_obj.getInt("n");
 
-              tempUnspentObj.scriptPubKeyHex=item_obj.getString("script_hex");
+              tempUnspentObj.scriptPubKeyHex=item_obj.getString("script");
 
               unspents.add(tempUnspentObj);
             }else{
@@ -360,6 +362,7 @@ public class Util {
    
   }
   */
+  
   public static List<UnspentOutput> getUnspents(String address) {
     String result = getPage( "https://blockchain.info/unspent?active="+address );
     List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
@@ -431,6 +434,18 @@ public class Util {
   }
 
   public static BigInteger getBTCBalance(String address) {
+    String result = getPage( "http://btc.blockr.io/api/v1/address/info/"+address);
+    try {
+      JSONObject tempResultObject=new JSONObject(result);
+      tempResultObject=tempResultObject.getJSONObject("data");
+
+      return  BigDecimal.valueOf(tempResultObject.getDouble("balance")*Config.btc_unit).toBigInteger();
+    } catch (Exception e) {
+      return getBTCBalance2(address);
+    }
+  }
+  /*
+  public static BigInteger getBTCBalance(String address) {
     String result = getPage( "http://blockmeta.com/api/v1/address/info/"+address);
     try {
       JSONObject tempResultObject=new JSONObject(result);
@@ -441,6 +456,7 @@ public class Util {
       return getBTCBalance2(address);
     }
   }
+  */
   /*
   public static BigInteger getBTCBalance(String address) {
     String result = getPage( "https://bitcoin.toshi.io/api/v0/addresses/"+address);
