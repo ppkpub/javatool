@@ -6,6 +6,7 @@ import java.util.Properties;
 public class Config {
   //name
   public static String appName = "PPk";
+  public static String defaultLang = "EN";
 
   public static String log = appName+".log";
   public static String downloadUrl = "http://ppkpub.org/javatool/";
@@ -24,7 +25,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 611;
+  public static Integer minorVersion = 613;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   public static Integer minorVersionDB = 2;
@@ -47,7 +48,7 @@ public class Config {
   //--- Test start ---//
   public static int ODIN_PROTOCOL_VER=1; 
   
-  //public static String PPK_ODIN_MARK_PUBKEY_HEX="0271e666a57da6c7a339699682eb7ed85afa28eacc92a55de0bbd1b71f0936e471";//1PPkBsYTwhJajmGvDquW7Cxbx9wxLX7ZCN : For test beta
+  //public static String 
   public static String PPK_ODIN_MARK_PUBKEY_HEX_TESTNET="02d173743cd0d94f64d241d82a42c6ca92327c443e489f3842464a4df118d4920a";//1PPkT1hoRbnvSRExCeNoP4s1zr61H12bbg : For testnet
   public static String PPK_ODIN_MARK_PUBKEY_HEX_MAINNET="0320a0de360cc2ae8672db7d557086a4e7c8eca062c0a5a4ba9922dee0aacf3e12";//1PPkPubRnK2ry9PPVW7HJiukqbSnWzXkbi : For Mainnet
   
@@ -117,6 +118,29 @@ public class Config {
       prop.load(input);
       RPCUsername = prop.getProperty("RPCUsername");
       RPCPassword = prop.getProperty("RPCPassword");
+      
+      defaultLang = prop.getProperty("Lang").toUpperCase();
+      System.out.println("Lang:"+defaultLang);
+      
+      String strTest = prop.getProperty("UseTestNet");
+      System.out.println("UseTestNet:"+strTest);
+      if(strTest!=null && strTest.equals("1") ){
+        appName += "Test";
+        
+        String strTestNetHash = prop.getProperty("TestNetHash");
+        if(strTestNetHash!=null ){
+          PPK_ODIN_MARK_PUBKEY_HEX=strTestNetHash;
+        }else{
+          PPK_ODIN_MARK_PUBKEY_HEX=PPK_ODIN_MARK_PUBKEY_HEX_TESTNET;
+        }
+        System.out.println("TestNetHash:"+strTestNetHash);
+      }else{
+        PPK_ODIN_MARK_PUBKEY_HEX=PPK_ODIN_MARK_PUBKEY_HEX_MAINNET;
+      }
+      
+      
+      ppkStandardDataFee = Integer.parseInt(prop.getProperty("StandardFeeSatoshi")) ;
+      System.out.println("StandardFeeSatoshi:"+ppkStandardDataFee);
     } catch (IOException e) {
     }    
   }

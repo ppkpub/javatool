@@ -2,13 +2,7 @@ import java.util.Locale;
 
 public class NoGUI  {
   public static void main(String[] args) throws Exception {
-    String strTest = System.getProperty("test");
-    if(strTest!=null && strTest.equalsIgnoreCase("true") ){
-      Config.PPK_ODIN_MARK_PUBKEY_HEX=Config.PPK_ODIN_MARK_PUBKEY_HEX_TESTNET;
-      Config.appName += "Test";
-    }else{
-      Config.PPK_ODIN_MARK_PUBKEY_HEX=Config.PPK_ODIN_MARK_PUBKEY_HEX_MAINNET;
-    }
+    Config.loadUserDefined();
     
     System.out.println("Loading "+Config.appName+" V"+Config.version+"  server without GUI ...");
 

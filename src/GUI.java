@@ -51,22 +51,12 @@ public class GUI extends Application {
   @Override public void init() {
     Locale.setDefault(new Locale("en", "US"));
     
-    String strTest = System.getProperty("test");
-    if(strTest!=null && strTest.equalsIgnoreCase("true") ){
-      Config.PPK_ODIN_MARK_PUBKEY_HEX=Config.PPK_ODIN_MARK_PUBKEY_HEX_TESTNET;
-      Config.appName += "Test";
-    }else{
-      Config.PPK_ODIN_MARK_PUBKEY_HEX=Config.PPK_ODIN_MARK_PUBKEY_HEX_MAINNET;
-    }
-    
-    String strLang = System.getProperty("lang");
-    if(strLang!=null){
-        Language.setLang(strLang);
-    }
-    
+    Config.loadUserDefined();
+
+    Language.setLang(Config.defaultLang);
     System.out.println(Language.getLangLabel("PPkPub"));
     System.out.println(Language.getLangLabel("Loading")+" "+Config.appName+" V"+Config.version);
-    
+
     GUI.bShowGui=true;
     String strNoGuiSet = System.getProperty("nogui");
     if(strNoGuiSet!=null){

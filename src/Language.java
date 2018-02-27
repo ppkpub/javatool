@@ -13,27 +13,30 @@ public class Language {
 
 
   public static void setLang(String lang) {
-        String  langFilename="./resources/static/lang/"+lang+".txt";
+    if(lang.equals("EN"))
+      return;
+    
+    String  langFilename="./resources/static/lang/"+lang+".txt";
           
     if (!(new File(langFilename)).exists() ){
             logger.error("Not found language file : "+langFilename);
             return;
     }
         
-        try{
-            String  tmpKeyStr=Util.readTextFile(langFilename,Config.PPK_TEXT_CHARSET);
-            if(tmpKeyStr==null){
-                logger.error("Failed to read language data from "+langFilename);
-                System.exit(0);        
-            }
-            
-            objLang=new JSONObject(tmpKeyStr);
-            
-            currentLang=lang;
-        }catch(Exception ex){
-            logger.error("Failed to set language :"+ex.toString());
-            System.exit(0);    
+    try{
+        String  tmpKeyStr=Util.readTextFile(langFilename,Config.PPK_TEXT_CHARSET);
+        if(tmpKeyStr==null){
+            logger.error("Failed to read language data from "+langFilename);
+            System.exit(0);        
         }
+        
+        objLang=new JSONObject(tmpKeyStr);
+        
+        currentLang=lang;
+    }catch(Exception ex){
+        logger.error("Failed to set language :"+ex.toString());
+        System.exit(0);    
+    }
   }
     
     public static String getCurrentLang(){

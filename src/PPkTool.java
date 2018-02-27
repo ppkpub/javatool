@@ -11,6 +11,11 @@ public class PPkTool {
   public static Logger logger = LoggerFactory.getLogger(Blocks.class);
 
   public static void main(String[] args) {
+    Config.loadUserDefined();
+    
+    System.out.println(Language.getLangLabel("PPkPub"));
+    System.out.println(Language.getLangLabel("Loading")+" "+Config.appName+" Tool V"+Config.version);
+    
     Blocks blocks = Blocks.getInstanceSkipVersionCheck();
     blocks.init();
     blocks.versionCheck(false);
@@ -24,6 +29,6 @@ public class PPkTool {
     Thread blocksThread = new Thread(blocks);
     blocksThread.setDaemon(true);
     blocksThread.start(); 
-    Config.loadUserDefined();
+    
   }
 }
