@@ -217,7 +217,7 @@ public class Server implements Runnable {
           }
           
           attributes.put("LANG_A_UNIQUE_GROUP", Language.getLangLabel("a public group that focus on open decentralized protocols and tools."));
-          attributes.put("LANG_MADE_FOR_A_LITTLE_JOY", Language.getLangLabel("ODIN is a decentralized DNS based on blockchains (Bitcoin,NXT,Fatcom,etc) . It's made for a little joy."));
+          attributes.put("LANG_MADE_FOR_A_LITTLE_JOY", Language.getLangLabel("ODIN is a decentralized DNS based on blockchains (Bitcoin,NXT,ETH,Fabric,etc) . It's made for a little joy."));
           attributes.put("LANG_DOWNLOAD", Language.getLangLabel("Download"));
           attributes.put("LANG_SOFTWARE_INCLUDING", Language.getLangLabel("this opensource software -- including a tool for registing and managing ODIN , a simple bitcoin wallet . Start playing today!"));
           attributes.put("LANG_BUILT_ON_BITCOIN_BLOCKCHAIN", Language.getLangLabel("Built on top of the blockchain technology, PPkPub will research and develope a few fully open decentralized protocols & tools. There is no central control and central point of failure. It's owned by the people."));
@@ -532,14 +532,15 @@ public class Server implements Runnable {
       }
     }
     
-    //Just for test to show private&public keys
-    for (ECKey key : blocks.wallet.getImportedKeys()) {
-        if (key.toAddress(blocks.params).toString().equals(address)) {
-          attributes.put("testShowKey", "PrivateKey HEX:"+key.getPrivateKeyAsHex() + " WIF:"+  key.getPrivateKeyAsWiF(MainNetParams.get())+"  PubKey:"+key.getPublicKeyAsHex());
-        }
+    //Just for debug to show private&public keys
+    if(Config.debugKey){
+      for (ECKey key : blocks.wallet.getImportedKeys()) {
+          if (key.toAddress(blocks.params).toString().equals(address)) {
+            attributes.put("testShowKey", "PrivateKey HEX:"+key.getPrivateKeyAsHex() + " WIF:"+  key.getPrivateKeyAsWiF(MainNetParams.get())+"  PubKey:"+key.getPublicKeyAsHex());
+          }
+      }
     }
-      
-    
+
     attributes.put("balanceBTC", Util.getBalance(address, "BTC").doubleValue() / Config.btc_unit.doubleValue());
     
     Database db = Database.getInstance();

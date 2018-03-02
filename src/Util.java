@@ -356,7 +356,7 @@ public class Util {
         }
     } catch (Exception e) {
       logger.error(e.toString());
-      return getUnspents2(address);
+      return getUnspentsWithoutDustTX(address);
     }
     return unspents;
    
@@ -364,6 +364,64 @@ public class Util {
   */
   
   public static List<UnspentOutput> getUnspents(String address) {
+    if(!Config.useDustTX){
+      return getUnspentsWithoutDustTX(address);
+    }
+    
+    String result = getPage( "https://chain.api.btc.com/v3/address/" + address + "/unspent" );
+
+    List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
+    try {
+        JSONObject tempObject=new JSONObject(result);
+        
+        JSONArray tempArray=tempObject.getJSONObject("data").getJSONArray("list");
+        
+        for(int tt=0;tt<tempArray.length();tt++){
+            JSONObject item_obj=(JSONObject)tempArray.get(tt);
+            
+            UnspentOutput tempUnspentObj=new UnspentOutput();
+            
+            if(item_obj.getInt("confirmations")>0){
+              tempUnspentObj.amount=item_obj.getDouble("value")/Config.btc_unit;
+              tempUnspentObj.txid=item_obj.getString("tx_hash");
+              tempUnspentObj.vout=item_obj.getInt("tx_output_n");
+              tempUnspentObj.scriptPubKeyHex="";
+
+              try {
+                result = getPage( "https://chain.api.btc.com/v3/tx/" + tempUnspentObj.txid + "?verbose=3" );
+                JSONObject tempObjectTx=new JSONObject(result);
+                JSONArray tempArrayOutputs=tempObjectTx.getJSONObject("data").getJSONArray("outputs");
+                JSONObject item_output=(JSONObject)tempArrayOutputs.get(tempUnspentObj.vout);
+
+                tempUnspentObj.scriptPubKeyHex=item_output.getString("script_hex");;
+              }catch (Exception e1) {
+                logger.error(e1.toString());
+                try {
+                  result = getPage( "https://blockchain.info/zh-cn/rawtx/" + tempUnspentObj.txid );
+                  JSONObject tempObjectTx=new JSONObject(result);
+                  JSONArray tempArrayOutputs=tempObjectTx.getJSONArray("out");
+                  JSONObject item_output=(JSONObject)tempArrayOutputs.get(tempUnspentObj.vout);
+
+                  tempUnspentObj.scriptPubKeyHex=item_output.getString("script");;
+                }catch (Exception e2) {
+                  logger.error(e2.toString());
+                }
+              }
+              //System.out.println(">>>>>>>>>>tempUnspentObj:"+tempUnspentObj.txid+","+tempUnspentObj.amount+","+tempUnspentObj.vout+","+tempUnspentObj.scriptPubKeyHex);
+              
+              if(tempUnspentObj.scriptPubKeyHex.length()>0)
+                unspents.add(tempUnspentObj);
+            }
+        }
+    } catch (Exception e) {
+      logger.error(e.toString());
+      return getUnspentsWithoutDustTX(address);
+    }
+    return unspents;
+   
+  }
+
+  public static List<UnspentOutput> getUnspentsWithoutDustTX(String address) {
     String result = getPage( "https://blockchain.info/unspent?active="+address );
     List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
     try {
@@ -387,12 +445,11 @@ public class Util {
             }
     } catch (Exception e) {
       logger.error(e.toString());
-      return getUnspents2(address);
     }
     return unspents;
   }
-  
-  public static List<UnspentOutput> getUnspents2(String address) {
+  /*
+  public static List<UnspentOutput> getUnspentsWithoutDustTX(String address) {
     String result = getPage( "http://blockmeta.com/api/v1/address/unspent/"+address );
     List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
     try {
@@ -418,7 +475,7 @@ public class Util {
     }
     return unspents;
   }
-
+  */
 
   public static TransactionInfo getTransaction(String txHash) {
     String result = getPage(transactionAddress(txHash));
@@ -434,41 +491,22 @@ public class Util {
   }
 
   public static BigInteger getBTCBalance(String address) {
-    String result = getPage( "http://btc.blockr.io/api/v1/address/info/"+address);
+    if(!Config.useDustTX){
+      return getBTCBalanceWithoutDustTX(address);
+    }
+    
+    String result = getPage( "https://chain.api.btc.com/v3/address/"+address);
     try {
       JSONObject tempResultObject=new JSONObject(result);
       tempResultObject=tempResultObject.getJSONObject("data");
 
-      return  BigDecimal.valueOf(tempResultObject.getDouble("balance")*Config.btc_unit).toBigInteger();
+      return  BigInteger.valueOf(tempResultObject.getLong("balance"));
     } catch (Exception e) {
-      return getBTCBalance2(address);
+      return getBTCBalanceWithoutDustTX(address);
     }
   }
-  /*
-  public static BigInteger getBTCBalance(String address) {
-    String result = getPage( "http://blockmeta.com/api/v1/address/info/"+address);
-    try {
-      JSONObject tempResultObject=new JSONObject(result);
-      JSONArray tempArray=tempResultObject.getJSONArray("data");
-      tempResultObject=(JSONObject)tempArray.get(0);
-      return  BigDecimal.valueOf(tempResultObject.getDouble("balance")*Config.btc_unit).toBigInteger();
-    } catch (Exception e) {
-      return getBTCBalance2(address);
-    }
-  }
-  */
-  /*
-  public static BigInteger getBTCBalance(String address) {
-    String result = getPage( "https://bitcoin.toshi.io/api/v0/addresses/"+address);
-    try {
-      JSONObject addressInfo=new JSONObject(result);
-      return BigInteger.valueOf(addressInfo.getLong("balance"));
-    } catch (Exception e) {
-      return getBTCBalance2(address);
-    }
-  }
-  */
-  public static BigInteger getBTCBalance2(String address) {
+
+  public static BigInteger getBTCBalanceWithoutDustTX(String address) {
     String result = getPage( "https://blockchain.info/zh-cn/address/"+address+"?format=json&limit=0" );
     try {
       JSONObject addressInfo=new JSONObject(result);
@@ -479,6 +517,20 @@ public class Util {
     }
   }
   
+  /*
+  public static BigInteger getBTCBalanceWithoutDustTX(String address) {
+    String result = getPage( "http://blockmeta.com/api/v1/address/info/"+address);
+    try {
+      JSONObject tempResultObject=new JSONObject(result);
+      JSONArray tempArray=tempResultObject.getJSONArray("data");
+      tempResultObject=(JSONObject)tempArray.get(0);
+      return  BigDecimal.valueOf(tempResultObject.getDouble("balance")*Config.btc_unit).toBigInteger();
+    } catch (Exception e) {
+      logger.error(e.toString());
+      return BigInteger.ZERO;
+    }
+  }
+  */  
   
   public static BigInteger getBalance(String address, String asset) {
     Database db = Database.getInstance();

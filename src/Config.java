@@ -21,7 +21,7 @@ public class Config {
   public static String RPCPassword = "";
   public static String ConfigFile = "./resources/ppk.conf";
   
-
+  public static boolean debugKey = false;
   
   //version
   public static Integer majorVersion = 0;
@@ -32,7 +32,8 @@ public class Config {
   public static String versionDB = Integer.toString(majorVersionDB)+"."+Integer.toString(minorVersionDB);  
   
   //bitcoin
-  public static Integer dustSize = 5757;// change 780->5750  20160131
+  public static boolean useDustTX = true;
+  public static Integer dustSize = 1000;
   //public static Integer minOrderMatchBTC = 100000;
   public static Integer minFee = 10000;
   public static Integer maxFee = 99999;
@@ -43,9 +44,8 @@ public class Config {
   public static long ppkToolCreationTime = 1400561240-1;  //UTC 2014-5-20 04:47:20
   public static Integer firstBlock = 425153;
   
-  public static Integer ppkStandardDataFee = 20000;
+  public static Integer ppkStandardDataFee = 10000;
   
-  //--- Test start ---//
   public static int ODIN_PROTOCOL_VER=1; 
   
   //public static String 
@@ -62,7 +62,6 @@ public class Config {
   public static int MAX_N = 3;   //多重签名1-OF-N中的参数N最大数量，建议设为3，如果过大可能会被比特币网络拒绝
   public static int MAX_OP_RETURN_LENGTH = 75; //OP_RETURN能存放数据的最大字节数
   public static int MAX_ODIN_DATA_LENGTH=(MAX_N-2)*PPK_PUBKEY_EMBED_DATA_MAX_LENGTH+(MAX_N-1)*PPK_PUBKEY_EMBED_DATA_MAX_LENGTH*(MAX_MULTISIG_TX_NUM-1)+MAX_OP_RETURN_LENGTH;  //支持嵌入的ODIN数据最大字节数
-  //--- Test end ---//
   
   
   public static Byte FUNC_ID_ODIN_REGIST='R'; 
@@ -141,6 +140,25 @@ public class Config {
       
       ppkStandardDataFee = Integer.parseInt(prop.getProperty("StandardFeeSatoshi")) ;
       System.out.println("StandardFeeSatoshi:"+ppkStandardDataFee);
+      
+      dustSize = Integer.parseInt(prop.getProperty("DustSize")) ;
+      System.out.println("DustSize:"+dustSize);
+      
+      String strUseDustTX = prop.getProperty("UseDustTX");
+      System.out.println("UseDustTX:"+strUseDustTX);
+      if(strUseDustTX!=null && strUseDustTX.equals("1") ){
+        useDustTX=true;
+      }else{
+        useDustTX=false;
+      }
+      
+      String strDebug = prop.getProperty("DEBUG_KEY");
+      System.out.println("DEBUG_KEY:"+strDebug);
+      if(strDebug!=null && strDebug.equals("1") ){
+        debugKey=true;
+      }else{
+        debugKey=false;
+      }
     } catch (IOException e) {
     }    
   }
