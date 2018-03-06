@@ -226,7 +226,7 @@ public class Server implements Runnable {
 
           attributes.put("LANG_REGISTE_A_NEW_ODIN", Language.getLangLabel("Registe a new ODIN"));
           attributes.put("LANG_FULL_ODIN", Language.getLangLabel("Full ODIN"));
-          attributes.put("LANG_SHORT_ODIN", Language.getLangLabel("Short Alias"));
+          attributes.put("LANG_SHORT_ODIN", Language.getLangLabel("SN"));
           attributes.put("LANG_TIME", Language.getLangLabel("Time"));
           attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
           attributes.put("LANG_ADMIN_REGISTER", Language.getLangLabel("Admin/Register"));
@@ -864,7 +864,7 @@ public class Server implements Runnable {
     attributes.put("LANG_MY_UPDATE_LOGS", Language.getLangLabel("My update logs"));
     
     attributes.put("LANG_FULL_ODIN", Language.getLangLabel("Full ODIN"));
-    attributes.put("LANG_SHORT_ODIN", Language.getLangLabel("Short Alias"));
+    attributes.put("LANG_SHORT_ODIN", Language.getLangLabel("SN"));
     attributes.put("LANG_TIME", Language.getLangLabel("Time"));
     attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
     attributes.put("LANG_ADMIN_REGISTER", Language.getLangLabel("Admin/Register"));

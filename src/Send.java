@@ -31,7 +31,7 @@ public class Send {
   public static Transaction create(String source, String destination, String asset, BigInteger amount) throws Exception {
     if (!source.equals("") && !destination.equals("") && asset.equals("BTC") && amount.compareTo(BigInteger.ZERO)>0) {
       Blocks blocks = Blocks.getInstance();
-      Transaction txBTC = blocks.transaction(source, destination, amount, BigInteger.valueOf(Config.minFee),null, "");
+      Transaction txBTC = blocks.transaction(source, destination, amount, BigInteger.valueOf(Config.ppkStandardDataFee),null, "");
       return txBTC;      
     } else {
       throw new Exception("Please specify a source address and destination address, and send more than 0 BTC.");
