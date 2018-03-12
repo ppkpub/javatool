@@ -25,7 +25,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 613;
+  public static Integer minorVersion = 615;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   public static Integer minorVersionDB = 2;
@@ -92,6 +92,10 @@ public class Config {
   public static String JSON_KEY_PPK_CHUNK_TYPE="ppk-chunk-type";
   public static String JSON_KEY_PPK_CHUNK_LENGTH="ppk-chunk-length";
   public static String JSON_KEY_PPK_CHUNK_URL="ppk-chunk-url";
+  
+  public static int PPK_VALIDATION_OK        = 0;
+  public static int PPK_VALIDATION_IGNORED   = 1;
+  public static int PPK_VALIDATION_ERROR     = 2;
   
   //IPFS
   public static String IPFS_API_ADDRESS="/ip4/127.0.0.1/tcp/5001";

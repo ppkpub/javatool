@@ -1600,10 +1600,11 @@ public class Server implements Runnable {
       String vd_set_algo=(String)map.get("vd_set_algo");
       String vd_set_pubkey=(String)map.get("vd_set_pubkey");
       
-      if(vd_set_algo==null || vd_set_pubkey==null){
-        attributes.put("error", "Invalid algorithm or pubkey. Please update the validtion setting.");
-        return attributes;
-      }
+      //暂时允许不配置验证参数也可以获取内容, chenhui,20180309
+      //if(vd_set_algo==null || vd_set_pubkey==null){
+      //  attributes.put("error", "Invalid algorithm or pubkey. Please update the validtion setting.");
+      //  return attributes;
+      //}
       
       JSONObject obj_ap_resp=PPkURI.fetchAndValidationAP(
             Config.PPK_URI_PREFIX+odinInfo.fullOdin+"/",
@@ -1628,7 +1629,10 @@ public class Server implements Runnable {
         ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI);
         ap_resp_sign = obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN);
         
-        if( obj_ap_resp.optBoolean(Config.JSON_KEY_PPK_VALIDATION,false) )
+        int validcode=obj_ap_resp.optInt(Config.JSON_KEY_PPK_VALIDATION,Config.PPK_VALIDATION_ERROR);
+        if( validcode == Config.PPK_VALIDATION_IGNORED )
+           ap_resp_validate_result="<font color='#F72'>Valiade ignored! The content unable to be identified. </font>";
+        else if( validcode == Config.PPK_VALIDATION_OK )
            ap_resp_validate_result="<font color='#0F0'>Valiade OK using algorithm: "+vd_set_algo+"</font>";
         else
            ap_resp_validate_result="<font color='#F00'>Valiade failed using algorithm: "+vd_set_algo+" ! Please check the related setting.</font>";
@@ -1713,7 +1717,10 @@ public class Server implements Runnable {
         ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI);
         ap_resp_sign = obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN,"");
         
-        if( obj_ap_resp.optBoolean(Config.JSON_KEY_PPK_VALIDATION,false) )
+        int validcode=obj_ap_resp.optInt(Config.JSON_KEY_PPK_VALIDATION,Config.PPK_VALIDATION_ERROR);
+        if( validcode == Config.PPK_VALIDATION_IGNORED )
+           ap_resp_validate_result="<font color='#F72'>Valiade ignored! The content unable to be identified. </font>";
+        else if( validcode == Config.PPK_VALIDATION_OK )
            ap_resp_validate_result="<font color='#0F0'>Valiade OK</font>";
         else
            ap_resp_validate_result="<font color='#F00'>Valiade failed!</font>";

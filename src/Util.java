@@ -109,41 +109,24 @@ public class Util {
       logger.error("Fetch URL error: "+e.toString());
     }
     return "";
-    /*
-    URL url;
-    String text = null;
-    try {
-      doTrustCertificates();
-      url = new URL(urlString);
-      URLConnection urlc = url.openConnection();
-      urlc.setRequestProperty("User-Agent", "PPkTool "+Config.version);
-      urlc.setDoOutput(false);
-      urlc.connect();
-
-      BufferedInputStream buffer = new BufferedInputStream(urlc.getInputStream());
-
-      StringBuilder builder = new StringBuilder();
-
-      int byteRead;
-
-      while ((byteRead = buffer.read()) != -1) {
-        builder.append((char) byteRead);
-      }
-
-      buffer.close();
-
-      text=builder.toString();
-
-    } catch (Exception e) {
-      if (retries != 0) {
-        return getPage(url_string, retries-1);  
-      } else {
-        logger.error(e.toString());
-      }
-    }
-    return text;
-     */
   }  
+  
+  public static byte[] readInputStream(InputStream inStream) throws Exception{
+    ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+    //创建一个Buffer字符串
+    byte[] buffer = new byte[1024];
+    //每次读取的字符串长度，如果为-1，代表全部读取完毕
+    int len = 0;
+    //使用一个输入流从buffer里把数据读取出来
+    while( (len=inStream.read(buffer)) != -1 ){
+        //用输出流往buffer里写入数据，中间参数代表从哪个位置开始读，len代表读取的长度
+        outStream.write(buffer, 0, len);
+    }
+    //关闭输入流
+    inStream.close();
+    //把outStream里的数据写入内存
+    return outStream.toByteArray();
+  }
 
   public static void doTrustCertificates() throws Exception {
     TrustManager[] trustAllCerts = new TrustManager[]{
@@ -841,6 +824,27 @@ public class Util {
       }   
       return d;   
   }   
+  
+  
+  //生成指定字节长度的HEX文本，如果长度不足则尾部追加指定字节值补足
+  public static String generateSegmentHex(byte[] data,int segment_len,byte ch_append){
+    List<Byte> dataArrayList = new ArrayList<Byte>();
+    
+    try {
+      dataArrayList = toByteArrayList(data);
+      
+      for(int kk=dataArrayList.size();kk<segment_len;kk++){
+        dataArrayList.add(ch_append); //不够指定字节长度的需尾部追加指定字节值补足
+      }
+    } catch (Exception e) {
+      return null;
+    }
+    
+    data = toByteArray(dataArrayList);
+
+    return  bytesToHexString(data);
+  } 
+  
   /**  
    * Convert char to byte  
    * @param c char  
