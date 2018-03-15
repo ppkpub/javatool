@@ -61,10 +61,13 @@ public class APoverHTTP {
                 //System.out.println("tmp_cookie: "+tmp_cookie);
 
                 if(tmp_cookie.substring(0,Config.JSON_KEY_PPK_SIGN.length()+1).equalsIgnoreCase(Config.JSON_KEY_PPK_SIGN+"=")){
+                  JSONObject obj_ppk_sign = new JSONObject( java.net.URLDecoder.decode(tmp_cookie.substring(Config.JSON_KEY_PPK_SIGN.length()+1)) );
                   obj_ap_resp.put( 
-                      Config.JSON_KEY_PPK_SIGN , 
-                      new JSONObject( java.net.URLDecoder.decode(tmp_cookie.substring(Config.JSON_KEY_PPK_SIGN.length()+1)) )
+                      Config.JSON_KEY_PPK_SIGN , obj_ppk_sign                      
                     );
+                  String ap_resp_ppk_uri = obj_ppk_sign.optString(Config.JSON_KEY_PPK_URI,"");
+                  
+                  obj_ap_resp.put(Config.JSON_KEY_PPK_URI,ap_resp_ppk_uri);
                 }
               } 
             }
@@ -92,7 +95,7 @@ public class APoverHTTP {
                 }
               }
             }
-            
+
             obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK,data);
             obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_LENGTH,data.length);
             obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_URL,ap_fetch_url);

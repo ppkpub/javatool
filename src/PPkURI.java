@@ -63,8 +63,6 @@ import org.ipfs.api.Multihash;
 import org.ipfs.api.Base58;
 
 public class PPkURI {
-
-  
   static Logger logger = LoggerFactory.getLogger(PPkURI.class);
     
   public static JSONObject  fetchPPkURI(String uri){

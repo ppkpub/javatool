@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Calendar;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -1019,6 +1021,7 @@ public class Server implements Runnable {
     attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
     attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
+    attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_UPDATE_IT", Language.getLangLabel("Update it"));  
@@ -1144,6 +1147,7 @@ public class Server implements Runnable {
     attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
     attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
+    attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_UPDATE_IT", Language.getLangLabel("Update it"));  
@@ -1273,14 +1277,16 @@ public class Server implements Runnable {
     
     attributes.put("LANG_UPDATE_THE_VD_SET_OF", Language.getLangLabel("Update the validtion set of"));
 
-    attributes.put("LANG_ODIN_ADMIN_ADDRESS", Language.getLangLabel("Admin BTC address"));
-    attributes.put("LANG_ODIN_REGISTER_ADDRESS", Language.getLangLabel("Register BTC address"));
-    
-    attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
-    attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
-    attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
-    attributes.put("LANG_ODIN_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
-    attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+    attributes.put("LANG_CURRENT_VALIDTION_SETTING", Language.getLangLabel("Current Validtion Setting"));
+    attributes.put("LANG_URI", Language.getLangLabel("URI"));
+    attributes.put("LANG_ALGORITHM", Language.getLangLabel("Algorithm"));
+    attributes.put("LANG_PUBLIC_KEY", Language.getLangLabel("Public key"));
+    attributes.put("LANG_PRIVATE_KEY", Language.getLangLabel("Private key"));
+    attributes.put("LANG_YOU_CAN_GENERATE_THE_PUBLIC_KEY_BY_YOURSELF", Language.getLangLabel("You can generate the public key by yourself and save it to a trusted storage service on the network, then fill its resource URI here."));
+    attributes.put("LANG_GENERATE_PUBLIC_AND_PRIVATE_KEYS_HERE", Language.getLangLabel("Or generate public and private keys automatically here and save the public key to the IPFS distributed storage service for public verification use."));
+    attributes.put("LANG_UPDATE_VALIDTION_SETTING", Language.getLangLabel("Update Validtion Setting"));
+    attributes.put("LANG_PLEASE_BACKUP_THE_PRIVATE_KEY", Language.getLangLabel("Please backup the private key."));  
+    attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_UPDATE_IT", Language.getLangLabel("Update it"));  
@@ -1699,20 +1705,26 @@ public class Server implements Runnable {
       
       if(obj_ap_resp!=null){
         ap_resp_url=obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_URL,"");
-        if( obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase().startsWith("text") ){
+        String str_chunk_type = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase();
+        if( str_chunk_type.startsWith("text") ){
           ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
+          
+          //处理页面内容中的图片
+          ap_resp_content = processPPkImagesInPage(ap_resp_content); 
           
           //将页面内容中以ppk:起始的href链接替换为适合本地浏览的链接格式
           String tmp_href_ap_url=Config.PPK_DEFAULT_HREF_AP_URL+"?"+Config.JSON_KEY_PPK_URI+"="+Config.PPK_URI_PREFIX;
-          String tmp_media_ap_url=Config.PPK_DEFAULT_MEDIA_AP_URL+"?"+Config.JSON_KEY_PPK_URI+"="+Config.PPK_URI_PREFIX;
-          ap_resp_content = ap_resp_content.replaceAll("src='"+Config.PPK_URI_PREFIX,"src='"+tmp_media_ap_url)
-                                           .replaceAll("src=\""+Config.PPK_URI_PREFIX,"src=\""+tmp_media_ap_url)
-                                           .replaceAll("'"+Config.PPK_URI_PREFIX,"'"+tmp_href_ap_url)
+
+          ap_resp_content = ap_resp_content.replaceAll("'"+Config.PPK_URI_PREFIX,"'"+tmp_href_ap_url)
                                            .replaceAll("\""+Config.PPK_URI_PREFIX,"\""+tmp_href_ap_url);
-        }else if(obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase().startsWith("image"))
-          ap_resp_content = "<img src='"+ap_resp_url+"'>";
-        else 
+          
+          
+        }else if(str_chunk_type.startsWith("image")){
+          ap_resp_content = "<img src='"+Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK))+"'>";
+        }else{
+          //Not supported chunk_type now
           ap_resp_content =  obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"");
+        }
         
         ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI);
         ap_resp_sign = obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN,"");
@@ -1745,5 +1757,45 @@ public class Server implements Runnable {
     attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
     
     return attributes;
+  }
+  
+  //处理页面中包含的"ppk:"起始的图片
+  protected String processPPkImagesInPage(String str_content){
+    List<String> srcList = new ArrayList<String>(); //用来存储获取到的图片地址  
+    Pattern p = Pattern.compile("<(img|IMG)(.*?)(>|></img>|/>)");//匹配字符串中的img标签  
+    Matcher matcher = p.matcher(str_content);  
+    boolean hasPic = matcher.find();  
+    if(hasPic == true)//判断是否含有图片  
+    {  
+      while(hasPic) //如果含有图片，那么持续进行查找，直到匹配不到  
+      {  
+        String group = matcher.group(2);//获取第二个分组的内容，也就是 (.*?)匹配到的  
+        Pattern srcText = Pattern.compile("(src|SRC)=(\"|\')(.*?)(\"|\')");//匹配图片的地址  
+        Matcher matcher2 = srcText.matcher(group);  
+        if( matcher2.find() )   
+        {  
+            String tmp_img_src=matcher2.group(3);
+            if(tmp_img_src.startsWith(Config.PPK_URI_PREFIX)){
+              if(!srcList.contains(tmp_img_src)){
+                srcList.add( tmp_img_src  );//把获取到的以"ppk:"起始的图片地址添加到列表中  
+              }
+            }
+        }  
+        hasPic = matcher.find();//判断是否还有img标签  
+      }  
+    }  
+
+    for(int kk=0; kk<srcList.size(); kk++){
+      String old_img_src = (String) srcList.get(kk);
+      JSONObject obj_ap_resp = PPkURI.fetchPPkURI(old_img_src);
+      String str_chunk_type = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase();
+      
+      String new_img_src = Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK));
+      
+      str_content = str_content.replaceAll("src='"+old_img_src,"src='"+new_img_src)
+                               .replaceAll("src=\""+old_img_src,"src=\""+new_img_src);
+    }
+    
+    return str_content;
   }
 }

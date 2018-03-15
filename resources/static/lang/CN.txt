@@ -111,6 +111,20 @@
     "Update description":"更新内容",
     "valid":"正常",
     "invalid":"有错误",
+    "Same as register":"与注册者相同",
+    "Email":"电子邮件",
+    "Optional":"可选",
+    "Status":"状态",
+    "Update the validtion set of":"修改内容可信设置",
+    "Current Validtion Setting":"当前可信设置",
+    "Update Validtion Setting":"更新可信设置",
+    "You can generate the public key by yourself and save it to a trusted storage service on the network, then fill its resource URI here.":"你可以自行生成公钥并保存到网络上可信的存储服务上，然后将其对应资源网址URI填写到这里：",
+    "Or generate public and private keys automatically here and save the public key to the IPFS distributed storage service for public verification use.":"或者在客户端这里生成公私钥，提交更新时会自动将公钥保存到IPFS分布式存储服务以便公开验证使用：",
+    "Algorithm":"验证算法",
+    "Public key":"公钥",
+    "Private key":"私钥",
+    "Please backup the private key.":"请注意先复制备份好这里生成的私钥再提交更新！",
+    "Submit to update":"提交更新",
     
     "Browse PPk network":"浏览PPk网络",
     "Response URI":"应答URI",
@@ -119,6 +133,7 @@
     "Response signature":"内容签名",
     "Validate pubkey":"验证公钥",
     "Validate result":"验证结果",
+
     
     "Please make sure that you have changed some values then submit.":"请确认已做有效修改后再提交",
 }

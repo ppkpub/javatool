@@ -17,13 +17,13 @@
     
     <h3>${LANG_UPDATE_VD_SET}</h3>
     
-    <h3>Current Validtion Setting</h3>
+    <h3>${LANG_CURRENT_VALIDTION_SETTING}</h3>
     <div class="input-group">
-        <span class="input-group-addon">URI</span>
+        <span class="input-group-addon">${LANG_URI}</span>
         <textarea rows=1 cols=80 ><#if odin["vd_set_cert_uri"]??>${odin["vd_set_cert_uri"]}</#if></textarea>
     </div>
     <div class="input-group">
-        <span class="input-group-addon">Algo</span>
+        <span class="input-group-addon">${LANG_ALGORITHM}</span>
         <textarea rows=1 cols=80 ><#if odin["vd_set_algo"]??>${odin["vd_set_algo"]}</#if></textarea>
     </div>
     <!--
@@ -33,54 +33,54 @@
     </div>
     -->
     <div class="input-group">
-        <span class="input-group-addon">Public key</span>
+        <span class="input-group-addon">${LANG_PUBLIC_KEY}</span>
         <textarea rows=3 cols=80 ><#if odin["vd_set_pubkey"]??>${odin["vd_set_pubkey"]}</#if></textarea>
     </div>
     
     <#if odin["vd_set_debug"]??>${odin["vd_set_debug"]}</#if>
 
-    <h3>Update Validtion Setting</h3>
-    1.
+    <h3>${LANG_UPDATE_VALIDTION_SETTING}</h3>
+    ${LANG_YOU_CAN_GENERATE_THE_PUBLIC_KEY_BY_YOURSELF}
     <form action="/odin-update-vd" class="form-inline" method="post">
       <input type="hidden" name="form" value="update-odin-vdset">
       <input type="hidden" name="odin" value='${odin["short_odin"]}'>
       <input type="hidden" name="updater" value="${address}">
       <div class="input-group">
-          <span class="input-group-addon">URI</span>
+          <span class="input-group-addon">${LANG_URI}</span>
           <input type="text" name="new_vd_set_cert_uri" size="40" value='<#if new_vd_set_cert_uri??>${new_vd_set_cert_uri}</#if>'>
       </div>
       <div class="input-group">
           <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
           <span class="input-group-btn">
-              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_UPDATE_VD_SET}</button>
+              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_SUBMIT_TO_UPDATE}</button>
           </span>
       </div>
     </form>
     <hr size="1">
-    2.
+    ${LANG_GENERATE_PUBLIC_AND_PRIVATE_KEYS_HERE}
     <form action="/odin-update-vd" class="form-inline" method="post">
       <input type="hidden" name="form" value="update-odin-vdset">
       <input type="hidden" name="odin" value='${odin["short_odin"]}'>
       <input type="hidden" name="updater" value="${address}">
       <div class="input-group">
-          <span class="input-group-addon">Algorithm</span>
+          <span class="input-group-addon">${LANG_ALGORITHM}</span>
           <input type="text" name="new_vd_set_algo" size="40" value='<#if new_vd_set_algo??>${new_vd_set_algo}</#if>'>
       </div>
       <div class="input-group">
-          <span class="input-group-addon">Public key</span>
+          <span class="input-group-addon">${LANG_PUBLIC_KEY}</span>
           <textarea rows=3 cols=100 name="new_vd_set_pubkey"><#if new_vd_set_pubkey??>${new_vd_set_pubkey}</#if></textarea>
       </div>
       <#if new_vd_set_prvkey??>
       <div class="input-group">
-          <span class="input-group-addon">Private key</span>
+          <span class="input-group-addon">${LANG_PRIVATE_KEY}</span>
           <textarea rows=3 cols=100 name="new_vd_set_pubkey">${new_vd_set_prvkey}</textarea>
-          Please backup the private key.
+          ${LANG_PLEASE_BACKUP_THE_PRIVATE_KEY}
       </div>
       </#if>
       <div class="input-group">
           <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
           <span class="input-group-btn">
-              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_UPDATE_VD_SET}</button>
+              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_SUBMIT_TO_UPDATE}</button>
           </span>
       </div>
     </form>

@@ -37,6 +37,7 @@ import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
 import java.text.ParsePosition;
 import java.util.TimeZone;
+import java.util.Base64;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -919,6 +920,8 @@ public class Util {
       IPFS ipfs = new IPFS(Config.IPFS_API_ADDRESS);
       mIpfsRunning = true;
     }catch(Exception e){
+      System.out.println("Failed to connnect IPFS service:"+e.toString());
+      //System.exit(-1);
       mIpfsRunning = false;
     }
     
@@ -987,6 +990,18 @@ public class Util {
     }
     return null;
   }
+  
+  /**
+   * 对图片字节数组进行Base64编码处理生成Data URL
+   * @param  img_type ：图片的类型，如 image/jpeg 
+   * @param  img_bytes ： 图片的字节数组
+   * @return Data URL字符串
+   */
+   
+  public static String imageToBase64DataURL(String img_type, byte[] img_bytes) {
+    return "data:"+img_type+";base64,"+Base64.getEncoder().encodeToString( img_bytes );
+  }
+
   
 }
 

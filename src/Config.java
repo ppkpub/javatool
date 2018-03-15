@@ -25,7 +25,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 615;
+  public static Integer minorVersion = 616;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   public static Integer minorVersionDB = 2;
@@ -98,13 +98,12 @@ public class Config {
   public static int PPK_VALIDATION_ERROR     = 2;
   
   //IPFS
-  public static String IPFS_API_ADDRESS="/ip4/127.0.0.1/tcp/5001";
-  public static String IPFS_PROXY_URL="https://ipfs.io/ipfs/";
+  public static String IPFS_API_ADDRESS="/ip4/127.0.0.1/tcp/5001"; //"https://ipfs.infura.io:5001"
+  public static String IPFS_PROXY_URL="https://ipfs.infura.io/ipfs/";
   
   //AP
   public static String PPK_DEFAULT_HREF_AP_URL = "http://0.0.0.0:8087/";
-  public static String PPK_DEFAULT_MEDIA_AP_URL = "http://ppk001.sinaapp.com/ap/";
-  
+
   //Charset
   public static String PPK_TEXT_CHARSET="UTF-8";  //适用文本内容
   public static String BINARY_DATA_CHARSET="ISO-8859-1";  //适用原始二进制数据与字符串类型间的转换
