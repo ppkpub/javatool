@@ -1788,12 +1788,14 @@ public class Server implements Runnable {
     for(int kk=0; kk<srcList.size(); kk++){
       String old_img_src = (String) srcList.get(kk);
       JSONObject obj_ap_resp = PPkURI.fetchPPkURI(old_img_src);
-      String str_chunk_type = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase();
-      
-      String new_img_src = Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK));
-      
-      str_content = str_content.replaceAll("src='"+old_img_src,"src='"+new_img_src)
-                               .replaceAll("src=\""+old_img_src,"src=\""+new_img_src);
+      if(obj_ap_resp!=null){
+        String str_chunk_type = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase();
+        
+        String new_img_src = Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK));
+        
+        str_content = str_content.replaceAll("src='"+old_img_src,"src='"+new_img_src)
+                                 .replaceAll("src=\""+old_img_src,"src=\""+new_img_src);
+      }
     }
     
     return str_content;
