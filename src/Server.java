@@ -1480,7 +1480,7 @@ public class Server implements Runnable {
       else
         sql_str+=" order by l.log_id;";
 
-      System.out.println("sql_str="+sql_str);
+      //System.out.println("sql_str="+sql_str);
       Database db = Database.getInstance();
       ResultSet rs = db.executeQuery(sql_str);
       
