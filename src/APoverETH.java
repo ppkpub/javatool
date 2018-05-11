@@ -19,18 +19,17 @@ import com.googlecode.jsonrpc4j.JsonRpcHttpClient;
 public class APoverETH {
   static Logger logger = LoggerFactory.getLogger(APoverETH.class);
 
-  public static JSONObject fetchInterest(String ap_url, String interest) {
+  public static String fetchInterest(String ap_url, String interest) {
     try {
-        //just for test
+        //just for demo
         JSONObject objInterest=new JSONObject(interest);
         interest=objInterest.getJSONObject("interest").getString("uri");
     }catch (Exception e) {
 
     }
-    JSONObject  obj_ap_resp=new JSONObject();
+    String str_ap_resp_json=null;
     logger.info("APoverETH.fetchInterest("+ap_url+","+interest+") ...");
-    
-    
+
     //缺省采用 infura.io 提供的json-rpc服务，可以切换成geth等提供的json-rpc比如 http://localhost:8545
     HashMap<String,String> mapEthNetworkJsonRPCs=new HashMap<String,String>();
     mapEthNetworkJsonRPCs.put("mainnet","https://mainnet.infura.io/2M0Ezt8fWNsDZ6wLOAaT");
@@ -97,48 +96,17 @@ public class APoverETH {
             JSONObject obj_resp=new JSONObject(str_resp);
             String str_result_hex=obj_resp.getString("result");
             
-            String str_ap_data=getFirstSegmentFromABIHex(str_result_hex);
-            System.out.println("APoverETH.fetchInterest() str_ap_data:"+str_ap_data);
-            
-            JSONObject obj_ap_data=new JSONObject(str_ap_data);
-            JSONObject obj_data=obj_ap_data.getJSONObject("data");
-            JSONObject obj_chunk_metainfo=obj_data.getJSONObject("metainfo");
-            
-            statusCode=obj_data.getInt("status_code");
-            if (statusCode == HttpURLConnection.HTTP_OK) {
-              byte[]  chunk_content=obj_data.getString("content").getBytes();
-              
-              obj_ap_resp.put(Config.JSON_KEY_PPK_URI,obj_data.getString("uri"));
-              obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_TYPE,obj_chunk_metainfo.getString("content_type"));
-              obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK,chunk_content);
-              obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_LENGTH,chunk_content.length);
-              obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_URL,ap_url);
-            }else{
-              String str_status_detail=obj_data.optString("status_detail","");
-              String str_content=obj_data.optString("content","");
-              if(str_content.length()==0)
-                str_content="AP status_code : "+statusCode + " " + str_status_detail ;
-              byte[]  chunk_content = str_content.getBytes();
-              obj_ap_resp.put(Config.JSON_KEY_PPK_URI,obj_data.getString("uri"));
-              obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_TYPE,obj_chunk_metainfo.getString("content_type"));
-              obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK,chunk_content);
-              obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_LENGTH,chunk_content.length);
-              obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_URL,ap_url);
-            }
-            
-            obj_ap_resp.put(Config.JSON_KEY_PPK_SIGN, obj_ap_data.optString("sign","") );
+            str_ap_resp_json=getFirstSegmentFromABIHex(str_result_hex);
           }
         }
     }catch (Throwable e) {
         logger.error("APoverETH.fetchInterest() error: "+e.toString());
     }
 
-    System.out.println("APoverETH.fetchInterest() obj_ap_resp:"+obj_ap_resp.toString());
-    return obj_ap_resp;
+    System.out.println("APoverETH.fetchInterest() str_ap_resp_json:"+str_ap_resp_json);
+    return str_ap_resp_json;
   }
 
-  
-  
   //按以太坊ABI规范将一段字符串转换为HEX文本
   protected static String toABIHex(String input) throws Exception{
     String strHexABI="";

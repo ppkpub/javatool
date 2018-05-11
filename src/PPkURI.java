@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Base64;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
 import java.text.ParsePosition;
@@ -210,14 +211,74 @@ public class PPkURI {
     
     String str_interest=objInterest.toString( );
     
+    String str_ap_resp_json=null;
     if( ap_url.toLowerCase().startsWith("http")){
-      obj_ap_resp = APoverHTTP.fetchInterest(ap_url,str_interest);
+      str_ap_resp_json = APoverHTTP.fetchInterest(ap_url,str_interest);
     }else if( ap_url.toLowerCase().startsWith("ethap")){
-      obj_ap_resp = APoverETH.fetchInterest(ap_url,str_interest);
+      str_ap_resp_json = APoverETH.fetchInterest(ap_url,str_interest);
     }else{
       logger.error("PPkURI.fetchAndValidationAP("+uri+") meet not supported ap url:"+ap_url);
     }
+    
+    obj_ap_resp=parseRespOfPTTP(ap_url,str_ap_resp_json,vd_set);
 
+    return obj_ap_resp;
+  }
+  
+  //解析AP按PTTP协议所应答的数据包(JSON格式字符串)
+  protected static JSONObject parseRespOfPTTP(String ap_url,String str_ap_data_json,JSONObject  vd_set){
+    JSONObject obj_ap_resp = null;
+    String   str_original_data_json = null;
+    
+    //从应答JSON字符串解析出所需数据正文、签名等字段
+    try{
+      JSONObject obj_ap_data = new JSONObject(str_ap_data_json);
+      JSONObject obj_data = null;
+      str_original_data_json = obj_ap_data.optString("data",null);
+      if(str_original_data_json!=null){
+        obj_data = new JSONObject(str_original_data_json);
+      }else{ //兼容data取值不是字符串而是JSONObject的非标准形式
+        obj_data = obj_ap_data.getJSONObject("data");
+        str_original_data_json = obj_data.toString();
+      }
+      JSONObject obj_chunk_metainfo=obj_data.getJSONObject("metainfo");
+      
+      int pttpStatusCode=obj_data.getInt("status_code");
+      System.out.println("pttpStatusCode="+pttpStatusCode);
+      obj_ap_resp = new JSONObject();
+      if (pttpStatusCode == HttpURLConnection.HTTP_OK) {
+        String content_encoding = obj_chunk_metainfo.optString("content_encoding","").toLowerCase();
+        byte[]  chunk_content = null;
+        if("base64".equals(content_encoding)){
+          chunk_content=Base64.getDecoder().decode(obj_data.getString("content"));
+        }else{
+          chunk_content=obj_data.getString("content").getBytes();
+        }
+        
+        obj_ap_resp.put(Config.JSON_KEY_PPK_URI,obj_data.getString("uri"));
+        obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_TYPE,obj_chunk_metainfo.getString("content_type"));
+        obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK,chunk_content);
+        obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_LENGTH,chunk_content.length);
+        obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_URL,ap_url);
+      }else{
+        String str_status_detail=obj_data.optString("status_detail","");
+        String str_content=obj_data.optString("content","");
+        if(str_content.length()==0)
+          str_content="PTTP status_code : "+pttpStatusCode + " " + str_status_detail ;
+        byte[]  chunk_content = str_content.getBytes();
+        obj_ap_resp.put(Config.JSON_KEY_PPK_URI,obj_data.getString("uri"));
+        obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_TYPE,obj_chunk_metainfo.getString("content_type"));
+        obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK,chunk_content);
+        obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_LENGTH,chunk_content.length);
+        obj_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_URL,ap_url);
+      }
+      
+      obj_ap_resp.put(Config.JSON_KEY_PPK_SIGN, obj_ap_data.optString("sign","") );
+    }catch(Exception e){
+      logger.error("PPkURI.parseRespOfPTTP("+ap_url+") error: "+e.toString());
+    }
+    
+    //验证数据包签名
     if(obj_ap_resp!=null && vd_set==null){
       //在未设置签名参数时，忽略检查签名
       try{
@@ -227,25 +288,22 @@ public class PPkURI {
       }
     }else if(obj_ap_resp!=null && vd_set!=null){
       //检查签名
+      String str_ppk_sign=obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN,"");
+      
       try{
         String vd_set_algo=vd_set.optString(Config.JSON_KEY_PPK_ALGO,"");
         String vd_set_pubkey=vd_set.optString(Config.JSON_KEY_PPK_PUBKEY,"");
 
-        JSONObject obj_ppk_sign=obj_ap_resp.getJSONObject(Config.JSON_KEY_PPK_SIGN);
-
-        String ap_resp_ppk_uri = obj_ppk_sign.optString(Config.JSON_KEY_PPK_URI,"");
-        String ap_resp_sign_base64=obj_ppk_sign.optString(Config.JSON_KEY_PPK_SIGN_BASE64,"");
-        //System.out.println("ap_resp_sign_base64="+ap_resp_sign_base64);
+        String[] sign_pieces = str_ppk_sign.split("\\:");
+        String ap_resp_sign_algo=sign_pieces[0].trim();
+        String ap_resp_sign_base64=sign_pieces[1].trim();
+        //String ap_resp_sign_pubkey=sign_pieces[2].trim(); //just for test
+        System.out.println("ap_resp_sign_algo="+ap_resp_sign_algo+",ap_resp_sign_base64="+ap_resp_sign_base64);
         
-        obj_ap_resp.put(Config.JSON_KEY_PPK_URI,ap_resp_ppk_uri);
-        
-        byte[] content_data=(byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK);
-        byte[] uri_data=ap_resp_ppk_uri.getBytes();
-
-        if(content_data!=null){
-          ByteBuffer byteBuffer = ByteBuffer.allocate(content_data.length+uri_data.length);
-          byteBuffer.put(content_data,0,content_data.length);
-          byteBuffer.put(uri_data,0,uri_data.length);
+        byte[] original_data = str_original_data_json.getBytes();
+        if(original_data!=null){
+          ByteBuffer byteBuffer = ByteBuffer.allocate(original_data.length);
+          byteBuffer.put(original_data,0,original_data.length);
 
           if(vd_set_algo.length()>0 && vd_set_pubkey.length()==0){
             //动态获取和更新公钥
@@ -259,7 +317,8 @@ public class PPkURI {
                 vd_set_pubkey=RSACoder.parseValidPubKey(vd_set_algo,tmp_str);
                 vd_set.put(Config.JSON_KEY_PPK_PUBKEY, vd_set_pubkey);
                 
-                // 待完善
+                //待完善，将动态获得的公钥自动存入数据库
+                /*
                 OdinInfo odinInfo=Odin.getOdinInfo(root_odin);
                 JSONObject  new_odin_set=odinInfo.odinSet;
                 new_odin_set.put("vd_set",vd_set);
@@ -271,6 +330,7 @@ public class PPkURI {
                 ps.setString(1, new_odin_set.toString());
                 ps.setString(2, odinInfo.fullOdin);
                 ps.execute(); 
+                */
               }catch(Exception e){
                 logger.error("Meet invalid vd_set_cert_uri:"+vd_set_cert_uri);
               }
@@ -287,16 +347,17 @@ public class PPkURI {
              System.out.println("Found invalid chunk.Please check the vd setting.");
              System.out.println("byteBuffer.array()="+Util.bytesToHexString(byteBuffer.array()));
              System.out.println("vd_set_pubkey="+vd_set_pubkey + ", vd_set_algo="+vd_set_algo);
-             System.out.println("resp_pubkey="+obj_ppk_sign.optString("debug_pubkey","") + "\nresp_algo="+obj_ppk_sign.optString("algo","")+"\nresp_sign_base64="+ap_resp_sign_base64);
+             System.out.println("str_ppk_sign="+str_ppk_sign);
           }
         }
       }catch(Exception e){
-        logger.error("PPkURI.fetchAndValidationAP("+uri+") meet invalid ppk sign:"+obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN));
+        logger.error("PPkURI.parseRespOfPTTP("+ap_url+") meet invalid ppk sign:"+str_ppk_sign);
       }
     }
     
     return obj_ap_resp;
   }
+  
   
   //获得PPk URI对应资源版本号，即结尾类似“#1.0”这样的描述，如果没有则缺省认为是“#1.0”
   public static String getPPkResourceVer(String ppk_uri){

@@ -25,7 +25,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 617;
+  public static Integer minorVersion = 618;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   public static Integer minorVersionDB = 2;
@@ -42,7 +42,7 @@ public class Config {
 
   //PPk
   public static long ppkToolCreationTime = 1400561240-1;  //UTC 2014-5-20 04:47:20
-  public static Integer firstBlock = 425153;
+  public static Integer firstBlock = 426896;
   
   public static Integer ppkStandardDataFee = 10000;
   
@@ -81,17 +81,18 @@ public class Config {
   public static String PPK_URI_PREFIX="ppk:";
   public static String PPK_URI_RESOURCE_MARK="#";
 
-  public static String JSON_KEY_PPK_SIGN="ppk-sign";
+  public static String JSON_KEY_PPK_DATA="data";
+  public static String JSON_KEY_PPK_SIGN="sign";
   public static String JSON_KEY_PPK_URI="ppk-uri";
   public static String JSON_KEY_PPK_ALGO="algo";
   public static String JSON_KEY_PPK_SIGN_BASE64="sign_base64";
   public static String JSON_KEY_PPK_PUBKEY="pubkey";
   public static String JSON_KEY_PPK_CERT_URI="cert_uri";
   public static String JSON_KEY_PPK_VALIDATION="validation";
-  public static String JSON_KEY_PPK_CHUNK="ppk-chunk";
-  public static String JSON_KEY_PPK_CHUNK_TYPE="ppk-chunk-type";
-  public static String JSON_KEY_PPK_CHUNK_LENGTH="ppk-chunk-length";
-  public static String JSON_KEY_PPK_CHUNK_URL="ppk-chunk-url";
+  public static String JSON_KEY_PPK_CHUNK="chunk";
+  public static String JSON_KEY_PPK_CHUNK_TYPE="chunk-type";
+  public static String JSON_KEY_PPK_CHUNK_LENGTH="chunk-length";
+  public static String JSON_KEY_PPK_CHUNK_URL="chunk-url";
   
   public static int PPK_VALIDATION_OK        = 0;
   public static int PPK_VALIDATION_IGNORED   = 1;

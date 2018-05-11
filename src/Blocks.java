@@ -415,7 +415,7 @@ public class Blocks implements Runnable {
       try {
         while (rs.next()) {
           Integer blockIndex = rs.getInt("block_index");
-                    Integer blockTime = rs.getInt("block_time");  //Added for POS
+          Integer blockTime = rs.getInt("block_time");  //Added for POS
           parseBlock(blockIndex,blockTime);
           
           Util.updateLastParsedBlock(blockIndex); 
