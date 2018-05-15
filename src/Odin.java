@@ -224,6 +224,8 @@ public class Odin {
   public static OdinInfo getOdinInfo(String odin) {
     Database db = Database.getInstance();
     
+    odin=Util.convertLetterToNumberInRootODIN(odin);
+    
     ResultSet rs = db.executeQuery("select cp.full_odin,cp.short_odin,cp.register,cp.admin ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odin_set, cp.validity from odins cp,transactions where (cp.full_odin='"+odin+"' or cp.short_odin='"+odin+"') and cp.tx_index=transactions.tx_index;");
 
     try {
