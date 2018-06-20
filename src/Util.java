@@ -1002,66 +1002,7 @@ public class Util {
     return "data:"+img_type+";base64,"+Base64.getEncoder().encodeToString( img_bytes );
   }
 
-  //将根标识中的英文字母按ODIN标识规范转换成对应数字
-  public static String convertLetterToNumberInRootODIN(String  original_odin){  
-     String converted_odin="";
-     original_odin=original_odin.toUpperCase();
-     for(int kk=0;kk<original_odin.length();kk++){  
-        int chr=original_odin.charAt(kk);  
-        switch(chr){
-            case 'O':
-              chr='0';
-              break;
-            case 'I':
-            case 'L':
-              chr='1';
-              break;
-            case 'A':
-            case 'B':
-            case 'C':
-              chr='2';
-              break;
-            case 'D':
-            case 'E':
-            case 'F':
-              chr='3';
-              break;
-            case 'G':
-            case 'H':
-              chr='4';
-              break;
-            case 'J':
-            case 'K':
-              chr='5';
-              break;
-            case 'M':
-            case 'N':
-              chr='6';
-              break;
-            case 'P':
-            case 'Q':
-            case 'R':
-            case 'S':
-              chr='7';
-              break;
-            case 'T':
-            case 'U':
-            case 'V':
-              chr='8';
-              break;
-            case 'W':
-            case 'X':
-            case 'Y':
-            case 'Z':
-              chr='9';
-              break;
-            default:
-              break;
-        }
-        converted_odin=converted_odin+(char)chr;
-     }  
-     return converted_odin;  
-  }   
+
 
 }
 

@@ -235,6 +235,7 @@ public class PPkURI {
       JSONObject obj_ap_data = new JSONObject(str_ap_data_json);
       JSONObject obj_data = null;
       str_original_data_json = obj_ap_data.optString("data",null);
+      System.out.println("PPkURI:parseRespOfPTTP() str_original_data_json="+str_original_data_json);
       if(str_original_data_json!=null){
         obj_data = new JSONObject(str_original_data_json);
       }else{ //兼容data取值不是字符串而是JSONObject的非标准形式

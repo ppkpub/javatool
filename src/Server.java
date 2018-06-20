@@ -219,7 +219,7 @@ public class Server implements Runnable {
           }
           
           attributes.put("LANG_A_UNIQUE_GROUP", Language.getLangLabel("a public group that focus on open decentralized protocols and tools."));
-          attributes.put("LANG_MADE_FOR_A_LITTLE_JOY", Language.getLangLabel("ODIN is a decentralized DNS based on blockchains (Bitcoin,NXT,ETH,Fabric,etc) . It's made for a little joy."));
+          attributes.put("LANG_MADE_FOR_A_LITTLE_JOY", Language.getLangLabel("ODIN is a decentralized DNS based on blockchains (BTC,ETH,BYTOM,Fabric,etc) . It's made for a little joy."));
           attributes.put("LANG_DOWNLOAD", Language.getLangLabel("Download"));
           attributes.put("LANG_SOFTWARE_INCLUDING", Language.getLangLabel("this opensource software -- including a tool for registing and managing ODIN , a simple bitcoin wallet . Start playing today!"));
           attributes.put("LANG_BUILT_ON_BITCOIN_BLOCKCHAIN", Language.getLangLabel("Built on top of the blockchain technology, PPkPub will research and develope a few fully open decentralized protocols & tools. There is no central control and central point of failure. It's owned by the people."));
@@ -1397,7 +1397,7 @@ public class Server implements Runnable {
     
     OdinInfo odinInfo=Odin.getOdinInfo(odin);
     if(odinInfo==null){
-      attributes.put("error", "handleOdinDetailRequest: Invalid odin.");
+      attributes.put("error", "handleOdinConfirmRequest: Invalid odin.");
       return attributes;
     }
     
@@ -1464,6 +1464,8 @@ public class Server implements Runnable {
     map.put("block_index", odinInfo.blockIndex.toString());
     map.put("block_time", Util.timeFormat(odinInfo.blockTime));
     map.put("validity",odinInfo.validity);
+    
+    map.put("escaped_list_debug", Odin.getEscapedListOfShortODIN(odinInfo.shortOdin).toString());
     
     try{
       String awaiting_update_log_id=request.queryParams("awaiting_update_log_id");
@@ -1544,6 +1546,7 @@ public class Server implements Runnable {
     attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
     attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
+    attributes.put("LANG_ESCAPED_LIST", Language.getLangLabel("Escaped names"));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_CONFIRM_THE_UPDATE", Language.getLangLabel("Confirm this update")); 

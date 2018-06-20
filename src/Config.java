@@ -25,7 +25,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 618;
+  public static Integer minorVersion = 621;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   public static Integer minorVersionDB = 2;
@@ -93,6 +93,8 @@ public class Config {
   public static String JSON_KEY_PPK_CHUNK_TYPE="chunk-type";
   public static String JSON_KEY_PPK_CHUNK_LENGTH="chunk-length";
   public static String JSON_KEY_PPK_CHUNK_URL="chunk-url";
+  public static String JSON_KEY_PPK_REGISTER="register";
+  public static String JSON_KEY_PPK_ADMIN="admin";
   
   public static int PPK_VALIDATION_OK        = 0;
   public static int PPK_VALIDATION_IGNORED   = 1;
