@@ -23,7 +23,7 @@ import javax.crypto.Cipher;
  */  
 public abstract class RSACoder extends Coder {  
     public static final String KEY_ALGORITHM = "RSA";  
-    public static final String DEFAULT_SIGNATURE_ALGORITHM = "MD5withRSA";  
+    public static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA256withRSA";  
     public static final String DEFAULT_FORMAT="BASE64";
   
     private static final String PUBLIC_KEY = "RSAPublicKey";  
