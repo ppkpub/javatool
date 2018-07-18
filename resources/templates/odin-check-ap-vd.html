@@ -17,7 +17,7 @@
     
     <h3>AP[${apid}]:${ap_url}</h3>
 
-    ${LANG_RESPONSE_URI}:<form action="/" class="form-inline" method="get"><input name='ppk-uri' type='text' size='100' value='<#if ap_resp_ppk_uri??>${ap_resp_ppk_uri}</#if>'><button class="btn btn-primary" type="submit">Go</button></form><br>
+    ${LANG_RESPONSE_URI}:<input name='ppk-uri' type='text' size='100' value='<#if ap_resp_ppk_uri??>${ap_resp_ppk_uri}</#if>'><br>
     ${LANG_RESPONSE_URL}:${ap_resp_url}<br>
     ${LANG_RESPONSE_CONTENT}:<br><textarea rows=3 cols=100>${ap_resp_content}</textarea><br>
     ${LANG_RESPONSE_SIGNATURE}:<br><textarea rows=3 cols=100>${ap_resp_sign}</textarea><br>

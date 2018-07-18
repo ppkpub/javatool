@@ -35,7 +35,6 @@
 					<li>${LANG_VIEWING_OTHER_ADDRESS} ${address}<br>${LANG_VIEWING_OTHER_ADDRESS_NOTICE}</li>
 			<#else>
           <li <#if title?? && title=="Odin">class="active"</#if>><a href="/odin">${LANG_ODIN}</a></li>
-          <li <#if title?? && title=="Browser">class="active"</#if>><a href="/?ppk-uri=ppk:0/">${LANG_BROWSER}</a></li>
 					<li <#if title?? && title=="Wallet">class="active"</#if>><a href="/wallet">${LANG_WALLET}</a></li>
 					<li <#if title?? && title=="Community">class="active"</#if>><a href="/community">${LANG_COMMUNITY}</a></li>
 			</#if>
@@ -97,9 +96,10 @@
 			</#if>
 		</div>
 		</#if>
-
-		<#nested/>
-
+  </div>
+  
+  <#nested/>
+  
 	<div class="container-fluid footer">
 	PPkPub &copy; 2015-2018. Released under the <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>. <#if system_charset??>[${system_charset}]</#if> <#if ipfs_status??>[${ipfs_status}]</#if>
 	</div>

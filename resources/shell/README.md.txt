@@ -21,7 +21,7 @@ Settings
 
 You can find the configure file named "ppk.conf" in the "resources" folder.
    
-1.The standard transaction fee for Bitcoin is 10000 Satoshi witch equals to 0.0001 BTC. 
+1.The standard transaction fee for Bitcoin is 1000 Satoshi witch equals to 0.00001 BTC. 
 If you want to change it, you can modify the value of "StandardFeeSatoshi".
 
 2.The default language setting is "Lang=EN" which means english. 
@@ -34,4 +34,5 @@ If you had installed the older version,please upgrade to the newest version.
 Before you upgrade ,you must backup your wallet file. The wallet file (wallet.dat and files such as "ck-*") can be found in the "resources/db" folder.Then unzip the downloaded zip file (PPk-x.x.zip) to override the older files.
 
 ==================================================================
+
 For more information, please see http://ppkpub.org/
