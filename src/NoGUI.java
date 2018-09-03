@@ -4,7 +4,9 @@ public class NoGUI  {
   public static void main(String[] args) throws Exception {
     Config.loadUserDefined();
     
-    System.out.println("Loading "+Config.appName+" V"+Config.version+"  server without GUI ...");
+    Language.setLang(Config.defaultLang);
+    System.out.println(Language.getLangLabel("PPkPub"));
+    System.out.println("Loading "+Config.appName+" V"+Config.version+"  PTTP service ...");
 
     Locale.setDefault(new Locale("en", "US"));
 
@@ -37,11 +39,16 @@ public class NoGUI  {
           }
       };
 
+      GuiServer gs = new GuiServer();
+      Thread serverThread = new Thread(gs);
+      serverThread.setDaemon(true);
+      serverThread.start(); 
+      
       progressUpdateThread.start();
       blocks.init();
       blocks.versionCheck();
       blocks.follow();
-      
+
       Thread.sleep(8000);
     }
    }

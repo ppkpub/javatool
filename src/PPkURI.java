@@ -71,13 +71,19 @@ public class PPkURI {
     
     JSONObject  obj_newest_ap_resp=null;
     try{
-      if(!uri.toLowerCase().startsWith(Config.PPK_URI_PREFIX)){
+      if(!uri.toLowerCase().startsWith(Config.PPK_URI_PREFIX)  
+         || uri.indexOf("//") >0 
+         || uri.indexOf("##") >0 
+         ){
         logger.error("PPkURI.fetchPPkURI() meet invalid ppk-uri:"+uri);
         return null;
       }
       
+      int path_mark_posn=uri.indexOf('/');
       int resoure_mark_posn=uri.indexOf('#');
-      if(resoure_mark_posn<0)
+      if( path_mark_posn<0 &&  resoure_mark_posn<0) //输入地址类似 ppk:100 的情况（没有加/或#），这时默认尾部加 /# 成为如 ppk:100/# 
+        uri+="/#";
+      else if(resoure_mark_posn<0)
         uri+="#";
 
       //解析URI资源区段
@@ -247,11 +253,14 @@ public class PPkURI {
       int pttpStatusCode=obj_data.getInt("status_code");
       System.out.println("pttpStatusCode="+pttpStatusCode);
       obj_ap_resp = new JSONObject();
+      obj_ap_resp.put(Config.JSON_KEY_ORIGINAL_RESP, str_ap_data_json );
       if (pttpStatusCode == HttpURLConnection.HTTP_OK) {
         String content_encoding = obj_chunk_metainfo.optString("content_encoding","").toLowerCase();
         byte[]  chunk_content = null;
         if("base64".equals(content_encoding)){
           chunk_content=Base64.getDecoder().decode(obj_data.getString("content"));
+        }else if("hex".equals(content_encoding)){
+          chunk_content=Util.hexStringToBytes(obj_data.getString("content"));
         }else{
           chunk_content=obj_data.getString("content").getBytes();
         }

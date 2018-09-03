@@ -240,11 +240,14 @@ public class Blocks implements Runnable {
         Odin.init();
       } catch (Exception e) {
         logger.error("Error during init: "+e.toString());
-        e.printStackTrace();
+        //e.printStackTrace();
+        System.exit(-1);
+        /*
         deleteDatabases();
         initialized = false;
         initializing = false;
         init();
+        */
       }
       initialized = true;
       initializing = false;

@@ -4,6 +4,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,35 +13,50 @@ public class Database {
   //uses https://bitbucket.org/xerial/sqlite-jdbc
   static Logger logger = LoggerFactory.getLogger(Database.class);
   Connection connection = null;
-  Statement statement = null;
+  //Statement statement = null;
   public static String dbFile = "./resources/db/" + Config.appName.toLowerCase()+"-"+Config.majorVersionDB.toString()+".db";  
   private static Database instance = null;
 
   public static Database getInstance() {
     if(instance == null) {
-      instance = new Database();
+      instance = new Database(false);
+    }
+    return instance;
+  }
+  
+  public static Database getInstance(boolean readonly) {
+    if(instance == null) {
+      instance = new Database(readonly);
     }
     return instance;
   }
 
-  private Database() {
+  private Database(boolean readonly) {
     Boolean dbExists = true;
     if (!(new File(dbFile)).exists()) {
       dbExists = false;
     }
-    init();
-    createTables();
+    init(readonly);
+    
+    if(!readonly)
+        createTables();
   }
 
-  public void init() {
+  public void init(boolean readonly) {
     try {
       Class.forName("org.sqlite.JDBC");
     } catch (Exception e) {
     }
     try {
-      connection = DriverManager.getConnection("jdbc:sqlite:"+dbFile);
-      statement = connection.createStatement();
-      statement.setQueryTimeout(30);
+      if(readonly){
+        Properties config = new Properties();
+        config.setProperty("open_mode","1");//1 == readonly
+        connection = DriverManager.getConnection("jdbc:sqlite:"+dbFile, config);
+      }else{
+        connection = DriverManager.getConnection("jdbc:sqlite:"+dbFile);
+      }
+      //statement = connection.createStatement();
+      //statement.setQueryTimeout(30);
     } catch (SQLException e) {
     }
   }
@@ -89,27 +105,45 @@ public class Database {
   }
 
   public void executeUpdate(String query) {
+    Statement statement = null;
     try {
-      (connection.createStatement()).executeUpdate(query);
+      statement = connection.createStatement();
+      statement.executeUpdate(query);
       logger.info("Update/Insert query: "+query);
     } catch (Exception e) {
       logger.error(e.toString());
       logger.error("Offending query: "+query);
       //System.exit(0);            
     }
+    if(statement!=null){
+      try {
+        statement.close();
+      } catch (Exception e) {
+      }
+    }
   }
 
   public ResultSet executeQuery(String query) {
+    Statement statement = null;
+    ResultSet rs = null;
     try {
-      ResultSet rs = (connection.createStatement()).executeQuery(query);
+      statement = connection.createStatement();
+      statement.setQueryTimeout(30);
+      rs = statement.executeQuery(query);
       //logger.info("Select query: "+query);
-      return rs;
     } catch (SQLException e) {
+      rs = null;
       logger.error(e.toString());
       logger.error("Offending query: "+query);
       //System.exit(0);            
-    }
-    return null;
+    }/*
+    if(statement!=null){
+      try {
+        statement.close();
+      } catch (Exception e) {
+      }
+    }*/
+    return rs;
   }
 
 }

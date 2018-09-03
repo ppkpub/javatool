@@ -127,13 +127,12 @@ public class GUI extends Application {
         blocks.versionCheck();
         blocks.follow();
         
-        if(GUI.bShowGui){
-            // start Server
-            Server server = new Server();
-            Thread serverThread = new Thread(server);
-            serverThread.setDaemon(true);
-            serverThread.start(); 
-        }
+        // Start GuiServer
+        GuiServer server = new GuiServer();
+        Thread serverThread = new Thread(server);
+        serverThread.setDaemon(true);
+        serverThread.start(); 
+
         //updateProgress(0,1);
         Thread.sleep(8000);
         
@@ -141,8 +140,8 @@ public class GUI extends Application {
       }
     };
 
-        if(GUI.bShowGui)
-            showSplash(initStage, preloaderTask);
+    if(GUI.bShowGui)
+      showSplash(initStage, preloaderTask);
             
     new Thread(preloaderTask).start();
     //showMainStage();
@@ -206,9 +205,10 @@ class Browser extends Region {
   final WebView browser = new WebView();
   final Button buttonHome = createHomeButton();
   final WebEngine webEngine = browser.getEngine();
-  final String address = "http://0.0.0.0:8087/";
+  String address;
 
   public Browser() {
+    address  = "http://0.0.0.0:"+Config.GuiServerPort+"/";
     //webEngine.load(Config.newsUrl);
     webEngine.load(address);
 

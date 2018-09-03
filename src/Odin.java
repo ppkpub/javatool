@@ -27,7 +27,7 @@ import org.json.JSONObject;
 public class Odin {
   static Logger logger = LoggerFactory.getLogger(Odin.class);
   public static Byte id = Config.FUNC_ID_ODIN_REGIST; //for registing new ODIN 
-  static String[] LetterEscapeNumSet={"O","IL","ABC","DEF","GH","JK","MN","PQRS","TUV","WXYZ"};
+  static String[] LetterEscapeNumSet={"O","ILA","BCZ","DEF","GH","JKS","MN","PQR","TUV","WXY"};
   
   //public static HashMap<String , String> teamMap = null;
   
@@ -426,11 +426,12 @@ public class Odin {
               break;
             case 'I':
             case 'L':
+            case 'A':
               chr='1';
               break;
-            case 'A':
             case 'B':
             case 'C':
+            case 'Z':
               chr='2';
               break;
             case 'D':
@@ -444,6 +445,7 @@ public class Odin {
               break;
             case 'J':
             case 'K':
+            case 'S':
               chr='5';
               break;
             case 'M':
@@ -453,7 +455,6 @@ public class Odin {
             case 'P':
             case 'Q':
             case 'R':
-            case 'S':
               chr='7';
               break;
             case 'T':
@@ -464,7 +465,6 @@ public class Odin {
             case 'W':
             case 'X':
             case 'Y':
-            case 'Z':
               chr='9';
               break;
             default:
