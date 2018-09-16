@@ -186,7 +186,7 @@ public class PttpServer implements Runnable {
       if(obj_ap_resp!=null){
         ap_resp_url=obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_URL,"");
         String str_chunk_type = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase();
-        if( str_chunk_type.startsWith("text") ){
+        if( str_chunk_type.startsWith("text/html") ){ //网页
           ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
           
           //处理页面内容中的图片
@@ -199,6 +199,8 @@ public class PttpServer implements Runnable {
                                            .replaceAll("\""+Config.PPK_URI_PREFIX,"\""+tmp_href_ap_url);
           
           
+        }else if(str_chunk_type.startsWith("text")){ //其他文本
+          ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
         }else if(str_chunk_type.startsWith("image")){
           ap_resp_content = "<img src='"+Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK))+"'>";
         }else{
