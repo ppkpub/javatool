@@ -80,6 +80,7 @@ public class PttpServer implements Runnable {
         String pttp_interest=request.queryParams(Config.PTTP_INTEREST);
         
         if( pttp_interest != null  ){
+          pttp_interest = pttp_interest.trim();
           String ppk_uri;
           try{
             //Request like http://127.0.0.1:8088/?pttp_interest={"ver":1,"hop_limit":6,"interest":{"uri":"ppk:0/"}}
@@ -110,6 +111,8 @@ public class PttpServer implements Runnable {
           String ppk_uri=request.queryParams(Config.JSON_KEY_PPK_URI);
           if( ppk_uri==null || ppk_uri.length( ) == 0 )
             ppk_uri = Config.ppkDefaultHomepage;
+          
+          ppk_uri = ppk_uri.trim();
    
           Map<String, Object> attributes = handlePttpBrowserRequest(request,ppk_uri);
           return modelAndView(attributes, "pttp-browser.html");
