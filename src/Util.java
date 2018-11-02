@@ -365,7 +365,7 @@ public class Util {
             
             UnspentOutput tempUnspentObj=new UnspentOutput();
             
-            if(item_obj.getInt("confirmations")>0){
+            //if(item_obj.getInt("confirmations")>0){
               tempUnspentObj.amount=item_obj.getDouble("value")/Config.btc_unit;
               tempUnspentObj.txid=item_obj.getString("tx_hash");
               tempUnspentObj.vout=item_obj.getInt("tx_output_n");
@@ -395,7 +395,7 @@ public class Util {
               
               if(tempUnspentObj.scriptPubKeyHex.length()>0)
                 unspents.add(tempUnspentObj);
-            }
+            //}
         }
     } catch (Exception e) {
       logger.error(e.toString());
@@ -1001,7 +1001,24 @@ public class Util {
   public static String imageToBase64DataURL(String img_type, byte[] img_bytes) {
     return "data:"+img_type+";base64,"+Base64.getEncoder().encodeToString( img_bytes );
   }
-
+  
+  
+  /**
+     * 匹配是否为数字
+     * @param str 可能为中文，也可能是-19162431.1254，不使用BigDecimal的话，变成-1.91624311254E7
+     * @return
+     * @author yutao
+     * @date 2016年11月14日下午7:41:22
+     */
+  public static boolean isNumeric(String str) {
+      String bigStr;
+      try {
+          bigStr = new BigDecimal(str).toString();
+      } catch (Exception e) {
+          return false;//异常 说明包含非数字。
+      }
+      return true;
+  }
 
 
 }

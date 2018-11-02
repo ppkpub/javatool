@@ -24,13 +24,15 @@ public class Config {
   
   public static boolean debugKey = false;
   
+  public static String  jdbcUrl      = "";
+  
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 705;
+  public static Integer minorVersion = 708;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
-  public static Integer minorVersionDB = 2;
-  public static String versionDB = Integer.toString(majorVersionDB)+"."+Integer.toString(minorVersionDB);  
+  
+  public static String defaultSqliteFile = null;  
   
   //bitcoin
   public static boolean useDustTX = true;
@@ -43,14 +45,16 @@ public class Config {
 
   //PPk
   public static long ppkToolCreationTime = 1400561240-1;  //UTC 2014-5-20 04:47:20
-  public static Integer firstBlock = 426896;
+  public static Integer firstBlock = 0;  
   
   public static Integer ppkStandardDataFee = 10000;
   
   public static int ODIN_PROTOCOL_VER=1; 
   
-  //public static String 
+  public static Integer TESTNET_FIRST_BLOCK = 547660;  //Testnet
   public static String PPK_ODIN_MARK_PUBKEY_HEX_TESTNET="02d173743cd0d94f64d241d82a42c6ca92327c443e489f3842464a4df118d4920a";//1PPkT1hoRbnvSRExCeNoP4s1zr61H12bbg : For testnet
+  
+  public static Integer MAINNET_FIRST_BLOCK = 426896;  //Mainnet
   public static String PPK_ODIN_MARK_PUBKEY_HEX_MAINNET="0320a0de360cc2ae8672db7d557086a4e7c8eca062c0a5a4ba9922dee0aacf3e12";//1PPkPubRnK2ry9PPVW7HJiukqbSnWzXkbi : For Mainnet
   
   public static String PPK_ODIN_MARK_PUBKEY_HEX=null;
@@ -166,9 +170,11 @@ public class Config {
         }else{
           PPK_ODIN_MARK_PUBKEY_HEX=PPK_ODIN_MARK_PUBKEY_HEX_TESTNET;
         }
+        firstBlock=TESTNET_FIRST_BLOCK;
         System.out.println("TestNetHash:"+strTestNetHash);
       }else{
         PPK_ODIN_MARK_PUBKEY_HEX=PPK_ODIN_MARK_PUBKEY_HEX_MAINNET;
+        firstBlock=MAINNET_FIRST_BLOCK;
       }
 
       ppkStandardDataFee = Integer.parseInt(prop.getProperty("StandardFeeSatoshi")) ;
@@ -202,6 +208,16 @@ public class Config {
         GuiServerPort = 23456 + (int)(rnd*10000);  //Random a port for local private GUI
       }
       System.out.println("GuiServerPort:"+GuiServerPort);
+      
+      defaultSqliteFile = dbPath + appName.toLowerCase()+"-"+majorVersionDB.toString()+".db";
+      
+      strTemp = prop.getProperty("JDBC");
+      if(strTemp!=null && strTemp.length()>0  ){
+        jdbcUrl=strTemp;
+      }else{
+        jdbcUrl = "sqlite:"+defaultSqliteFile;
+      }
+      System.out.println("JDBC:"+jdbcUrl);
     } catch (IOException e) {
     }    
   }

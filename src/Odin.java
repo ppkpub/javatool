@@ -39,13 +39,15 @@ public class Odin {
     if(db==null) 
       db = Database.getInstance();
     try {
-      db.executeUpdate("CREATE TABLE IF NOT EXISTS odins (tx_index INTEGER PRIMARY KEY, tx_hash TEXT UNIQUE,block_index INTEGER,full_odin TEXT UNIQUE,short_odin INTEGER UNIQUE , register TEXT, admin TEXT,odin_set TEXT, validity TEXT)");
+      db.executeUpdate("CREATE TABLE IF NOT EXISTS odins (tx_index INTEGER PRIMARY KEY, tx_hash CHAR(64) UNIQUE,block_index INTEGER,full_odin CHAR(32) UNIQUE,short_odin INTEGER UNIQUE , register TEXT, admin TEXT,odin_set TEXT, validity TEXT)");
+      //db.executeUpdate("ALTER TABLE  odins ADD INDEX block_idx(block_index)");  //for test mysql 
       db.executeUpdate("CREATE INDEX IF NOT EXISTS block_index_idx ON odins (block_index)");
       db.executeUpdate("CREATE INDEX IF NOT EXISTS tx_index ON odins (tx_index)");
       db.executeUpdate("CREATE INDEX IF NOT EXISTS full_odin ON odins (full_odin)");
       db.executeUpdate("CREATE INDEX IF NOT EXISTS short_odin ON odins (short_odin)");
 
-      db.executeUpdate("CREATE TABLE IF NOT EXISTS odin_update_logs (log_id TEXT, tx_index INTEGER PRIMARY KEY,block_index INTEGER,full_odin TEXT, updater TEXT,destination TEXT,update_set TEXT, validity TEXT,required_confirmer TEXT);");
+      db.executeUpdate("CREATE TABLE IF NOT EXISTS odin_update_logs (log_id CHAR(32) PRIMARY KEY , tx_index INTEGER UNIQUE,block_index INTEGER,full_odin CHAR(32), updater TEXT,destination TEXT,update_set TEXT, validity TEXT,required_confirmer TEXT)");
+      //db.executeUpdate("ALTER TABLE  odin_update_logs ADD INDEX full_odin_idx(full_odin)"); //for test mysql 
       db.executeUpdate("CREATE INDEX IF NOT EXISTS logid_idx ON odin_update_logs (log_id);");
       db.executeUpdate("CREATE INDEX IF NOT EXISTS odin_idx ON odin_update_logs (full_odin);");
       
@@ -472,7 +474,7 @@ public class Odin {
         }
         converted_odin=converted_odin+(char)chr;
      }  
-     return converted_odin;  
+     return Util.isNumeric(converted_odin)?converted_odin:null;  
   }   
   
   //获得指定数字短标识的对应字母转义名称组合

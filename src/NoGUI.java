@@ -6,9 +6,14 @@ public class NoGUI  {
     
     Language.setLang(Config.defaultLang);
     System.out.println(Language.getLangLabel("PPkPub"));
-    System.out.println("Loading "+Config.appName+" V"+Config.version+"  PTTP service ...");
+    System.out.println("Loading "+Config.appName+" V"+Config.version+"  GUIServer service ...");
 
     Locale.setDefault(new Locale("en", "US"));
+    
+    GuiServer gs = new GuiServer();
+    Thread serverThread = new Thread(gs);
+    serverThread.setDaemon(true);
+    serverThread.start(); 
 
     while(true){    
       // Start Blocks
@@ -39,17 +44,12 @@ public class NoGUI  {
           }
       };
 
-      GuiServer gs = new GuiServer();
-      Thread serverThread = new Thread(gs);
-      serverThread.setDaemon(true);
-      serverThread.start(); 
-      
       progressUpdateThread.start();
       blocks.init();
       blocks.versionCheck();
       blocks.follow();
 
-      Thread.sleep(8000);
+      Thread.sleep(60000);
     }
    }
 

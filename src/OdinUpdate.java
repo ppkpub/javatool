@@ -681,3 +681,4 @@ class OdinUpdateInfo {
 
   public JSONObject updateSet;
 }
+

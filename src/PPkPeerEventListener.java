@@ -24,7 +24,7 @@ public class PPkPeerEventListener extends AbstractPeerEventListener {
 
   @Override
   public void onBlocksDownloaded(Peer peer, Block block, FilteredBlock filteredBlock, int blocksLeft){
-    logger.info("Block downloaded: "+blocksLeft);
+    logger.info("BlockHeader left: "+blocksLeft);
     /*
     //this doesn't work
     Blocks blocks = Blocks.getInstance();

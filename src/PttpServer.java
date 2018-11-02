@@ -138,6 +138,8 @@ public class PttpServer implements Runnable {
     attributes.put("version_minor", Config.minorVersion);
     attributes.put("system_charset", java.nio.charset.Charset.defaultCharset().toString());
     
+    attributes.put("LastParsedBlock", Util.getLastParsedBlock());
+    
     String str_ipfs_status = Util.isIpfsRuning() ? "IPFS:OK":"IPFS:<font color='#F00'>Not running</font>";
     
     attributes.put("ipfs_status", str_ipfs_status);

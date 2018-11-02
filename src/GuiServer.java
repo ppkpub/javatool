@@ -351,6 +351,14 @@ public class GuiServer implements Runnable {
         return modelAndView(attributes, "odin-detail.html");
       }
     });  
+    get(new FreeMarkerRoute("/odin-match") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        Map<String, Object> attributes = handleOdinMatchRequest(request);
+        return modelAndView(attributes, "odin-match.html");
+      }
+    });  
     post(new FreeMarkerRoute("/odin-update") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -620,7 +628,7 @@ public class GuiServer implements Runnable {
     for (OdinInfo odinInfo : odinsPending) {
       HashMap<String,Object> map = new HashMap<String,Object>();
       map.put("full_odin", odinInfo.fullOdin);
-      map.put("short_odin", odinInfo.shortOdin);
+      map.put("short_odin", odinInfo.shortOdin.toString());
       map.put("register", odinInfo.register);
       map.put("admin", odinInfo.admin);
       map.put("tx_index",odinInfo.txIndex.toString());
@@ -738,7 +746,7 @@ public class GuiServer implements Runnable {
     for (OdinUpdateInfo updateOdinInfo : updatePending) {
       HashMap<String,Object> map = new HashMap<String,Object>();
       map.put("full_odin", updateOdinInfo.fullOdin);
-      map.put("short_odin", updateOdinInfo.shortOdin);
+      map.put("short_odin", updateOdinInfo.shortOdin.toString());
       map.put("updater", updateOdinInfo.updater);
       map.put("tx_index",updateOdinInfo.txIndex.toString());
       map.put("tx_hash", updateOdinInfo.txHash);
@@ -852,6 +860,12 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_MY_REGISTED_ODINS", Language.getLangLabel("My registed ODINs"));
     attributes.put("LANG_MY_ADMIN_ODINS", Language.getLangLabel("My admin ODINs"));
     attributes.put("LANG_MY_UPDATE_LOGS", Language.getLangLabel("My update logs"));
+    attributes.put("LANG_QUERY_ODIN", Language.getLangLabel("Query ODIN"));
+    attributes.put("LANG_INPUT_ODIN", Language.getLangLabel("Input the ODIN"));
+    attributes.put("LANG_INPUT_ODIN_DESC", Language.getLangLabel("Input the ODIN number that you want to query"));
+    attributes.put("LANG_MATCH_WORD", Language.getLangLabel("Match word"));
+    attributes.put("LANG_INPUT_WORD", Language.getLangLabel("Input the word"));
+    attributes.put("LANG_INPUT_WORD_DESC", Language.getLangLabel("Input the word string that you want to match"));
     
     attributes.put("LANG_FULL_ODIN", Language.getLangLabel("Full ODIN"));
     attributes.put("LANG_SHORT_ODIN", Language.getLangLabel("SN"));
@@ -907,7 +921,7 @@ public class GuiServer implements Runnable {
         try {
             HashMap<String,Object> map = new HashMap<String,Object>();
             map.put("full_odin", odinInfo.fullOdin);
-            map.put("short_odin", odinInfo.shortOdin);
+            map.put("short_odin", odinInfo.shortOdin.toString());
             map.put("register", odinInfo.register);
             map.put("admin", admin);
             map.put("tx_index",odinInfo.txIndex.toString());
@@ -976,7 +990,7 @@ public class GuiServer implements Runnable {
     } else {  
       HashMap<String,Object> map = new HashMap<String,Object>();
       map.put("full_odin", odinInfo.fullOdin);
-      map.put("short_odin", odinInfo.shortOdin);
+      map.put("short_odin", odinInfo.shortOdin.toString());
       map.put("register", odinInfo.register);
       map.put("admin", odinInfo.admin);
       map.put("tx_index",odinInfo.txIndex.toString());
@@ -1048,7 +1062,7 @@ public class GuiServer implements Runnable {
       try {
           HashMap<String,Object> map = new HashMap<String,Object>();
           map.put("full_odin", odinInfo.fullOdin);
-          map.put("short_odin", odinInfo.shortOdin);
+          map.put("short_odin", odinInfo.shortOdin.toString());
           map.put("register", odinInfo.register);
           map.put("admin", odinInfo.admin);
           map.put("tx_index",odinInfo.txIndex.toString());
@@ -1102,7 +1116,7 @@ public class GuiServer implements Runnable {
     } else {  
       HashMap<String,Object> map = new HashMap<String,Object>();
       map.put("full_odin", odinInfo.fullOdin);
-      map.put("short_odin", odinInfo.shortOdin);
+      map.put("short_odin", odinInfo.shortOdin.toString());
       map.put("register", odinInfo.register);
       map.put("admin", odinInfo.admin);
       map.put("tx_index",odinInfo.txIndex.toString());
@@ -1175,7 +1189,7 @@ public class GuiServer implements Runnable {
       try {
           HashMap<String,Object> map = new HashMap<String,Object>();
           map.put("full_odin", odinInfo.fullOdin);
-          map.put("short_odin", odinInfo.shortOdin);
+          map.put("short_odin", odinInfo.shortOdin.toString());
           map.put("register", odinInfo.register);
           map.put("admin", odinInfo.admin);
           map.put("tx_index",odinInfo.txIndex.toString());
@@ -1233,7 +1247,7 @@ public class GuiServer implements Runnable {
     } else {  
       HashMap<String,Object> map = new HashMap<String,Object>();
       map.put("full_odin", odinInfo.fullOdin);
-      map.put("short_odin", odinInfo.shortOdin);
+      map.put("short_odin", odinInfo.shortOdin.toString());
       map.put("register", odinInfo.register);
       map.put("admin", odinInfo.admin);
       map.put("tx_index",odinInfo.txIndex.toString());
@@ -1317,7 +1331,7 @@ public class GuiServer implements Runnable {
         try {
             HashMap<String,Object> map = new HashMap<String,Object>();
             map.put("full_odin", odinInfo.fullOdin);
-            map.put("short_odin", odinInfo.shortOdin);
+            map.put("short_odin", odinInfo.shortOdin.toString());
             map.put("register", odinInfo.register);
             map.put("validity",odinInfo.validity);
 
@@ -1344,7 +1358,7 @@ public class GuiServer implements Runnable {
     } else {  
       HashMap<String,Object> map = new HashMap<String,Object>();
       map.put("full_odin", odinInfo.fullOdin);
-            map.put("short_odin", odinInfo.shortOdin);
+      map.put("short_odin", odinInfo.shortOdin.toString());
       map.put("register", odinInfo.register);
       map.put("validity",odinInfo.validity);
       
@@ -1444,7 +1458,7 @@ public class GuiServer implements Runnable {
   
     HashMap<String,Object> map = new HashMap<String,Object>();
     map.put("full_odin", odinInfo.fullOdin);
-    map.put("short_odin", odinInfo.shortOdin);
+    map.put("short_odin", odinInfo.shortOdin.toString());
     map.put("register", odinInfo.register);
     map.put("admin", odinInfo.admin);
     map.put("tx_index",odinInfo.txIndex.toString());
@@ -1546,6 +1560,37 @@ public class GuiServer implements Runnable {
     return attributes;
   }
   
+  public Map<String, Object> handleOdinMatchRequest(Request request) {
+    Map<String, Object> attributes = new HashMap<String, Object>();
+    request.session(true);
+    
+    attributes = updateCommonStatus(request, attributes);
+    attributes.put("title", "Match a word");
+    
+    String input_word=request.queryParams("word");
+    if(input_word==null){
+        attributes.put("matched_result", "handleOdinMatchRequest : no word.");
+    } 
+    
+    String matched_odin=Odin.convertLetterToNumberInRootODIN(input_word);
+    
+    if(matched_odin==null){
+      attributes.put("matched_result", Language.getLangLabel("No matched ODIN for the word!"));
+    }else{
+      OdinInfo odinInfo=Odin.getOdinInfo(matched_odin);
+      if(odinInfo==null){
+        attributes.put("matched_result", Language.getLangLabel("Matched ODIN")+"["+matched_odin+"]. "+Language.getLangLabel("The ODIN not appeared")  );
+      }else{
+        attributes.put("matched_result", Language.getLangLabel("Matched ODIN")+"["+matched_odin+"]."+" <a href='/odin-detail?odin="+matched_odin+"'>"+Language.getLangLabel("The ODIN had been registered by ") + odinInfo.register+"</a>" );
+      }
+    }
+
+    attributes.put("LANG_MATCH_WORD", Language.getLangLabel("Match word"));
+    attributes.put("input_word", input_word);
+
+    return attributes;
+  }
+  
   public Map<String, Object> handleOdinCheckApVdRequest(Request request) {
     Map<String, Object> attributes = new HashMap<String, Object>();
     request.session(true);
@@ -1578,7 +1623,7 @@ public class GuiServer implements Runnable {
     
     HashMap<String,Object> map = new HashMap<String,Object>();
     map.put("full_odin", odinInfo.fullOdin);
-    map.put("short_odin", odinInfo.shortOdin);
+    map.put("short_odin", odinInfo.shortOdin.toString());
     map.put("register", odinInfo.register);
     map.put("admin", odinInfo.admin);
     map.put("tx_index",odinInfo.txIndex.toString());

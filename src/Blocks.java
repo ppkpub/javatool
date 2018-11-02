@@ -201,7 +201,7 @@ public class Blocks implements Runnable {
           wallet.addKey(newKey);
         }
         String fileBTCdb = Config.dbPath+Config.appName.toLowerCase()+".h2.db";
-        String fileODINdb = Database.dbFile;
+        String fileODINdb = Config.defaultSqliteFile;
         if (!new File(fileODINdb).exists()) {
           statusMessage = "Downloading ODIN database"; 
           logger.info(statusMessage);
@@ -259,7 +259,7 @@ public class Blocks implements Runnable {
     logger.info("Deleting Bitcoin and ODIN databases");
     String fileBTCdb = Config.dbPath+Config.appName.toLowerCase()+".h2.db";
     new File(fileBTCdb).delete();
-    String fileODINdb = Database.dbFile;
+    String fileODINdb = Config.defaultSqliteFile;
     new File(fileODINdb).delete();
   }
 
@@ -334,13 +334,8 @@ public class Blocks implements Runnable {
         Integer lastParsedBlock = Util.getLastParsedBlock(); 
         if (lastParsedBlock < lastImportedBlock) {
           parsing = true;
-          if (getDBMinorVersion()<Config.minorVersionDB){
-            reparse(true);
-            Database db = Database.getInstance();
-            db.updateMinorVersion();          
-          }else{
-            parseFrom(lastParsedBlock+1, true);
-          }
+          parseFrom(lastParsedBlock+1, true);
+
           parsing = false;
         }
       } catch (Exception e) {
@@ -507,7 +502,7 @@ public class Blocks implements Runnable {
     db.executeUpdate("delete from transactions where block_index<0 and tx_index<(select max(tx_index) from transactions)-10;");
   }
 
-
+/*
   public Integer getDBMinorVersion() {
     Database db = Database.getInstance();
     ResultSet rs = db.executeQuery("PRAGMA user_version;");
@@ -525,7 +520,7 @@ public class Blocks implements Runnable {
     Database db = Database.getInstance();
     db.executeUpdate("PRAGMA user_version = "+Config.minorVersionDB.toString());
   }
-
+*/
   public Integer getHeight() {
     try {
       Integer height = blockStore.getChainHead().getHeight();
