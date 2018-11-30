@@ -1,6 +1,6 @@
 <#import "template.html" as template>
 <@template.content>
-<#if !success?? >
+<#if !success??  && !error??>
 <div class="row section">
     <div class="row section">
     <table border="0" width="100%">
@@ -22,6 +22,7 @@
     <li>${LANG_ODIN_AUTHORITY} : <#if odin["auth"]="0">${LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE}</#if><#if odin["auth"]="1">${LANG_ONLY_THE_ADMIN_CAN_UPDATE}</#if><#if odin["auth"]="2">${LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER}</#if></li>
     
     <li>${LANG_ODIN_REGISTER_ADDRESS} : ${odin["register"]}</li>
+    <li>${LANG_TIME}: ${odin["block_time"]}   ${LANG_BLOCK}:${odin["block_index"]}</li>
 
     <li>${LANG_ODIN_AP}</li>
     <ul>

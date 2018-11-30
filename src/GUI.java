@@ -41,12 +41,10 @@ public class GUI extends Application {
   private Stage mainStage;
   private static final int SPLASH_WIDTH = 200;
   private static final int SPLASH_HEIGHT = 200;
-    
-    private static boolean bShowGui;
 
   public static void main(String[] args) throws Exception { 
-        launch(args); 
-    }
+      launch(args); 
+  }
 
   @Override public void init() {
     Locale.setDefault(new Locale("en", "US"));
@@ -57,32 +55,21 @@ public class GUI extends Application {
     System.out.println(Language.getLangLabel("PPkPub"));
     System.out.println(Language.getLangLabel("Loading")+" "+Config.appName+" V"+Config.version);
 
-    GUI.bShowGui=true;
-    String strNoGuiSet = System.getProperty("nogui");
-    if(strNoGuiSet!=null){
-        GUI.bShowGui=false;
-    }
-    
-    if(GUI.bShowGui){
-        ImageView splash = new ImageView(new Image("file:./resources/static/images/logo.png"));
-        loadProgress = new ProgressBar();
-        loadProgress.setPrefWidth(SPLASH_WIDTH);
-        progressText = new Label("");
-        splashLayout = new VBox();
-        splashLayout.getChildren().addAll(splash, loadProgress, progressText);
-        progressText.setAlignment(Pos.CENTER);
-        splashLayout.setStyle("-fx-padding: 5; -fx-background-color: linear-gradient(to bottom, #ffffff, #ffffff); -fx-border-width:1; -fx-border-color: black;");
-        splashLayout.setEffect(new DropShadow());
-    }else{
-                    
-    }
+    ImageView splash = new ImageView(new Image("file:./resources/static/images/logo.png"));
+    loadProgress = new ProgressBar();
+    loadProgress.setPrefWidth(SPLASH_WIDTH);
+    progressText = new Label("");
+    splashLayout = new VBox();
+    splashLayout.getChildren().addAll(splash, loadProgress, progressText);
+    progressText.setAlignment(Pos.CENTER);
+    splashLayout.setStyle("-fx-padding: 5; -fx-background-color: linear-gradient(to bottom, #ffffff, #ffffff); -fx-border-width:1; -fx-border-color: black;");
+    splashLayout.setEffect(new DropShadow());
   }
 
   @Override public void start(final Stage initStage) throws Exception {
     final Task preloaderTask = new Task() {
       @Override protected Object call() throws InterruptedException {
-        if(GUI.bShowGui)
-            updateMessage(Language.getLangLabel("Loading")+" "+Config.appName);
+        updateMessage(Language.getLangLabel("Loading")+" "+Config.appName);
         
         // start Blocks
         final Blocks blocks = Blocks.getInstanceFresh();
@@ -92,25 +79,14 @@ public class GUI extends Application {
             Integer lastParsedBlock=Util.getLastParsedBlock();
             while(blocks.ppkBlock == 0  || blocks.working || blocks.parsing 
                 || lastParsedBlock<blocks.bitcoinBlock ) {
-                if(GUI.bShowGui){
-                    if (blocks.ppkBlock > 0) {
-                        if( blocks.ppkBlock < blocks.bitcoinBlock )
-                            updateMessage(Language.getLangLabel("Getting block")+" " + blocks.ppkBlock + "/" + blocks.bitcoinBlock);
-                        else
-                            updateMessage(Language.getLangLabel("Parsing")+" " + blocks.ppkBlock + "/" + blocks.bitcoinBlock);
-                    } else {
-                        updateMessage(blocks.statusMessage);    
-                    }
-                }else{
-                    if (blocks.ppkBlock > 0) {
-                        if( blocks.ppkBlock < blocks.bitcoinBlock )
-                            System.out.println(Language.getLangLabel("Getting block")+" " + blocks.ppkBlock + "/" + blocks.bitcoinBlock);
-                        else
-                            System.out.println(Language.getLangLabel("Parsing")+" " + blocks.ppkBlock + "/" + blocks.bitcoinBlock);
-                    } else {
-                        System.out.println(blocks.statusMessage);    
-                    }
-                }
+              if (blocks.ppkBlock > 0) {
+                  if( blocks.ppkBlock < blocks.bitcoinBlock )
+                      updateMessage(Language.getLangLabel("Getting block")+" " + blocks.ppkBlock + "/" + blocks.bitcoinBlock);
+                  else
+                      updateMessage(Language.getLangLabel("Parsing")+" " + blocks.ppkBlock + "/" + blocks.bitcoinBlock);
+              } else {
+                  updateMessage(blocks.statusMessage);    
+              }
               try {
                 Thread.sleep(2000);
               } catch (InterruptedException e) {
@@ -140,8 +116,7 @@ public class GUI extends Application {
       }
     };
 
-    if(GUI.bShowGui)
-      showSplash(initStage, preloaderTask);
+    showSplash(initStage, preloaderTask);
             
     new Thread(preloaderTask).start();
     //showMainStage();
@@ -153,8 +128,8 @@ public class GUI extends Application {
     mainStage.setTitle(Language.getLangLabel("PPkPub"));
     mainStage.getIcons().add(new Image("file:./resources/static/images/logo.png"));
     mainStage.setIconified(false);
-    Browser browser=new Browser();
-    Scene scene = new Scene(browser,1100,690, Color.web("#EEEEEE"));
+    ToolUI ToolUI=new ToolUI("http://0.0.0.0:"+Config.GuiServerPort+"/");
+    Scene scene = new Scene(ToolUI,1100,690, Color.web("#EEEEEE"));
     mainStage.setResizable(false);
     mainStage.setScene(scene);
     mainStage.show();
@@ -201,21 +176,21 @@ public class GUI extends Application {
   }
 }
 
-class Browser extends Region {
-  final WebView browser = new WebView();
+class ToolUI extends Region {
+  final WebView ToolUI = new WebView();
   final Button buttonHome = createHomeButton();
-  final WebEngine webEngine = browser.getEngine();
+  final WebEngine webEngine = ToolUI.getEngine();
   String address;
 
-  public Browser() {
-    address  = "http://0.0.0.0:"+Config.GuiServerPort+"/";
+  public ToolUI(String default_address) {
+    address  = default_address;
     //webEngine.load(Config.newsUrl);
     webEngine.load(address);
 
     VBox vbox1 = new VBox(0);
-    vbox1.getChildren().add(browser);
+    vbox1.getChildren().add(ToolUI);
     vbox1.getChildren().add(buttonHome);
-    browser.setPrefSize(1100, 654);
+    ToolUI.setPrefSize(1100, 654);
     vbox1.setAlignment(Pos.TOP_CENTER);
     getChildren().add(vbox1);
   }

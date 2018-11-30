@@ -18,10 +18,7 @@ public class Database {
   private static Database instance = null;
 
   public static Database getInstance() {
-    if(instance == null) {
-      instance = new Database(false);
-    }
-    return instance;
+    return getInstance(false);
   }
   
   public static Database getInstance(boolean readonly) {
@@ -34,8 +31,20 @@ public class Database {
   private Database(boolean readonly) {
     init();
     
-    if(!readonly)
-        createTables();
+    if(!readonly){
+      createTables();
+  
+      System.out.println("================ Check db whether be locked by others ...");
+      
+      //Check db whether be locked by others
+      if( !executeUpdate("replace into sys_parameters (para_name,para_value) values ('db_last_open_time','"+ Util.getNowTimestamp() +"');") ){
+        System.out.println("ERROR: Database locked by others. Please close the other PPk process. ");
+        System.exit(-1);  
+      }
+      
+      //Delete the pending transactions exceed 24*3 hours
+      executeUpdate("delete from transactions where block_index<0 and block_time<"+ (Util.getNowTimestamp()-3*24*60*60) );
+    }
   }
 
   public void init( ) {
@@ -89,16 +98,17 @@ public class Database {
     }
   }
 
-  public void executeUpdate(String query) {
+  public boolean executeUpdate(String query) {
     Statement statement = null;
+    boolean success=false;
     try {
       statement = connection.createStatement();
       statement.executeUpdate(query);
       logger.info("Update/Insert query: "+query);
+      success=true;
     } catch (Exception e) {
       logger.error(e.toString());
       logger.error("Offending query: "+query);
-      //System.exit(0);            
     }
     if(statement!=null){
       try {
@@ -106,6 +116,7 @@ public class Database {
       } catch (Exception e) {
       }
     }
+    return success;
   }
 
   public ResultSet executeQuery(String query) {

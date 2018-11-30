@@ -83,7 +83,7 @@ public class PPkURI {
       int resoure_mark_posn=uri.indexOf('#');
       if( path_mark_posn<0 &&  resoure_mark_posn<0) //输入地址类似 ppk:100 的情况（没有加/或#），这时默认尾部加 /# 成为如 ppk:100/# 
         uri+="/#";
-      else if(resoure_mark_posn<0)
+      else if(resoure_mark_posn<0) //其他没有带#默认追加 # 成为如 ppk:100/image# 
         uri+="#";
 
       //解析URI资源区段
@@ -122,9 +122,27 @@ public class PPkURI {
         
         //本地直接返回该一级ODIN配置信息
         obj_newest_ap_resp=new JSONObject();
-        byte[] data=odin_set.toString().getBytes();
-        obj_newest_ap_resp.put(Config.JSON_KEY_PPK_CHUNK,data);
-        obj_newest_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_LENGTH,data.length);
+        String chunk_content=odin_set.toString();
+        byte[] chunk_content_bytes=chunk_content.getBytes();
+        
+        JSONObject obj_chunk_metainfo=new JSONObject();
+        obj_chunk_metainfo.put("chunk_index", 0 );
+        obj_chunk_metainfo.put("chunk_count", 1 );
+        obj_chunk_metainfo.put("content_type", "text/json"  );
+        obj_chunk_metainfo.put("content_length", chunk_content.length()  );
+        
+        JSONObject obj_newest_ap_data=new JSONObject();
+        obj_newest_ap_data.put("uri",formated_ppk_uri);
+        obj_newest_ap_data.put("status_code",200);
+        obj_newest_ap_data.put("status_info","OK");
+        
+        obj_newest_ap_data.put("metainfo",obj_chunk_metainfo);
+        obj_newest_ap_data.put("content",chunk_content);
+        
+        obj_newest_ap_resp.put(Config.JSON_KEY_ORIGINAL_RESP, obj_newest_ap_data.toString() );
+        
+        obj_newest_ap_resp.put(Config.JSON_KEY_PPK_CHUNK,chunk_content_bytes);
+        obj_newest_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_LENGTH,chunk_content_bytes.length);
         obj_newest_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_TYPE,"text/json");
         obj_newest_ap_resp.put(Config.JSON_KEY_PPK_CHUNK_URL,"");
 

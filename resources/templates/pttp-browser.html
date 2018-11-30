@@ -1,21 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"/>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-	<title>${LANG_PPK_BROWSER}<#if title??> - ${title}</#if></title>
-	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
-	<link rel="stylesheet" href="/css/style.css">
-	<link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
-  <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
-	<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
-	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
-	<script type="text/javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-</head>
-<body>
 <#if info?? || error?? || success?? || warning?? >
-<div class="row section messages">
   <#if info??>
   <div class="alert alert-info">${info}</div>
   </#if>
@@ -28,28 +11,5 @@
   <#if warning??>
   <div class="alert alert-warning">${warning}</div>
   </#if>
-</div>
 </#if>
-
-<div class="row section">
-    <div class="row section">
-    <table border="0" width="100%">
-    <tr>
-        <td><h2>${LANG_BROWSE_PPK_NETWORK}</h2></td>
-        <td align="right">
-        <form action="/" class="form-inline" method="get"><input name='ppk-uri' type='text' size='70' value='<#if ppk_uri??>${ppk_uri}</#if>'><button class="btn btn-primary" type="submit" onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();">Go</button></form>
-        </td>
-    </tr>
-    </table>
-    </div>
-    ${LANG_RESPONSE_URI}:<#if ap_resp_ppk_uri??>${ap_resp_ppk_uri}</#if><br>
-    ${LANG_RESPONSE_URL}:<#if ap_resp_url??>${ap_resp_url}</#if><br>
-    ${LANG_VALIDATE_RESULT}:<#if ap_resp_validate_result??>${ap_resp_validate_result}</#if><br>
-    <hr>
-    <#if ap_resp_content??>${ap_resp_content}</#if>
-</div>
-<div class="container-fluid footer">
-	PPkPub PTTP Service &copy; 2015-2018. Released under the <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>. <#if system_charset??>[${system_charset}]</#if> <#if ipfs_status??>[${ipfs_status}]</#if>
-	</div>
-</body>
-</html>
+<#if ap_resp_content??>${ap_resp_content}</#if>

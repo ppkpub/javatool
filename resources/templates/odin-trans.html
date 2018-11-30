@@ -1,6 +1,6 @@
 <#import "template.html" as template>
 <@template.content>
-<#if !success??  >
+<#if !success??  && !error??>
 <div class="row section">
     <h2>${LANG_TRANSFER_THE_REGISTER_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2>
     <form action="/odin-trans" class="form-inline" method="post">

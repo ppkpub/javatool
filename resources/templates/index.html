@@ -39,10 +39,10 @@
     <tr>
         <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
         <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-        <td><a href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+        <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
         <td>
-        ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
-        ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+        ${LANG_ADMIN_BY} ${odin["admin"]}<br>
+        ${LANG_REGISTED_BY} ${odin["register"]}
         </td>
         <td>
             ${odin["validity"]}<br>

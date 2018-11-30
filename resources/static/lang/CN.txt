@@ -105,6 +105,7 @@
     "Transfer the register of":"转移注册者身份",
     "Transfer register":"转移注册者",
     "Awaiting your confirm":"等待你的确认",
+    "Awaiting your receipt":"等待你的接收",
     "Update":"更新",
     "Update it":"提交更新",
     "Regist it":"提交注册",

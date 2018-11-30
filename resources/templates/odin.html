@@ -11,9 +11,10 @@
 		<div class="row section padding-top">
 		    <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
 				<li class="active"><a href="#recent_odins" data-toggle="tab">${LANG_RECENT_ODINS}</a></li>
-				<li><a href="#my_registed_odins" data-toggle="tab">${LANG_MY_REGISTED_ODINS}</a></li>
-				<li><a href="#my_admin_odins" data-toggle="tab">${LANG_MY_ADMIN_ODINS}</a></li>
+				<li><a href="#my_registed_odins" data-toggle="tab">${LANG_MY_REGISTED_ODINS}(${my_registed_odin_num})</a></li>
+				<li><a href="#my_admin_odins" data-toggle="tab">${LANG_MY_ADMIN_ODINS}(${my_admin_odin_num})</a></li>
         <li><a href="#my_update_logs" data-toggle="tab">${LANG_MY_UPDATE_LOGS}</a></li>
+        <li><a href="#query_odin" data-toggle="tab">${LANG_QUERY_ODIN}</a></li>
 		    </ul>
 
 		    <div id="my-tab-content" class="tab-content">
@@ -39,8 +40,8 @@
 									<td>${LANG_PENDING}</td>
 									<td>
                   ${odin["title"]}<br>
-                  ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
-                  ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+                  ${LANG_ADMIN_BY} ${odin["admin"]}<br>
+                  ${LANG_REGISTED_BY} ${odin["register"]}
                   </td>
                   <td>${LANG_PENDING}
 									<td>${odin["ap_set_debug"]}</td>
@@ -54,10 +55,10 @@
 								<tr>
 									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                                     <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-								    <td><a href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+								    <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
 									<td>
-                  ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
-                  ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+                  ${LANG_ADMIN_BY} ${odin["admin"]}<br>
+                  ${LANG_REGISTED_BY} ${odin["register"]}
                   </td>
 									<td>
 										${odin["validity"]}<br>
@@ -96,8 +97,8 @@
 								<td>${LANG_PENDING}</td>
 								<td>${odin["title"]}</td>
                 <td>
-                ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
-                ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+                ${LANG_ADMIN_BY} ${odin["admin"]}<br>
+                ${LANG_REGISTED_BY} ${odin["register"]}
                 </td>
 								<td>${LANG_PENDING}
 								</td>
@@ -111,11 +112,11 @@
 							<tr>
                 <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                 <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-								<td><a  href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+								<td><a  href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
 								<td>${odin["title"]}</td>
                 <td>
-                ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
-                ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+                ${LANG_ADMIN_BY} ${odin["admin"]}<br>
+                ${LANG_REGISTED_BY} ${odin["register"]}
                 </td>
 								<td>
 									${odin["validity"]}
@@ -152,11 +153,11 @@
 								<tr>
 									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-                  <td><a  href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+                  <td><a  href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
 									<td>${odin["title"]}</td>
 									<td>
-                  ${LANG_ADMIN_BY} <a href="/wallet?address=${odin["admin"]}">${odin["admin"]}</a><br>
-                  ${LANG_REGISTED_BY} <a href="/wallet?address=${odin["register"]}">${odin["register"]}</a>
+                  ${LANG_ADMIN_BY} ${odin["admin"]}<br>
+                  ${LANG_REGISTED_BY} ${odin["register"]}
                   </td>
 									<td>
 										${odin["validity"]}<br>
@@ -205,7 +206,7 @@
 								<tr>
 									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-								  <td><a href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+								  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
 									<td>${odin["update_desc"]}</td>
 									<td>
 										${odin["validity"]}<br>
@@ -222,7 +223,7 @@
 								<tr>
 									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-								  <td><a href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+								  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
 									<td>${odin["update_desc"]}</td>
 									<td>
 										${odin["validity"]}<br>
@@ -239,7 +240,7 @@
 								<tr>
 									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-								  <td><a href="https://blockchain.info/block-index/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+								  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
 									<td>
                     ${odin["update_desc"]}
                     <hr>
@@ -254,6 +255,41 @@
 						</tbody>
 					</table>
 				</div>
+        
+        <div class="tab-pane" id="query_odin">
+          <div class="row section">
+          <center>
+          <br>
+          <form action="/odin-detail" class="form-inline" method="get">
+          <div class="input-group">
+            <span class="input-group-addon">${LANG_INPUT_ODIN}</span>
+            <input type="text" placeholder="${LANG_INPUT_ODIN_DESC}" name="odin" value=""  size="30">
+          </div>
+          <div class="input-group">
+            <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            <span class="input-group-btn">
+              <button class="btn btn-success btn-lg" type="submit" >${LANG_QUERY_ODIN}</button>
+            </span>
+          </div>
+          </form>
+          
+          <br>
+          <br>
+          <form action="/odin-match" class="form-inline" method="get">
+          <div class="input-group">
+            <span class="input-group-addon">${LANG_INPUT_WORD}</span>
+            <input type="text" placeholder="${LANG_INPUT_WORD_DESC}" name="word" value=""  size="30">
+          </div>
+          <div class="input-group">
+            <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            <span class="input-group-btn">
+              <button class="btn btn-success btn-lg" type="submit" >${LANG_MATCH_WORD}</button>
+            </span>
+          </div>
+          </form>
+          </center>
+          </div>
+        </div>
 		</div>
 
 </@template.content>

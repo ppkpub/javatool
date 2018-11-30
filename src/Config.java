@@ -28,7 +28,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 708;
+  public static Integer minorVersion = 801;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   
@@ -38,8 +38,8 @@ public class Config {
   public static boolean useDustTX = true;
   public static Integer dustSize = 1000;
   //public static Integer minOrderMatchBTC = 100000;
-  public static Integer minFee = 10000;
-  public static Integer maxFee = 99999;
+  //public static Integer minFee = 10000;
+  public static Integer maxFee = 99999;  //Avoid sending too much btc than normal fee
   public static Integer dataValue = 0;
   public static Integer btc_unit = 100000000;
 

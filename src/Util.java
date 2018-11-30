@@ -358,44 +358,61 @@ public class Util {
     try {
         JSONObject tempObject=new JSONObject(result);
         
+        Integer total_count=tempObject.getJSONObject("data").getInt("total_count");
+        Integer pagesize=tempObject.getJSONObject("data").getInt("pagesize");
+        
+        if(total_count>pagesize){
+          result = getPage( "https://chain.api.btc.com/v3/address/" + address + "/unspent?page="+ 
+                            Math.round( Math.ceil((double)total_count/(double)pagesize) ) );
+          tempObject=new JSONObject(result);
+        }
+        
         JSONArray tempArray=tempObject.getJSONObject("data").getJSONArray("list");
         
-        for(int tt=0;tt<tempArray.length();tt++){
+        int txCounter=0;
+        Double valueCounter=0.0;
+        for(int tt=tempArray.length()-1;tt>=0;tt--){
             JSONObject item_obj=(JSONObject)tempArray.get(tt);
             
             UnspentOutput tempUnspentObj=new UnspentOutput();
             
-            //if(item_obj.getInt("confirmations")>0){
-              tempUnspentObj.amount=item_obj.getDouble("value")/Config.btc_unit;
-              tempUnspentObj.txid=item_obj.getString("tx_hash");
-              tempUnspentObj.vout=item_obj.getInt("tx_output_n");
-              tempUnspentObj.scriptPubKeyHex="";
+            tempUnspentObj.amount=item_obj.getDouble("value")/Config.btc_unit;
+            tempUnspentObj.txid=item_obj.getString("tx_hash");
+            tempUnspentObj.vout=item_obj.getInt("tx_output_n");
+            tempUnspentObj.scriptPubKeyHex="";
 
+            try {
+              result = getPage( "https://chain.api.btc.com/v3/tx/" + tempUnspentObj.txid + "?verbose=3" );
+              JSONObject tempObjectTx=new JSONObject(result);
+              JSONArray tempArrayOutputs=tempObjectTx.getJSONObject("data").getJSONArray("outputs");
+              JSONObject item_output=(JSONObject)tempArrayOutputs.get(tempUnspentObj.vout);
+
+              tempUnspentObj.scriptPubKeyHex=item_output.getString("script_hex");;
+            }catch (Exception e1) {
+              logger.error(e1.toString());
               try {
-                result = getPage( "https://chain.api.btc.com/v3/tx/" + tempUnspentObj.txid + "?verbose=3" );
+                result = getPage( "https://blockchain.info/zh-cn/rawtx/" + tempUnspentObj.txid );
                 JSONObject tempObjectTx=new JSONObject(result);
-                JSONArray tempArrayOutputs=tempObjectTx.getJSONObject("data").getJSONArray("outputs");
+                JSONArray tempArrayOutputs=tempObjectTx.getJSONArray("out");
                 JSONObject item_output=(JSONObject)tempArrayOutputs.get(tempUnspentObj.vout);
 
-                tempUnspentObj.scriptPubKeyHex=item_output.getString("script_hex");;
-              }catch (Exception e1) {
-                logger.error(e1.toString());
-                try {
-                  result = getPage( "https://blockchain.info/zh-cn/rawtx/" + tempUnspentObj.txid );
-                  JSONObject tempObjectTx=new JSONObject(result);
-                  JSONArray tempArrayOutputs=tempObjectTx.getJSONArray("out");
-                  JSONObject item_output=(JSONObject)tempArrayOutputs.get(tempUnspentObj.vout);
-
-                  tempUnspentObj.scriptPubKeyHex=item_output.getString("script");;
-                }catch (Exception e2) {
-                  logger.error(e2.toString());
-                }
+                tempUnspentObj.scriptPubKeyHex=item_output.getString("script");;
+              }catch (Exception e2) {
+                logger.error(e2.toString());
               }
-              //System.out.println(">>>>>>>>>>tempUnspentObj:"+tempUnspentObj.txid+","+tempUnspentObj.amount+","+tempUnspentObj.vout+","+tempUnspentObj.scriptPubKeyHex);
-              
-              if(tempUnspentObj.scriptPubKeyHex.length()>0)
-                unspents.add(tempUnspentObj);
-            //}
+            }
+            //System.out.println(">>>>>>>>>>tempUnspentObj["+tt+"]:"+tempUnspentObj.txid+","+tempUnspentObj.amount+","+tempUnspentObj.vout+","+tempUnspentObj.scriptPubKeyHex);
+            
+            if(tempUnspentObj.scriptPubKeyHex.length()>0){
+              unspents.add(tempUnspentObj);
+              valueCounter += item_obj.getDouble("value");
+              txCounter ++ ;
+            }
+            
+            if( txCounter>Config.MAX_MULTISIG_TX_NUM+1 
+               && (valueCounter > Config.maxFee || valueCounter >  Config.ppkStandardDataFee + (Config.MAX_MULTISIG_TX_NUM+1) * Config.dustSize))  {  //if enough for max ODIN fee 
+              break;
+            }
         }
     } catch (Exception e) {
       logger.error(e.toString());
@@ -975,7 +992,11 @@ public class Util {
       if(uri_chunks[0].equalsIgnoreCase("ipfs")){
         return getIpfsData(uri_chunks[1]);
       }else if(uri_chunks[0].equalsIgnoreCase("ppk")){
-        //return fetchPPkURI(uri);
+        JSONObject obj_ap_resp=PPkURI.fetchPPkURI(uri);
+        if(obj_ap_resp==null)
+          return null;
+        
+        return obj_ap_resp.optString(Config.JSON_KEY_ORIGINAL_RESP,"ERROR:Invalid PTTP data!");
       }else if(uri_chunks[0].equalsIgnoreCase("data")){
         int from=uri_chunks[1].indexOf(",");
         if(from>=0){
