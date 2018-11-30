@@ -1,0 +1,10 @@
+<#import "template.html" as template>
+<@template.content>
+<#if !success??  && !error??>
+<div class="row section">
+    <h2>${LANG_MATCH_WORD} : ${input_word}</h2>
+    <p>${matched_result}</p>
+</div>  
+</#if>
+
+</@template.content>
