@@ -130,6 +130,19 @@ public class PttpServer implements Runnable {
         return modelAndView(attributes, "error.html");
       }
     });
+    
+    /*
+    get(new FreeMarkerRoute("*") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        logger.error("PttpServer.get(*) meet misformated request:"+request.toString());
+        Map<String, Object> attributes = new HashMap<String, Object>();
+        attributes.put("title", "Error");
+        return modelAndView(attributes, "error.html");
+      }
+    });
+    */
   }
  
   public Map<String, Object> updateCommonStatus(Request request, Map<String, Object> attributes) {

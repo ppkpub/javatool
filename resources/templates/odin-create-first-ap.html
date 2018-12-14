@@ -1,0 +1,54 @@
+<#import "template.html" as template>
+<@template.content>
+<#if !success??  && !error??>
+<div class="row section">
+    <div class="row section">
+    <table border="0" width="100%">
+    <tr>
+        <td><h2>${LANG_CREATE_AP_SAMPLE} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2></td>
+        <td align="right">
+        <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
+        <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
+        <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
+        </td>
+    </tr>
+    </table>
+    </div>
+
+    <form action="/odin-create-first-ap" class="form-inline" method="post">
+      <input type="hidden" name="form" value="odin-create-first-ap">
+      <input type="hidden" name="odin" value='${odin["short_odin"]}'>
+      <input type="hidden" name="updater" value="${address}">
+      
+      <div class="input-group">
+          <span class="input-group-addon">${LANG_CREATE_AP_SAMPLE_TITLE}:</span>
+          <input type="text" placeholder="Input the page title" name='ap_page_title' value='我的第一个对等网页 My first PeerWeb page'  size="50">
+      </div>
+      <div class="input-group">
+        <span class="input-group-addon">${LANG_CREATE_AP_SAMPLE_CONTENT}:</span>
+        <textarea rows=10 cols=80 name='ap_page_content'  >
+        欢迎来到属于 <a href="ppk:${odin["short_odin"]}#">ppk:${odin["short_odin"]}#</a> 的对等网站示例页面。<br>
+        该页面去中心化托管在基于比原区块链构建的分布式文件系统(BtmFS)上。<br>
+        
+        简单的开始，体验PPk新业态（PWEB/DWEB/WEB3.0）的第一步...<br>
+        
+        This is the first PeerWeb page of <a href="ppk:${odin["short_odin"]}#">ppk:${odin["short_odin"]}#</a> <br>
+        The page is storaged on BtmFS which is a distributed file system based Bytom blockchain.<br> 
+        
+        <p><img src="ppk:0/image/logo#1.0"  title="0/image/logo#1.0"><br>Powered by PPkPub <a target="_top" href="ppk:0/">ppk:0/</a></p>
+        </textarea>
+      </div>
+
+      <div class="input-group">
+          <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+          <span class="input-group-btn">
+              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_SUBMIT_TO_UPDATE}</button>
+          </span>
+      </div>
+    </form>
+    <hr>
+    
+</div>
+</#if>
+
+</@template.content>

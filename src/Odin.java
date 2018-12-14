@@ -147,13 +147,18 @@ public class Odin {
     }
   }
 
+  public static List<OdinInfo> getPending() {
+      return getPending(null);
+  }
+  
   public static List<OdinInfo> getPending(String register) {
     Database db = Database.getInstance();
-    ResultSet rs = db.executeQuery("select * from transactions where block_index<0 and source='"+register+"' and prefix_type=1 order by tx_index desc;");
+    ResultSet rs = db.executeQuery("select * from transactions where block_index<0 "+( register==null? "":"and source='"+register+"'") +" and prefix_type=1 order by tx_index desc;");
     List<OdinInfo> odins = new ArrayList<OdinInfo>();
     Blocks blocks = Blocks.getInstance();
     try {
       while (rs.next()) {
+        String source = rs.getString("source");
         String destination = rs.getString("destination");
         //BigInteger btcAmount = BigInteger.valueOf(rs.getLong("btc_amount"));
         //BigInteger fee = BigInteger.valueOf(rs.getLong("fee"));
@@ -180,14 +185,14 @@ public class Odin {
             int odin_set_length = odin_set_len_varint.intValue();
             int odin_set_start = 1+odin_set_len_varint.size();
           
-            if( !register.equals("") && message.size()==odin_set_start+odin_set_length )
+            if( !( source.equals("")) && message.size()==odin_set_start+odin_set_length )
             {
                 byte[] odin_set_byte_array=new byte[odin_set_length];
                 for(int off=0;off<odin_set_length;off++)
                   odin_set_byte_array[off]=byteBuffer.get(odin_set_start+off);
               
                 JSONObject odin_set;
-                String odin_set_admin = destination; //HtmlRegexpUtil.filterHtml( destination.length()==0 ? register : destination );
+                String odin_set_admin = destination; //HtmlRegexpUtil.filterHtml( destination.length()==0 ? source : destination );
                                     
                 try{
                   if(odin_set_data_type==Config.DATA_BIN_GZIP)
@@ -201,7 +206,7 @@ public class Odin {
                 }  
                 OdinInfo odinInfo = new OdinInfo();
 
-                odinInfo.register = register;
+                odinInfo.register = source;
                 
                 odinInfo.fullOdin="";
                 odinInfo.shortOdin=-1;
@@ -394,8 +399,11 @@ public class Odin {
     
   public static boolean checkUpdatable(String authSet,String updater,String register,String admin  ) {
       if(
-          ( ( authSet==null || authSet.length()==0 || authSet.equals("1") ) && updater.equals(admin) )
-        ||( ( authSet.equals("0")||authSet.equals("2") ) && ( updater.equals(register) || updater.equals(admin) ) )
+          ( authSet.equals("1")  && updater.equals(admin) )
+        ||(  
+            ( authSet==null || authSet.length()==0 || authSet.equals("0")||authSet.equals("2") ) 
+            && ( updater.equals(register) || updater.equals(admin) ) 
+           )
       ){
           return true;
       } else {

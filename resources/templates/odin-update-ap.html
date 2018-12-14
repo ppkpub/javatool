@@ -5,7 +5,7 @@
     <div class="row section">
     <table border="0" width="100%">
     <tr>
-        <td><h2>${LANG_UPDATE_THE_ADMIN_SET_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2></td>
+        <td><h2>${LANG_UPDATE_AP_SET} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2></td>
         <td align="right">
         <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
         <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
@@ -15,7 +15,6 @@
     </table>
     </div>
     
-    <h3>${LANG_UPDATE_AP_SET}</h3>
     <form action="/odin-update-ap" class="form-inline" method="post">
       <input type="hidden" name="form" value="update-odin-aplist">
       <input type="hidden" name="odin" value='${odin["short_odin"]}'>
@@ -35,6 +34,9 @@
               <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_SUBMIT_TO_UPDATE}</button>
           </span>
       </div>
+      
+      <h3 align="center"><a href="/odin-create-first-ap?odin=${odin["short_odin"]}" >${LANG_SUBMIT_TO_CREATE_FIRST_AP}</a></h3>
+
     </form>
     <hr>
     

@@ -71,6 +71,12 @@ public class GUI extends Application {
       @Override protected Object call() throws InterruptedException {
         updateMessage(Language.getLangLabel("Loading")+" "+Config.appName);
         
+        // Start GuiServer
+        GuiServer server = new GuiServer();
+        Thread serverThread = new Thread(server);
+        serverThread.setDaemon(true);
+        serverThread.start(); 
+        
         // start Blocks
         final Blocks blocks = Blocks.getInstanceFresh();
         
@@ -102,12 +108,6 @@ public class GUI extends Application {
         blocks.init();
         blocks.versionCheck();
         blocks.follow();
-        
-        // Start GuiServer
-        GuiServer server = new GuiServer();
-        Thread serverThread = new Thread(server);
-        serverThread.setDaemon(true);
-        serverThread.start(); 
 
         //updateProgress(0,1);
         Thread.sleep(8000);

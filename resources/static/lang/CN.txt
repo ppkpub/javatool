@@ -138,6 +138,11 @@
     "Matched ODIN":"匹配到ODIN标识",
     "The ODIN not appeared":"该ODIN标识尚未出现",
     "The ODIN had been registered by ":"该ODIN标识已出现，注册者地址：",
+    "Create your first AP sample based Blockchain ...":"创建你的第一个托管在区块链上的对等网页AP示例...",
+    "Create AP sample based Blockchain":"创建对等网页AP示例（去中心化托管在区块链上）",
+    "Page title":"示例标题",
+    "Page Content":"示例内容",
+    "Invalid Inputs":"输入有误，请重试",
     
     "Browse PPk network":"浏览PPk网络",
     "Response URI":"应答URI",

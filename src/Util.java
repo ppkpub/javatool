@@ -78,7 +78,6 @@ public class Util {
 
   public static String getPage(String urlString) {
     return getPage(urlString, 1);
-
   }
 
   public static String getPage(String urlString, int retries) {
@@ -981,6 +980,37 @@ public class Util {
     }
   }
   
+  //Upload data to BtmFS and return the uri
+  public static String uploadToBtmfs(byte[] data){
+      String tmp_url=Config.BTMFS_PROXY_URL+"?hex=" + bytesToHexString( data );
+      System.out.println("Using BTMFS Proxy to upload :"+ tmp_url);
+      
+      try{
+        String str_resp_json=getPage(tmp_url);
+        System.out.println("str_resp_json ="+ str_resp_json);
+        
+        JSONObject obj_ap_resp=new JSONObject(str_resp_json);
+        if(obj_ap_resp==null)
+          return null;
+        
+        String resp_status=obj_ap_resp.optString("status",null);
+        if( "success".equalsIgnoreCase(resp_status) )
+            return obj_ap_resp.optString("uri",null);
+        else
+            return null;
+      }catch(Exception e){
+        logger.error("Util.uploadToBtmfs() error:"+e.toString());
+        return null;
+      }
+  }
+  
+  public static String getBtmfsData(String btmfs_uri){
+      String tmp_url=Config.BTMFS_PROXY_URL+"?uri=" + java.net.URLEncoder.encode(btmfs_uri);
+      System.out.println("Using BTMFS Proxy to fetch:"+ tmp_url);
+      
+      return getPage(tmp_url);
+  }
+  
   public static String  fetchURI(String uri){
     try{
       String[] uri_chunks=uri.split(":");
@@ -991,6 +1021,8 @@ public class Util {
       
       if(uri_chunks[0].equalsIgnoreCase("ipfs")){
         return getIpfsData(uri_chunks[1]);
+      }else if(uri_chunks[0].equalsIgnoreCase("btmfs")){
+        return getBtmfsData(uri);
       }else if(uri_chunks[0].equalsIgnoreCase("ppk")){
         JSONObject obj_ap_resp=PPkURI.fetchPPkURI(uri);
         if(obj_ap_resp==null)

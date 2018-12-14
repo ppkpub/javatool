@@ -30,6 +30,9 @@
       <#list apids as apid>
       <#if odin["ap"+apid+"_url"]??><li>${odin["ap"+apid+"_url"]}  <a class="btn btn-success" role="button" href='/odin-check-ap-vd?odin=${odin["short_odin"]}&apid=${apid}'>${LANG_BROWSE_AP}...</a></li></#if>
       </#list>
+      <#if odin["me_updatable"]?? && !odin["ap0_url"]??>
+      <ul><a href="/odin-create-first-ap?odin=${odin["short_odin"]}" >${LANG_SUBMIT_TO_CREATE_FIRST_AP}</a></ul>
+      </#if>
     </ul>
 
     <li>${LANG_ODIN_VALIDTION} : <br><ul><textarea rows=3 cols=80>${odin["vd_set_debug"]}</textarea></ul></li>

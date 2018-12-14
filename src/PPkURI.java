@@ -131,13 +131,18 @@ public class PPkURI {
         obj_chunk_metainfo.put("content_type", "text/json"  );
         obj_chunk_metainfo.put("content_length", chunk_content.length()  );
         
-        JSONObject obj_newest_ap_data=new JSONObject();
-        obj_newest_ap_data.put("uri",formated_ppk_uri);
-        obj_newest_ap_data.put("status_code",200);
-        obj_newest_ap_data.put("status_info","OK");
+        JSONObject obj_newest_ap_chunk=new JSONObject();
+        obj_newest_ap_chunk.put("uri",formated_ppk_uri);
+        obj_newest_ap_chunk.put("status_code",200);
+        obj_newest_ap_chunk.put("status_info","OK");
         
-        obj_newest_ap_data.put("metainfo",obj_chunk_metainfo);
-        obj_newest_ap_data.put("content",chunk_content);
+        obj_newest_ap_chunk.put("metainfo",obj_chunk_metainfo);
+        obj_newest_ap_chunk.put("content",chunk_content);
+        
+        JSONObject obj_newest_ap_data=new JSONObject();
+        obj_newest_ap_data.put("ver",1);
+        obj_newest_ap_data.put("data",obj_newest_ap_chunk.toString());
+        obj_newest_ap_data.put("sign","");
         
         obj_newest_ap_resp.put(Config.JSON_KEY_ORIGINAL_RESP, obj_newest_ap_data.toString() );
         
@@ -169,7 +174,7 @@ public class PPkURI {
         
         odin_set = new  JSONObject( new String( (byte[])tmp_resp.opt(Config.JSON_KEY_PPK_CHUNK) ));
         
-        //检查ap_set和vd_set参数是否存在，如存在则相应自动继承使用父级标识的ap_set和vd_set,20181017
+        //检查ap_set和vd_set参数是否存在，如不存在则相应自动继承使用父级标识的ap_set和vd_set,20181017
         if( (odin_set.isNull("ap_set") || odin_set.isNull("vd_set")) 
             &&  !tmp_resp.isNull("parent_odin_set") ){
           
@@ -261,6 +266,8 @@ public class PPkURI {
       str_ap_resp_json = APoverHTTP.fetchInterest(ap_url,str_interest);
     }else if( ap_url.toLowerCase().startsWith("ethap")){
       str_ap_resp_json = APoverETH.fetchInterest(ap_url,str_interest);
+    }else if( ap_url.toLowerCase().startsWith("btmfs")){
+      str_ap_resp_json = Util.getBtmfsData(ap_url);
     }else{
       logger.error("PPkURI.fetchAndValidationAP("+uri+") meet not supported ap url:"+ap_url);
     }

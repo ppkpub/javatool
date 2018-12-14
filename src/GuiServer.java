@@ -390,7 +390,23 @@ public class GuiServer implements Runnable {
         Map<String, Object> attributes = handleOdinUpdateApSetRequest(request);
         return modelAndView(attributes, "odin-update-ap.html");
       }
+    }); 
+    post(new FreeMarkerRoute("/odin-create-first-ap") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        Map<String, Object> attributes = handleOdinCreateFirstApRequest(request);
+        return modelAndView(attributes, "odin-create-first-ap.html");
+      }
     });  
+    get(new FreeMarkerRoute("/odin-create-first-ap") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        Map<String, Object> attributes = handleOdinCreateFirstApRequest(request);
+        return modelAndView(attributes, "odin-create-first-ap.html");
+      }
+    });     
     post(new FreeMarkerRoute("/odin-update-vd") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -588,18 +604,19 @@ public class GuiServer implements Runnable {
       String emailStr=request.queryParams("email");
       String authSet=request.queryParams("auth");
 
-      if(admin.length()>0 && titleStr.length()>0 ){
+      if(admin.length()>0 && authSet.length()>0 ){
         try {
           Map mapOdinSet = new HashMap(); 
                     
           mapOdinSet.put("ver", Config.ODIN_PROTOCOL_VER); 
-          
-          mapOdinSet.put("title", titleStr); 
           mapOdinSet.put("auth", authSet); 
 
           if(register.equals(admin))
              admin="";
         
+          if(titleStr.length()>0)
+             mapOdinSet.put("title", titleStr); 
+         
           if(emailStr.length()>0)
              mapOdinSet.put("email", emailStr); 
            
@@ -619,13 +636,15 @@ public class GuiServer implements Runnable {
     
     Database db = Database.getInstance();
     
-    ArrayList<HashMap<String, Object>> odins = new ArrayList<HashMap<String, Object>>();
+    ArrayList<HashMap<String, Object>> odins ;
+    ArrayList<HashMap<String, Object>> my_pending_odins ;
     
-    List<OdinInfo> odinsPending = Odin.getPending(address);
-    logger.info( "\n=============================\n odinsPending.size="+odinsPending.size()+"\n=====================\n");
+    List<OdinInfo> allPendingOdins = Odin.getPending();
+    logger.info( "\n=============================\n allPendingOdins.size="+allPendingOdins.size()+"\n=====================\n");
     
     odins = new ArrayList<HashMap<String, Object>>();
-    for (OdinInfo odinInfo : odinsPending) {
+    my_pending_odins = new ArrayList<HashMap<String, Object>>();
+    for (OdinInfo odinInfo : allPendingOdins) {
       HashMap<String,Object> map = new HashMap<String,Object>();
       map.put("full_odin", odinInfo.fullOdin);
       map.put("short_odin", odinInfo.shortOdin.toString());
@@ -640,12 +659,17 @@ public class GuiServer implements Runnable {
       try{
         map=Odin.parseOdinSet(map,odinInfo.odinSet,address,odinInfo.register,odinInfo.admin);
         odins.add(map);
+        
+        if(address.equals(odinInfo.register))
+          my_pending_odins.add(map);
+        
       }catch (Exception e) {
         logger.error(e.toString());
       }
     }
-    attributes.put("my_pending_odins", odins);
-    
+    attributes.put("all_pending_odins", odins);
+    attributes.put("my_pending_odins", my_pending_odins);
+        
     //get last 200 odins
     ResultSet rs = db.executeQuery("select cp.full_odin,cp.short_odin,cp.register,cp.admin ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odin_set, cp.validity from odins cp,transactions where cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 200;");
     odins = new ArrayList<HashMap<String, Object>>();
@@ -679,7 +703,7 @@ public class GuiServer implements Runnable {
     }
     
     //get my registed odins
-    rs = db.executeQuery("select cp.full_odin,cp.short_odin,cp.register,cp.admin ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odin_set,cp.validity from odins cp,transactions where cp.register='"+address+"' and cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 100;");
+    rs = db.executeQuery("select cp.full_odin,cp.short_odin,cp.register,cp.admin ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odin_set,cp.validity from odins cp,transactions where cp.register='"+address+"' and cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc;");
     odins = new ArrayList<HashMap<String, Object>>();
     try {
       while ( rs.next()) {
@@ -707,9 +731,10 @@ public class GuiServer implements Runnable {
     }
         
     attributes.put("my_registed_odins", odins);
+    attributes.put("my_registed_odin_num", odins.size() );
     
     //get my admin odins
-    rs = db.executeQuery("select cp.full_odin,cp.short_odin,cp.register,cp.admin ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odin_set,cp.validity from odins cp,transactions where cp.admin='"+address+"' and cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 100;");
+    rs = db.executeQuery("select cp.full_odin,cp.short_odin,cp.register,cp.admin ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odin_set,cp.validity from odins cp,transactions where cp.admin='"+address+"' and cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc;");
     odins = new ArrayList<HashMap<String, Object>>();
     try {
       while ( rs.next()) {
@@ -737,6 +762,7 @@ public class GuiServer implements Runnable {
     }
     
     attributes.put("my_admin_odins", odins);
+    attributes.put("my_admin_odin_num", odins.size() );
     
     //get my pending update
     List<OdinUpdateInfo> updatePending = OdinUpdate.getPending(address);
@@ -1024,7 +1050,8 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
     attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
     attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
-    
+    attributes.put("LANG_SUBMIT_TO_CREATE_FIRST_AP", Language.getLangLabel("Create your first AP sample based Blockchain ..."));
+
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_UPDATE_IT", Language.getLangLabel("Update it"));  
     attributes.put("LANG_UPDATE_BASEINFO", Language.getLangLabel("Update base info")); 
@@ -1135,10 +1162,154 @@ public class GuiServer implements Runnable {
       }
     }          
     
-    attributes.put("LANG_UPDATE_THE_ADMIN_SET_OF", Language.getLangLabel("Update the admin set of"));
+    attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
+    attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
+    attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
+    attributes.put("LANG_ODIN_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
+    attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+    attributes.put("LANG_ODIN_AUTHORITY", Language.getLangLabel("Authority"));    
+    attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
+    attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
+    attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
+    attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
+    attributes.put("LANG_SUBMIT_TO_CREATE_FIRST_AP", Language.getLangLabel("Create your first AP sample based Blockchain ..."));
+    
+    attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
+    attributes.put("LANG_UPDATE_IT", Language.getLangLabel("Update it"));  
+    attributes.put("LANG_DELETE_IT", Language.getLangLabel("Delete it"));  
+    attributes.put("LANG_UPDATE_BASEINFO", Language.getLangLabel("Update base info")); 
+    attributes.put("LANG_UPDATE_AP_SET", Language.getLangLabel("Update AP list")); 
+    attributes.put("LANG_UPDATE_VD_SET", Language.getLangLabel("Validtion setting"));  
+    attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
+    attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+        
+    return attributes;
+  }
+  
+  public Map<String, Object> handleOdinCreateFirstApRequest(Request request) {
+    Map<String, Object> attributes = new HashMap<String, Object>();
+    request.session(true);
+    
+    attributes = updateCommonStatus(request, attributes);
+    attributes.put("title", "Create AP sample based Blockchain");
+    
+    String odin=request.queryParams("odin");
+    if(odin==null){
+        attributes.put("error", "handleOdinCreateFirstApRequest: no odin.");
+        return attributes;
+    } 
+       
+    Blocks blocks = Blocks.getInstance();
+    String address=(String)attributes.get("address");
+    
+    OdinInfo odinInfo=Odin.getOdinInfo(odin);
 
-    attributes.put("LANG_ODIN_ADMIN_ADDRESS", Language.getLangLabel("Admin BTC address"));
-    attributes.put("LANG_ODIN_REGISTER_ADDRESS", Language.getLangLabel("Register BTC address"));
+    if(odinInfo==null){
+      attributes.put("error", "handleOdinCreateFirstApRequest Invalid odin.");
+    }else if (request.queryParams().contains("form") && request.queryParams("form").equals("odin-create-first-ap")) {
+      logger.info("************* do odin-create-first-ap **************");
+
+      try {
+          HashMap<String,Object> map = new HashMap<String,Object>();
+          map.put("full_odin", odinInfo.fullOdin);
+          map.put("short_odin", odinInfo.shortOdin.toString());
+          map.put("register", odinInfo.register);
+          map.put("admin", odinInfo.admin);
+          map.put("tx_index",odinInfo.txIndex.toString());
+          map.put("tx_hash", odinInfo.txHash);
+          map.put("block_index", odinInfo.blockIndex.toString());
+          map.put("block_time", Util.timeFormat(odinInfo.blockTime));
+          map.put("validity",odinInfo.validity);
+
+          JSONObject odin_set = odinInfo.odinSet; 
+          map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
+
+          JSONObject apUpdate = new JSONObject(); 
+          
+          //Generate PTTP data package of the sample page 
+          String tmp_page_title = request.queryParams("ap_page_title");
+          String tmp_page_content = request.queryParams("ap_page_content");
+          String chunk_content="<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>"+tmp_page_title+"</title><meta content=\"IE=edge\" http-equiv=\"X-UA-Compatible\"><meta content=\"width=device-width, initial-scale=1\" name=\"viewport\"></head><body><h2>"+tmp_page_title+"</h2>"+tmp_page_content+"</body></html>";
+          
+          String sample_ppk_uri=  Config.PPK_URI_PREFIX + odinInfo.fullOdin +"/#" + Util.getNowTimestamp();
+          System.out.println("sample_ppk_uri="+sample_ppk_uri);
+          
+          JSONObject obj_chunk_metainfo=new JSONObject();
+          obj_chunk_metainfo.put("chunk_index", 0 );
+          obj_chunk_metainfo.put("chunk_count", 1 );
+          obj_chunk_metainfo.put("content_type", "text/html"  );
+          obj_chunk_metainfo.put("content_length", chunk_content.length()  );
+
+          JSONObject obj_newest_ap_chunk=new JSONObject();
+          obj_newest_ap_chunk.put("uri",sample_ppk_uri);
+          obj_newest_ap_chunk.put("status_code",200);
+          obj_newest_ap_chunk.put("status_info","OK");
+
+          obj_newest_ap_chunk.put("metainfo",obj_chunk_metainfo);
+          obj_newest_ap_chunk.put("content",chunk_content);
+
+          JSONObject obj_newest_ap_data=new JSONObject();
+          obj_newest_ap_data.put("ver",1);
+          obj_newest_ap_data.put("data",obj_newest_ap_chunk.toString());
+          obj_newest_ap_data.put("sign","");
+
+          String tmp_ap_url_str = Util.uploadToBtmfs(obj_newest_ap_data.toString().getBytes(Config.PPK_TEXT_CHARSET));
+          if(tmp_ap_url_str!=null && tmp_ap_url_str.length()>0 ){
+              System.out.println("tmp_ap_url_str="+tmp_ap_url_str);
+
+              Map map_new_ap_record = new HashMap(); 
+              map_new_ap_record.put("url", tmp_ap_url_str); 
+              apUpdate.put("0",new JSONObject(map_new_ap_record));
+              map.put("ap0_url", tmp_ap_url_str);
+              
+              
+              if(map.containsKey("me_updatable"))
+              {
+                  if( apUpdate.length()==0 ){
+                      attributes.put("error", Language.getLangLabel("Please update at least one valid access point."));
+                  } else {
+                      Transaction tx = OdinUpdate.updateOdinApSet(odinInfo.fullOdin,address,apUpdate);
+                      blocks.sendTransaction(address,tx);
+                      attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
+                  }
+              } else {
+                  attributes.put("error", Language.getLangLabel("No permission."));
+              }
+          }else{
+              attributes.put("error", Language.getLangLabel("Invalid Inputs"));
+          }
+          
+          attributes.put("odin", map);  
+      } catch (Exception e) {
+        logger.error("************* do odin-create-first-ap error: "+e.getMessage());
+        attributes.put("error", e.getMessage());
+      }
+    } else {  
+      HashMap<String,Object> map = new HashMap<String,Object>();
+      map.put("full_odin", odinInfo.fullOdin);
+      map.put("short_odin", odinInfo.shortOdin.toString());
+      map.put("register", odinInfo.register);
+      map.put("admin", odinInfo.admin);
+      map.put("tx_index",odinInfo.txIndex.toString());
+      map.put("tx_hash", odinInfo.txHash);
+      map.put("block_index", odinInfo.blockIndex.toString());
+      map.put("block_time", Util.timeFormat(odinInfo.blockTime));
+      map.put("validity",odinInfo.validity);
+      
+      try{
+        JSONObject odin_set = odinInfo.odinSet; 
+        map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
+
+        attributes.put("odin", map);    
+      }catch (Exception e) {
+        logger.error(e.toString());
+      }
+    }          
+    
+    attributes.put("LANG_CREATE_AP_SAMPLE", Language.getLangLabel("Create AP sample based Blockchain"));
+    attributes.put("LANG_CREATE_AP_SAMPLE_TITLE", Language.getLangLabel("Page title"));
+    attributes.put("LANG_CREATE_AP_SAMPLE_CONTENT", Language.getLangLabel("Page Content"));
+
     
     attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
     attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
@@ -1152,8 +1323,6 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
-    attributes.put("LANG_UPDATE_IT", Language.getLangLabel("Update it"));  
-    attributes.put("LANG_DELETE_IT", Language.getLangLabel("Delete it"));  
     attributes.put("LANG_UPDATE_BASEINFO", Language.getLangLabel("Update base info")); 
     attributes.put("LANG_UPDATE_AP_SET", Language.getLangLabel("Update AP list")); 
     attributes.put("LANG_UPDATE_VD_SET", Language.getLangLabel("Validtion setting"));  
@@ -1549,6 +1718,10 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
     attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
     attributes.put("LANG_ESCAPED_LIST", Language.getLangLabel("Escaped names"));
+    attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+    attributes.put("LANG_BLOCK", Language.getLangLabel("Block"));
+    
+    attributes.put("LANG_SUBMIT_TO_CREATE_FIRST_AP", Language.getLangLabel("Create your first AP sample based Blockchain ..."));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_CONFIRM_THE_UPDATE", Language.getLangLabel("Confirm this update")); 
