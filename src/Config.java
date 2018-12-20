@@ -28,7 +28,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 803;
+  public static Integer minorVersion = 805;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   
@@ -74,6 +74,7 @@ public class Config {
 
   public static Byte DATA_TEXT_UTF8= 'T'; //normal text in UTF-8
   public static Byte DATA_BIN_GZIP = 'G'; //Compressed by gzip
+  public static Byte DATA_BIN_DEFLATE = 'D'; //Compressed by deflate
   
   public static String ODIN_CMD_UPDATE_BASE_INFO ="BI";
   public static String ODIN_CMD_UPDATE_AP_SET ="AP";
@@ -107,10 +108,14 @@ public class Config {
   public static int PPK_VALIDATION_OK        = 0;
   public static int PPK_VALIDATION_IGNORED   = 1;
   public static int PPK_VALIDATION_ERROR     = 2;
+
+  //Dat
+  public static String DAT_UPLOAD_URL="http://45.32.19.146/dat/"; 
+  public static String[] DAT_DOWNLOAD_URL_LIST={"http://45.32.19.146/dat/?uri=dat://","https://datbase.org/download/"}; 
   
   //IPFS
-  public static String IPFS_API_ADDRESS="/ip4/127.0.0.1/tcp/5001"; //"https://ipfs.infura.io:5001"
-  public static String IPFS_PROXY_URL="https://ipfs.infura.io/ipfs/";
+  public static String IPFS_API_ADDRESS="/ip4/45.32.19.146/tcp/5001"; //"https://ipfs.infura.io:5001"
+  public static String IPFS_DOWNLOAD_URL="http://45.32.19.146:8080/ipfs/";//"https://ipfs.infura.io/ipfs/";
   
   //Bytom File System
   public static String BTMFS_PROXY_URL="http://45.32.19.146/btmfs/"; //Test service
@@ -221,6 +226,40 @@ public class Config {
         jdbcUrl = "sqlite:"+defaultSqliteFile;
       }
       System.out.println("JDBC:"+jdbcUrl);
+      
+      
+      strTemp = prop.getProperty("DatUploadURL");
+      if(strTemp!=null && strTemp.length()>0 ){
+        DAT_UPLOAD_URL = strTemp;
+      }
+      System.out.println("DatUploadURL:"+DAT_UPLOAD_URL);
+      
+      /*
+      strTemp = prop.getProperty("DatDownloadList");
+      if(strTemp!=null && strTemp.length()>0 ){
+        DAT_DOWNLOAD_URL_LIST = strTemp;
+      }
+      System.out.println("DatDownloadList:"+DAT_DOWNLOAD_URL);      
+      */
+      
+      strTemp = prop.getProperty("IpfsApiAddress");
+      if(strTemp!=null && strTemp.length()>0 ){
+        IPFS_API_ADDRESS = strTemp;
+      }
+      System.out.println("IpfsApiAddress:"+IPFS_API_ADDRESS);
+      
+      strTemp = prop.getProperty("IpfsDownloadURL");
+      if(strTemp!=null && strTemp.length()>0 ){
+        IPFS_DOWNLOAD_URL = strTemp;
+      }
+      System.out.println("IpfsDownloadURL:"+IPFS_DOWNLOAD_URL);
+      
+      strTemp = prop.getProperty("BtmpfsProxyURL");
+      if(strTemp!=null && strTemp.length()>0 ){
+        BTMFS_PROXY_URL = strTemp;
+      }
+      System.out.println("BtmpfsProxyURL:"+BTMFS_PROXY_URL);
+      
     } catch (IOException e) {
     }    
   }

@@ -57,7 +57,7 @@ public class Odin {
       /*
       //test chinese encode
       String oldStr="EncodeTest编码测试";
-      String newStr=Util.uncompress(Util.compress(oldStr));
+      String newStr=Util.uncompress(Util.compress(oldStr.getBytes(Config.PPK_TEXT_CHARSET),Config.DATA_BIN_DEFLATE),Config.DATA_BIN_DEFLATE);
       db.executeUpdate("CREATE TABLE IF NOT EXISTS encodetest (old_str TEXT,new_str TEXT);");
 
       PreparedStatement ps = db.connection.prepareStatement("insert into encodetest(old_str, new_str) values(?,?);");
@@ -108,7 +108,7 @@ public class Odin {
           BitcoinVarint odin_set_len_varint=BitcoinVarint.getFromBuffer(byteBuffer,1);
           int odin_set_length = odin_set_len_varint.intValue();
           int odin_set_start = 1+odin_set_len_varint.size();
-          logger.info( "\n=============================\n message.size()="+message.size()+",odin_set_start="+odin_set_start+",odin_set_length="+odin_set_length+"\n=====================\n");
+          logger.info( "\n=============================\n message.size()="+message.size()+",odin_set_data_type="+odin_set_data_type+",odin_set_start="+odin_set_start+",odin_set_length="+odin_set_length+"\n=====================\n");
           
           if( !source.equals("") && message.size()==odin_set_start+odin_set_length )
           {
@@ -121,10 +121,10 @@ public class Odin {
             
             
             try{ 
-              if(odin_set_data_type==Config.DATA_BIN_GZIP)
-                  odin_set=new JSONObject(Util.uncompress(new String(odin_set_byte_array,Config.BINARY_DATA_CHARSET)));
-              else
-                  odin_set=new JSONObject(new String(odin_set_byte_array,Config.PPK_TEXT_CHARSET));
+              if(odin_set_data_type!=Config.DATA_TEXT_UTF8)
+                  odin_set_byte_array=Util.uncompress(odin_set_byte_array,odin_set_data_type);
+                  
+              odin_set=new JSONObject(new String(odin_set_byte_array,Config.PPK_TEXT_CHARSET));
                             
               logger.info( "\n=============================\n odin_set="+odin_set.toString()+"\n=====================\n");
             } catch (Exception e) {  
@@ -195,10 +195,10 @@ public class Odin {
                 String odin_set_admin = destination; //HtmlRegexpUtil.filterHtml( destination.length()==0 ? source : destination );
                                     
                 try{
-                  if(odin_set_data_type==Config.DATA_BIN_GZIP)
-                    odin_set=new JSONObject(Util.uncompress(new String(odin_set_byte_array,Config.BINARY_DATA_CHARSET)));
-                  else
-                    odin_set=new JSONObject(new String(odin_set_byte_array,Config.PPK_TEXT_CHARSET));
+                  if(odin_set_data_type!=Config.DATA_TEXT_UTF8)
+                      odin_set_byte_array=Util.uncompress(odin_set_byte_array,odin_set_data_type);
+                  
+                  odin_set=new JSONObject(new String(odin_set_byte_array,Config.PPK_TEXT_CHARSET));
                   
                 } catch (Exception e) {  
                   logger.error(e.toString());
@@ -291,11 +291,14 @@ public class Odin {
     
     Byte odin_set_data_type=Config.DATA_TEXT_UTF8; 
     byte[] odin_set_byte_array=odin_set.toString().getBytes(Config.PPK_TEXT_CHARSET);
-    byte[] odin_set_byte_array_gzip=Util.compress(odin_set.toString()).getBytes(Config.BINARY_DATA_CHARSET);
+    byte[] odin_set_byte_array_compressed=Util.compress(odin_set.toString().getBytes(Config.PPK_TEXT_CHARSET),Config.DATA_BIN_DEFLATE);
     
-    if(odin_set_byte_array.length>odin_set_byte_array_gzip.length){ //need compress the long data
-       odin_set_byte_array=odin_set_byte_array_gzip;
-       odin_set_data_type=Config.DATA_BIN_GZIP;
+    logger.info("odin_set_byte_array.length="+odin_set_byte_array.length);
+    logger.info("odin_set_byte_array_compressed.length="+odin_set_byte_array_compressed.length);
+    
+    if(odin_set_byte_array.length>odin_set_byte_array_compressed.length){ //need compress the long data
+       odin_set_byte_array=odin_set_byte_array_compressed;
+       odin_set_data_type=Config.DATA_BIN_DEFLATE;
     }    
 
     int odin_set_length=odin_set_byte_array.length;
@@ -394,6 +397,7 @@ public class Odin {
     }
     map.put("vd_set_debug", vd_set_debug);
 
+    
     return map;
   }
     
@@ -493,14 +497,14 @@ public class Odin {
     String strTmp=short_odin.toString();
     listEscaped=getEscapedLettersOfShortODIN(listEscaped,strTmp,0,"");
     
-    System.out.println("listEscaped:"+listEscaped.toString());
+    //System.out.println("listEscaped:"+listEscaped.toString());
     
     return listEscaped;
   }
   
   public static List getEscapedLettersOfShortODIN(List listEscaped,String  original,int posn,String pref){ 
     int tmpNum=Integer.parseInt(String.valueOf(original.charAt(posn)));
-    System.out.println("original["+posn+"]:"+tmpNum);
+    //System.out.println("original["+posn+"]:"+tmpNum);
     
     String tmpLetters=LetterEscapeNumSet[tmpNum];
     for(int tt=0;tt<tmpLetters.length();tt++){

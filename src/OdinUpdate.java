@@ -35,7 +35,7 @@ public class OdinUpdate {
   }
 
   public static void parse(Integer txIndex, List<Byte> message) {
-    logger.info( "\n=============================\n Parsing OdinUpdate txIndex="+txIndex.toString()+"\n=====================\n");
+    logger.info( "\n=============================\n Parsing OdinUpdate txIndex="+txIndex.toString()+", message.size()="+message.size()+"\n=====================\n");
     
     Database db = Database.getInstance();
     ResultSet rs = db.executeQuery("SELECT * FROM transactions tx  WHERE tx.tx_index="+txIndex.toString());
@@ -55,7 +55,7 @@ public class OdinUpdate {
         //  destination=source;
 
         ResultSet rsCheck = db.executeQuery("select * from odin_update_logs where tx_index='"+txIndex.toString()+"'");
-        if (rsCheck.next()) 
+        if (rsCheck.next())   
           return;
 
         if (message.size()>UPDATE_ODIN_PREFIX_LENGTH) {
@@ -70,7 +70,8 @@ public class OdinUpdate {
           
           String full_odin=getFullOdinFromUpdateMessage(byteBuffer); 
           OdinInfo oldOdinInfo=Odin.getOdinInfo(full_odin);
-
+          
+          //logger.info( "full_odin="+full_odin+",source="+source+",oldOdinInfo="+oldOdinInfo.toString());
           if(oldOdinInfo!=null && !source.equals("") ){
             String authSet="";
             try{
@@ -83,20 +84,19 @@ public class OdinUpdate {
             int update_set_length = update_set_len_varint.intValue();
             int update_set_start = UPDATE_ODIN_PREFIX_LENGTH+1+update_set_len_varint.size();
             
-            logger.info( "\n=============================\n message.size()="+message.size()+",update_set_length="+update_set_length+"\n=====================\n");
+            logger.info( "\n=============================\n message.size()="+message.size()+",update_set_data_type="+update_set_data_type+",update_set_start="+update_set_start+",update_set_length="+update_set_length+"\n=====================\n");
             
-            if( !source.equals("") && message.size()==update_set_start+update_set_length )
-            {
+            if( !source.equals("") && message.size()==update_set_start+update_set_length ) {
                 byte[] update_set_byte_array=new byte[update_set_length];
                 
                 for(int off=0;off<update_set_length;off++)
                     update_set_byte_array[off]=byteBuffer.get(update_set_start+off);
                 
                 try{ 
-                  if(update_set_data_type==Config.DATA_BIN_GZIP)
-                      update_set=new JSONObject(Util.uncompress(new String(update_set_byte_array,Config.BINARY_DATA_CHARSET)));
-                  else
-                      update_set=new JSONObject(new String(update_set_byte_array,Config.PPK_TEXT_CHARSET));
+                  if(update_set_data_type!=Config.DATA_TEXT_UTF8)
+                      update_set_byte_array=Util.uncompress(update_set_byte_array,update_set_data_type);
+                  
+                  update_set=new JSONObject(new String(update_set_byte_array,Config.PPK_TEXT_CHARSET));
                   
                   logger.info( "\n=============================\n update_set="+update_set.toString()+"\n=====================\n");
                   
@@ -323,10 +323,10 @@ public class OdinUpdate {
                 JSONObject update_set;
                     
                 try{
-                    if(update_set_data_type==Config.DATA_BIN_GZIP)
-                        update_set=new JSONObject(Util.uncompress(new String(update_set_byte_array,Config.BINARY_DATA_CHARSET)));
-                    else
-                        update_set=new JSONObject(new String(update_set_byte_array,Config.PPK_TEXT_CHARSET));
+                    if(update_set_data_type!=Config.DATA_TEXT_UTF8)
+                      update_set_byte_array=Util.uncompress(update_set_byte_array,update_set_data_type);
+                  
+                    update_set=new JSONObject(new String(update_set_byte_array,Config.PPK_TEXT_CHARSET));
                     
                 } catch (Exception e) {  
                     logger.error(e.toString());
@@ -334,7 +334,7 @@ public class OdinUpdate {
                 }  
                 OdinUpdateInfo updateOdinInfo;
                 
-                if(Config.ODIN_CMD_CONFIRM_UPDATE.equals(update_set.optString("cmd"))){  ////Confirm update request,待修改
+                if(Config.ODIN_CMD_CONFIRM_UPDATE.equals(update_set.optString("cmd"))){  ////Confirm update request
                  try{
                       String confirm_tx_hash=update_set.getString("confirm_tx_hash");
                       updateOdinInfo=getOdinUpdateInfo(confirm_tx_hash);
@@ -367,8 +367,8 @@ public class OdinUpdate {
                     }
                   }catch(Exception e){                              
                   }
-                  */
                   System.out.println("BBBB odinUpdateLogs="+odinUpdateLogs.toString());
+                  */
                   odinUpdateLogs.add(updateOdinInfo);
                 }
                 
@@ -458,8 +458,8 @@ public class OdinUpdate {
     return null;    
   }
   
+  /*
   public static boolean checkTransferRegisterConfimedByRegisterAndAdmin(String full_odin,String update_tx_index_or_logid) { 
-    /*
     Database db = Database.getInstance();
     
     ResultSet rs = db.executeQuery("select l.log_id,l.tx_index, l.block_index,l.updater,l.destination, l.update_set,l.validity,cp.full_odin,cp.short_odin,cp.register,cp.admin,transactions.block_time,transactions.tx_hash from odins cp,odin_update_logs l,transactions where (l.tx_index='"+update_tx_index_or_logid+"' and l.full_odin=cp.full_odin and  l.tx_index=transactions.tx_index) or (l.log_id='"+update_tx_index_or_logid+"' and l.full_odin=cp.full_odin and  l.tx_index=transactions.tx_index) ;");
@@ -490,10 +490,8 @@ public class OdinUpdate {
     } catch (SQLException e) {
       logger.error("OdinUpdate.getOdinUpdateInfo(): "+e.toString());
     }  
-    */
-    return false;    
   }
-
+  */
   public static Transaction updateOdinBaseInfo(String fullOdin,String updater,String admin,JSONObject update_set) throws Exception {
       return updateOdin(fullOdin,updater,null,admin,update_set);
   }
@@ -565,17 +563,19 @@ public class OdinUpdate {
 
     Byte update_set_data_type=Config.DATA_TEXT_UTF8; 
     byte[] update_set_byte_array=update_set.toString().getBytes(Config.PPK_TEXT_CHARSET);
-    byte[] update_set_byte_array_gzip=Util.compress(update_set.toString()).getBytes(Config.BINARY_DATA_CHARSET);
+    byte[] update_set_byte_array_compressed=Util.compress(update_set.toString().getBytes(Config.PPK_TEXT_CHARSET),Config.DATA_BIN_DEFLATE);
     
-    if(update_set_byte_array.length>update_set_byte_array_gzip.length){ //need compress the long data
-       update_set_byte_array=update_set_byte_array_gzip;
-       update_set_data_type=Config.DATA_BIN_GZIP;
+    logger.info("update_set_byte_array.length="+update_set_byte_array.length);
+    logger.info("update_set_byte_array_compressed.length="+update_set_byte_array_compressed.length);
+    if(update_set_byte_array.length>update_set_byte_array_compressed.length){ //need compress the long data
+       update_set_byte_array=update_set_byte_array_compressed;
+       update_set_data_type=Config.DATA_BIN_DEFLATE;
     }    
     
     int update_set_length=update_set_byte_array.length;
     byte[] len_bytes=BitcoinVarint.toBytes(update_set_length);
     int total_data_len=UPDATE_ODIN_PREFIX_LENGTH+1+1+len_bytes.length+update_set_length;
-    if (total_data_len>Config.MAX_ODIN_DATA_LENGTH) throw new Exception("Too big setting data.(Should be less than "+Config.MAX_ODIN_DATA_LENGTH+" bytes)");
+    if (total_data_len>Config.MAX_ODIN_DATA_LENGTH) throw new Exception("Too big setting data size:"+total_data_len+" .(Should be less than "+Config.MAX_ODIN_DATA_LENGTH+" bytes)");
 
     byteBuffer = ByteBuffer.allocate(total_data_len);
     byteBuffer.put(id);

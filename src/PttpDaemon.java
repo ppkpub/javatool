@@ -3,12 +3,15 @@ import java.util.Locale;
 public class PttpDaemon  {
   public static void main(String[] args) throws Exception {
     boolean bNoSyncBlocks=false;
+    boolean bSyncOnce=false;
     if(args!=null){
       System.out.println("args.length:"+args.length);
       
       for(int aa=0;aa<args.length;aa++){
         if(args[aa].equalsIgnoreCase("nosync"))
           bNoSyncBlocks=true;
+        else if(args[aa].equalsIgnoreCase("sync1"))
+          bSyncOnce=true;
       }
     }
     
@@ -32,7 +35,7 @@ public class PttpDaemon  {
       if(!bNoSyncBlocks){
         //Start blocks thread
         final Blocks blocks = Blocks.getInstanceFresh();
-        
+        /*
         Thread progressUpdateThread = new Thread(blocks) { 
           public void run() {
               Integer lastParsedBlock=Util.getLastParsedBlock();
@@ -59,6 +62,7 @@ public class PttpDaemon  {
         };
       
         progressUpdateThread.start();
+        */
         blocks.init();
         blocks.versionCheck();
         blocks.follow();
@@ -66,6 +70,9 @@ public class PttpDaemon  {
         System.out.println("Waiting a while for new block ......");
       }
       
+      if(bSyncOnce){
+          System.exit(-1);
+      }
       Thread.sleep(8000);
     }
   }

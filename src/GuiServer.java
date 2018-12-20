@@ -58,6 +58,8 @@ public class GuiServer implements Runnable {
     
     String str_ipfs_status = Util.isIpfsRuning() ? "IPFS:OK":"IPFS:<font color='#F00'>Not running</font>";
     
+    str_ipfs_status += "("+Config.IPFS_API_ADDRESS+")";
+    
     attributes.put("ipfs_status", str_ipfs_status);
     
     //Blocks.getInstance().versionCheck();
@@ -529,7 +531,7 @@ public class GuiServer implements Runnable {
           blocks.sendTransaction(source,tx);
           attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
         } catch (Exception e) {
-          attributes.put("error", e.getMessage());
+          attributes.put("error", "GuiServer:"+e.getMessage());
         }
       }
     }
@@ -627,11 +629,11 @@ public class GuiServer implements Runnable {
           attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
         } catch (Exception e) {
           logger.error("************* do add-odin error: "+e.getMessage());
-          attributes.put("error", e.getMessage());
+          attributes.put("error", "GuiServer:"+e.getMessage());
         }
       } else {
         attributes.put("error", Language.getLangLabel("Please input valid admin address,title and AP URLs."));
-      }
+      } 
     }
     
     Database db = Database.getInstance();
@@ -1008,7 +1010,7 @@ public class GuiServer implements Runnable {
             attributes.put("odin", map);  
         } catch (Exception e) {
           logger.error("************* do update-odin error: "+e.getMessage());
-          attributes.put("error", e.getMessage());
+          attributes.put("error", "GuiServer:"+e.getMessage());
         }
       } else {
         attributes.put("error", Language.getLangLabel("Please input valid title."));
@@ -1050,7 +1052,7 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
     attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
     attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
-    attributes.put("LANG_SUBMIT_TO_CREATE_FIRST_AP", Language.getLangLabel("Create your first AP sample based Blockchain ..."));
+    attributes.put("LANG_SUBMIT_TO_CREATE_FIRST_AP", Language.getLangLabel("Create your first AP sample based distributed system like Blockchain ..."));
 
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_UPDATE_IT", Language.getLangLabel("Update it"));  
@@ -1138,7 +1140,7 @@ public class GuiServer implements Runnable {
           attributes.put("odin", map);  
       } catch (Exception e) {
         logger.error("************* do update-odin-aplist error: "+e.getMessage());
-        attributes.put("error", e.getMessage());
+        attributes.put("error", "GuiServer:"+e.getMessage());
       }
     } else {  
       HashMap<String,Object> map = new HashMap<String,Object>();
@@ -1172,7 +1174,9 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
     attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
     attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
-    attributes.put("LANG_SUBMIT_TO_CREATE_FIRST_AP", Language.getLangLabel("Create your first AP sample based Blockchain ..."));
+    attributes.put("LANG_SUBMIT_TO_CREATE_FIRST_AP", Language.getLangLabel("Create your first AP sample based distributed system like Blockchain ..."));
+    attributes.put("LANG_GENERATE", Language.getLangLabel("Generate"));
+    attributes.put("LANG_UPDATE", Language.getLangLabel("Update"));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_UPDATE_IT", Language.getLangLabel("Update it"));  
@@ -1191,14 +1195,20 @@ public class GuiServer implements Runnable {
     request.session(true);
     
     attributes = updateCommonStatus(request, attributes);
-    attributes.put("title", "Create AP sample based Blockchain");
+    attributes.put("title", "Create AP sample based distributed system like Blockchain");
     
     String odin=request.queryParams("odin");
     if(odin==null){
         attributes.put("error", "handleOdinCreateFirstApRequest: no odin.");
         return attributes;
     } 
-       
+    
+    String tmp_apid = request.queryParams("apid");
+    if(tmp_apid==null || tmp_apid.length()==0){
+        tmp_apid="0";
+    } 
+    attributes.put("apid", tmp_apid);  
+    
     Blocks blocks = Blocks.getInstance();
     String address=(String)attributes.get("address");
     
@@ -1224,14 +1234,17 @@ public class GuiServer implements Runnable {
           JSONObject odin_set = odinInfo.odinSet; 
           map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
 
-          JSONObject apUpdate = new JSONObject(); 
-          
           //Generate PTTP data package of the sample page 
           String tmp_page_title = request.queryParams("ap_page_title");
           String tmp_page_content = request.queryParams("ap_page_content");
+          String tmp_ap_type = request.queryParams("ap_type");
+          
+          String tmp_private_key=request.queryParams("sign_prvkey");
+          String tmp_sign_algo=request.queryParams("sign_algo");
+          
           String chunk_content="<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>"+tmp_page_title+"</title><meta content=\"IE=edge\" http-equiv=\"X-UA-Compatible\"><meta content=\"width=device-width, initial-scale=1\" name=\"viewport\"></head><body><h2>"+tmp_page_title+"</h2>"+tmp_page_content+"</body></html>";
           
-          String sample_ppk_uri=  Config.PPK_URI_PREFIX + odinInfo.fullOdin +"/#" + Util.getNowTimestamp();
+          String sample_ppk_uri =  Config.PPK_URI_PREFIX + odinInfo.fullOdin +"/#" + Util.getNowTimestamp();
           System.out.println("sample_ppk_uri="+sample_ppk_uri);
           
           JSONObject obj_chunk_metainfo=new JSONObject();
@@ -1247,26 +1260,45 @@ public class GuiServer implements Runnable {
 
           obj_newest_ap_chunk.put("metainfo",obj_chunk_metainfo);
           obj_newest_ap_chunk.put("content",chunk_content);
+          
+          String obj_newest_ap_chunk_str=obj_newest_ap_chunk.toString();
+          String tmp_sign="";
+          
+          if(tmp_private_key!=null && tmp_private_key.length()>0
+            && tmp_sign_algo!=null && tmp_sign_algo.length()>0
+             ){
+              tmp_sign=tmp_sign_algo+":"+RSACoder.sign(
+                    obj_newest_ap_chunk_str.getBytes() , tmp_private_key,tmp_sign_algo
+                 );
+          }
 
           JSONObject obj_newest_ap_data=new JSONObject();
           obj_newest_ap_data.put("ver",1);
-          obj_newest_ap_data.put("data",obj_newest_ap_chunk.toString());
-          obj_newest_ap_data.put("sign","");
+          obj_newest_ap_data.put("data",obj_newest_ap_chunk_str);
+          obj_newest_ap_data.put("sign", tmp_sign );
 
-          String tmp_ap_url_str = Util.uploadToBtmfs(obj_newest_ap_data.toString().getBytes(Config.PPK_TEXT_CHARSET));
+          //Upload to th AP
+          String tmp_ap_url_str=Util.uploadToAP(tmp_ap_type,obj_newest_ap_data.toString().getBytes(Config.PPK_TEXT_CHARSET),odinInfo.shortOdin.toString()+"P");
           if(tmp_ap_url_str!=null && tmp_ap_url_str.length()>0 ){
               System.out.println("tmp_ap_url_str="+tmp_ap_url_str);
+              
+              JSONObject apUpdate = new JSONObject(); 
+              
+              //检查AP地址是否发生有效变更
+              String old_ap_url_str=(String)map.get("ap"+tmp_apid+"_url");
+              if(old_ap_url_str==null)
+                old_ap_url_str="";
 
-              Map map_new_ap_record = new HashMap(); 
-              map_new_ap_record.put("url", tmp_ap_url_str); 
-              apUpdate.put("0",new JSONObject(map_new_ap_record));
-              map.put("ap0_url", tmp_ap_url_str);
-              
-              
-              if(map.containsKey("me_updatable"))
-              {
+              System.out.println("tmp_ap_url_str="+tmp_ap_url_str+"  oldurl="+old_ap_url_str);
+              if( !tmp_ap_url_str.equals(old_ap_url_str) ){
+                  Map map_new_ap_record = new HashMap(); 
+                  map_new_ap_record.put("url", tmp_ap_url_str); 
+                  apUpdate.put(tmp_apid,new JSONObject(map_new_ap_record));
+              } 
+
+              if(map.containsKey("me_updatable")){
                   if( apUpdate.length()==0 ){
-                      attributes.put("error", Language.getLangLabel("Please update at least one valid access point."));
+                      attributes.put("success", Language.getLangLabel("The content had been updated while the AP url remain as ")+tmp_ap_url_str);
                   } else {
                       Transaction tx = OdinUpdate.updateOdinApSet(odinInfo.fullOdin,address,apUpdate);
                       blocks.sendTransaction(address,tx);
@@ -1282,7 +1314,7 @@ public class GuiServer implements Runnable {
           attributes.put("odin", map);  
       } catch (Exception e) {
         logger.error("************* do odin-create-first-ap error: "+e.getMessage());
-        attributes.put("error", e.getMessage());
+        attributes.put("error", "GuiServer:"+e.getMessage());
       }
     } else {  
       HashMap<String,Object> map = new HashMap<String,Object>();
@@ -1297,8 +1329,34 @@ public class GuiServer implements Runnable {
       map.put("validity",odinInfo.validity);
       
       try{
+        String old_ap_url=request.queryParams("old_ap_url");
+        if(old_ap_url!=null && old_ap_url.length()>0){
+            try{
+                String str_ap_resp_json=Util.fetchURI(old_ap_url);
+                JSONObject obj_ap_resp=PPkURI.parseRespOfPTTP(old_ap_url,str_ap_resp_json,null);
+                if(obj_ap_resp!=null){
+                    byte[] old_page_content= (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) ;
+                    if(old_page_content!=null){
+                        attributes.put("old_page_content", new String(old_page_content));
+                    }
+                }
+            }catch (Exception e) {
+                logger.error(e.toString());
+            }
+        } 
+        
         JSONObject odin_set = odinInfo.odinSet; 
         map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
+        
+        //系统为用户自动产生一对RSA公私钥供选用
+        JSONObject keyMap=Util.getRSAKeys(odinInfo.fullOdin,true,true);
+      
+        String publicKey = RSACoder.getPublicKey(keyMap);  
+        String privateKey = RSACoder.getPrivateKey(keyMap);            
+
+        attributes.put("new_vd_set_algo", RSACoder.DEFAULT_SIGNATURE_ALGORITHM);
+        attributes.put("new_vd_set_pubkey", publicKey);
+        attributes.put("new_vd_set_prvkey", privateKey);
 
         attributes.put("odin", map);    
       }catch (Exception e) {
@@ -1306,11 +1364,14 @@ public class GuiServer implements Runnable {
       }
     }          
     
-    attributes.put("LANG_CREATE_AP_SAMPLE", Language.getLangLabel("Create AP sample based Blockchain"));
+    attributes.put("LANG_CREATE_AP_SAMPLE", Language.getLangLabel("Create AP sample based distributed system like Blockchain"));
     attributes.put("LANG_CREATE_AP_SAMPLE_TITLE", Language.getLangLabel("Page title"));
     attributes.put("LANG_CREATE_AP_SAMPLE_CONTENT", Language.getLangLabel("Page Content"));
+    attributes.put("LANG_SELECT_FIRST_AP_TYPE", Language.getLangLabel("Select AP type"));
+    attributes.put("LANG_AP_TYPE_BTMFS", Language.getLangLabel("BTMFS(A distributed file system based Bytom Blockchain)"));
+    attributes.put("LANG_AP_TYPE_DAT", Language.getLangLabel("Dat Protocol"));
+    attributes.put("LANG_AP_TYPE_IPFS", Language.getLangLabel("IPFS(InterPlanetary File System)"));
 
-    
     attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
     attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
     attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
@@ -1321,6 +1382,8 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
     attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
     attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
+    attributes.put("LANG_PRIVATE_KEY", Language.getLangLabel("Private key"));
+    attributes.put("LANG_ALGORITHM", Language.getLangLabel("Algorithm"));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_UPDATE_BASEINFO", Language.getLangLabel("Update base info")); 
@@ -1382,11 +1445,11 @@ public class GuiServer implements Runnable {
                   attributes.put("error", Language.getLangLabel("Please input valid URI of certificate."));
              }
           }else if(new_vd_set_pubkey!=null && new_vd_set_pubkey.trim().length()>0 ){
-            new_vd_set_cert_uri=Util.uploadToIpfs(new_vd_set_pubkey);
+            String tmp_ap_type = request.queryParams("ap_type");
+            new_vd_set_cert_uri=Util.uploadToAP(tmp_ap_type,new_vd_set_pubkey.getBytes(),odinInfo.shortOdin.toString()+"K");
             if( new_vd_set_cert_uri==null){
-              attributes.put("warning", Language.getLangLabel("The IPFS service is unusable. So try to store the pubkey to blockchain."));
-              
-              new_vd_set_cert_uri="data:,"+new_vd_set_pubkey;
+              attributes.put("error", "["+tmp_ap_type+"]"+Language.getLangLabel(" is invalid. Please retry the other storage service."));
+              //new_vd_set_cert_uri="data:,"+new_vd_set_pubkey;
             }
             
             attributes.put("new_vd_set_algo", new_vd_set_algo);
@@ -1401,8 +1464,12 @@ public class GuiServer implements Runnable {
                   new_vd_set.put(Config.JSON_KEY_PPK_ALGO,new_vd_set_algo);
                   new_vd_set.put(Config.JSON_KEY_PPK_CERT_URI,new_vd_set_cert_uri);
                   Transaction tx = OdinUpdate.updateOdinVdSet(odinInfo.fullOdin,address,new_vd_set);
-                  blocks.sendTransaction(address,tx);
-                  attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
+                  if(tx==null){
+                      attributes.put("error", Language.getLangLabel("Invalid Inputs"));
+                  }else{
+                      blocks.sendTransaction(address,tx);
+                      attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
+                  }
               }
           } else {
               attributes.put("error", Language.getLangLabel("No permission."));
@@ -1411,7 +1478,7 @@ public class GuiServer implements Runnable {
           attributes.put("odin", map);  
       } catch (Exception e) {
         logger.error("************* do update-odin-vdset error: "+e.getMessage());
-        attributes.put("error", e.getMessage());
+        attributes.put("error", "do update-odin-vdset : "+e.getMessage());
       }
     } else {  
       HashMap<String,Object> map = new HashMap<String,Object>();
@@ -1429,16 +1496,15 @@ public class GuiServer implements Runnable {
         JSONObject odin_set = odinInfo.odinSet; 
         map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
 
-        if(!map.containsKey("vd_set_cert_uri")){//如果尚未设置内容验证证书，系统将为用户自动产生RSA公私钥
-          JSONObject keyMap=Util.getRSAKeys(odinInfo.fullOdin,true,true);
-          
-          String publicKey = RSACoder.getPublicKey(keyMap);  
-          String privateKey = RSACoder.getPrivateKey(keyMap);            
+        //系统为用户自动产生一对RSA公私钥供选用
+        JSONObject keyMap=Util.getRSAKeys(odinInfo.fullOdin,true,true);
+      
+        String publicKey = RSACoder.getPublicKey(keyMap);  
+        String privateKey = RSACoder.getPrivateKey(keyMap);            
 
-          attributes.put("new_vd_set_algo", RSACoder.DEFAULT_SIGNATURE_ALGORITHM);
-          attributes.put("new_vd_set_pubkey", publicKey);
-          attributes.put("new_vd_set_prvkey", privateKey);
-        }
+        attributes.put("new_vd_set_algo", RSACoder.DEFAULT_SIGNATURE_ALGORITHM);
+        attributes.put("new_vd_set_pubkey", publicKey);
+        attributes.put("new_vd_set_prvkey", privateKey);
 
         attributes.put("odin", map);    
       }catch (Exception e) {
@@ -1454,10 +1520,14 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_PUBLIC_KEY", Language.getLangLabel("Public key"));
     attributes.put("LANG_PRIVATE_KEY", Language.getLangLabel("Private key"));
     attributes.put("LANG_YOU_CAN_GENERATE_THE_PUBLIC_KEY_BY_YOURSELF", Language.getLangLabel("You can generate the public key by yourself and save it to a trusted storage service on the network, then fill its resource URI here."));
-    attributes.put("LANG_GENERATE_PUBLIC_AND_PRIVATE_KEYS_HERE", Language.getLangLabel("Or generate public and private keys automatically here and save the public key to the IPFS distributed storage service for public verification use."));
+    attributes.put("LANG_GENERATE_PUBLIC_AND_PRIVATE_KEYS_HERE", Language.getLangLabel("Or generate public and private keys automatically here and save the public key to the selected distributed storage service for public verification use."));
     attributes.put("LANG_UPDATE_VALIDTION_SETTING", Language.getLangLabel("Update Validtion Setting"));
     attributes.put("LANG_PLEASE_BACKUP_THE_PRIVATE_KEY", Language.getLangLabel("Please backup the private key."));  
     attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
+    attributes.put("LANG_SELECT_STORAGE_SERVICE", Language.getLangLabel("Select storage service"));
+    attributes.put("LANG_AP_TYPE_BTMFS", Language.getLangLabel("BTMFS(A distributed file system based Bytom Blockchain)"));
+    attributes.put("LANG_AP_TYPE_DAT", Language.getLangLabel("Dat Protocol"));
+    attributes.put("LANG_AP_TYPE_IPFS", Language.getLangLabel("IPFS(InterPlanetary File System)"));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_UPDATE_IT", Language.getLangLabel("Update it"));  
@@ -1519,7 +1589,7 @@ public class GuiServer implements Runnable {
             attributes.put("odin", map);  
         } catch (Exception e) {
           logger.error("************* do trans-odin error: "+e.getMessage());
-          attributes.put("error", e.getMessage());
+          attributes.put("error", "GuiServer:"+e.getMessage());
         }
       } else {
         attributes.put("error", Language.getLangLabel("Please input another valid register address."));
@@ -1595,7 +1665,7 @@ public class GuiServer implements Runnable {
     } catch (Exception e) {
       e.printStackTrace();
       logger.error("************* do confirm-update error: "+e.getMessage());
-      attributes.put("error", e.getMessage());
+      attributes.put("error", "GuiServer:"+e.getMessage());
     }
         
     return attributes;
@@ -1721,7 +1791,7 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_TIME", Language.getLangLabel("Time"));
     attributes.put("LANG_BLOCK", Language.getLangLabel("Block"));
     
-    attributes.put("LANG_SUBMIT_TO_CREATE_FIRST_AP", Language.getLangLabel("Create your first AP sample based Blockchain ..."));
+    attributes.put("LANG_SUBMIT_TO_CREATE_FIRST_AP", Language.getLangLabel("Create your first AP sample based distributed system like Blockchain ..."));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_CONFIRM_THE_UPDATE", Language.getLangLabel("Confirm this update")); 

@@ -184,8 +184,18 @@ public class Blocks implements Runnable {
                         "SHA256withRSA");
         System.out.println("tmpstr="+tmpstr);
         */
-        //OdinUpdate.parse(52,Blocks.getPPkMessageFromTransaction("U426137.1411                   T.{\"cmd\":\"CU\",\"tx_list\":[\"427493.1073\"],\"ver\":1}"));
-        //System.exit(0);
+        /*
+        Database test_db = Database.getInstance();
+        int test_tx_index=7;
+        ResultSet rsTx = test_db.executeQuery("select * from transactions where tx_index="+test_tx_index);
+        rsTx.next();
+        String dataString = rsTx.getString("data");
+        System.out.println("dataString="+dataString);
+        rsTx.close();
+        
+        OdinUpdate.parse(test_tx_index,Blocks.getPPkMessageFromTransaction(dataString));
+        System.exit(0);
+        */
         //test end
         
         if ((new File(walletFile)).exists()) {
@@ -601,6 +611,7 @@ public class Blocks implements Runnable {
    */
 
   public Transaction transaction(String source, String destination, BigInteger btcAmount, BigInteger fee, String markPubkeyHexStr,String dataString) throws Exception {
+    /*
     //Anti duplicate same reuqest
     if( source.equals(lastTransctionSource) 
        && (lastTransctionDestination!=null && lastTransctionDestination.equals(destination) )
@@ -611,6 +622,7 @@ public class Blocks implements Runnable {
       logger.error("Error for duplicate transaction request");
       return null;    
     }
+    */
     
     lastTransctionSource=source;
     lastTransctionDestination=destination;

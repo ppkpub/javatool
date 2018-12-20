@@ -35,7 +35,7 @@
         <textarea rows=3 cols=80 ><#if odin["vd_set_pubkey"]??>${odin["vd_set_pubkey"]}</#if></textarea>
     </div>
     
-    <#if odin["vd_set_debug"]??>${odin["vd_set_debug"]}</#if>
+    <!--<#if odin["vd_set_debug"]??>${odin["vd_set_debug"]}</#if>-->
 
     <h3>${LANG_UPDATE_VALIDTION_SETTING}</h3>
     ${LANG_YOU_CAN_GENERATE_THE_PUBLIC_KEY_BY_YOURSELF}
@@ -62,8 +62,15 @@
       <input type="hidden" name="updater" value="${address}">
       <div class="input-group">
           <span class="input-group-addon">${LANG_ALGORITHM}</span>
-          <input type="text" name="new_vd_set_algo" size="40" value='<#if new_vd_set_algo??>${new_vd_set_algo}</#if>'>
+          <input type="text" name="new_vd_set_algo" size="40" value='<#if new_vd_set_algo??>${new_vd_set_algo}</#if>' list="algo_list">
       </div>
+      <datalist id="algo_list">
+        <option value="SHA256withRSA" label="SHA256withRSA">
+        <option value="SHA384withRSA" label="SHA384withRSA">
+        <option value="SHA512withRSA" label="SHA512withRSA">
+        <option value="SHA1withRSA" label="SHA1withRSA">
+        <option value="MD5withRSA" label="MD5withRSA">
+      </datalist>
       <div class="input-group">
           <span class="input-group-addon">${LANG_PUBLIC_KEY}</span>
           <textarea rows=3 cols=100 name="new_vd_set_pubkey"><#if new_vd_set_pubkey??>${new_vd_set_pubkey}</#if></textarea>
@@ -71,10 +78,18 @@
       <#if new_vd_set_prvkey??>
       <div class="input-group">
           <span class="input-group-addon">${LANG_PRIVATE_KEY}</span>
-          <textarea rows=3 cols=100 name="new_vd_set_pubkey">${new_vd_set_prvkey}</textarea>
+          <textarea rows=3 cols=100>${new_vd_set_prvkey}</textarea>
           ${LANG_PLEASE_BACKUP_THE_PRIVATE_KEY}
       </div>
       </#if>
+      <div class="input-group">
+          <span class="input-group-addon">${LANG_SELECT_STORAGE_SERVICE}</span>
+          <select name="ap_type" id="ap_type" size="3">
+              <!--<option value="dat" >${LANG_AP_TYPE_DAT}</option>-->
+              <option value="ipfs"  selected="selected" >${LANG_AP_TYPE_IPFS}</option>
+              <option value="btmfs" >${LANG_AP_TYPE_BTMFS}</option>
+          </select>
+      </div>
       <div class="input-group">
           <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
           <span class="input-group-btn">

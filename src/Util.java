@@ -43,6 +43,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -81,34 +83,13 @@ public class Util {
   }
 
   public static String getPage(String urlString, int retries) {
+
     try {
-      logger.info("Getting URL: "+urlString);
-      doTrustCertificates();
-      URL url = new URL(urlString);
-      HttpURLConnection connection = null;
-      connection = (HttpURLConnection)url.openConnection();
-      connection.setUseCaches(false);
-      connection.addRequestProperty("User-Agent", Config.appName+" "+Config.version); 
-      connection.setRequestMethod("GET");
-      connection.setDoOutput(true);
-      connection.setReadTimeout(10000);
-      connection.connect();
-
-      BufferedReader rd  = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-      StringBuilder sb = new StringBuilder();
-      String line;
-      
-      while ((line = rd.readLine()) != null)
-      {
-        sb.append(line + '\n');
-      }
-      //System.out.println (sb.toString());
-
-      return sb.toString();
+      return CommonHttpUtil.getSourceFromUrl(urlString);
     } catch (Exception e) {
       logger.error("Fetch URL error: "+e.toString());
     }
-    return "";
+    return null;
   }  
   
   public static byte[] readInputStream(InputStream inStream) throws Exception{
@@ -702,31 +683,66 @@ public class Util {
   }
   
   //Compress string
-  public static String compress(String str) throws Exception {
-    if (str == null || str.length() == 0) {
-      return str;
+  //type: Config.DATA_BIN_DEFLATE,Config.DATA_BIN_GZIP
+  public static byte[] compress(byte input[],Byte type) throws Exception {
+    if (input == null || input.length == 0) {
+      return input;
     }
+
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    GZIPOutputStream gzip = new GZIPOutputStream(out);
-    gzip.write(str.getBytes(Config.PPK_TEXT_CHARSET));
-    gzip.close();
-    return out.toString(Config.BINARY_DATA_CHARSET);
+    
+    if(Config.DATA_BIN_GZIP==type){
+        GZIPOutputStream gzip = new GZIPOutputStream(out);
+        gzip.write(input);
+        gzip.close();
+    }else if(Config.DATA_BIN_DEFLATE==type){
+        Deflater compressor = new Deflater(9);
+        try {
+            compressor.setInput(input);
+            compressor.finish();
+            final byte[] buf = new byte[2048];
+            while (!compressor.finished()) {
+                int count = compressor.deflate(buf);
+                out.write(buf, 0, count);
+            }
+        } finally {
+            compressor.end();
+        }
+    }
+    return out.toByteArray();
   }
 
   //Uncompress string
-  public static String uncompress(String str) throws Exception {
-    if (str == null || str.length() == 0) {
-      return str;
+  //type: Config.DATA_BIN_DEFLATE,Config.DATA_BIN_GZIP
+  public static byte[] uncompress(byte[] input,Byte type) throws Exception {
+    if (input == null || input.length == 0) {
+      return input;
     }
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ByteArrayInputStream in = new ByteArrayInputStream(str.getBytes(Config.BINARY_DATA_CHARSET));
-    GZIPInputStream gunzip = new GZIPInputStream(in);
-    byte[] buffer = new byte[256];
-    int n;
-    while ((n = gunzip.read(buffer)) >= 0) {
-      out.write(buffer, 0, n);
+    
+    if(Config.DATA_BIN_GZIP==type){
+        ByteArrayInputStream in = new ByteArrayInputStream(input);
+        GZIPInputStream gunzip = new GZIPInputStream(in);
+        byte[] buffer = new byte[256];
+        int n;
+        while ((n = gunzip.read(buffer)) >= 0) {
+          out.write(buffer, 0, n);
+        }
+    }else if(Config.DATA_BIN_DEFLATE==type){
+        Inflater decompressor = new Inflater();
+        try {
+            decompressor.setInput(input);
+            final byte[] buf = new byte[2048];
+            while (!decompressor.finished()) {
+                int count = decompressor.inflate(buf);
+                out.write(buf, 0, count);
+            }
+        } finally {
+            decompressor.end();
+        }
     }
-    return out.toString(Config.PPK_TEXT_CHARSET);
+    System.out.println("uncompress result"+ new String(out.toByteArray()));
+    return out.toByteArray();
   }
   
   public static boolean exportTextToFile(String text, String fileName) {
@@ -945,11 +961,11 @@ public class Util {
   }
   
   //Upload data to IPFS and return the HASH uri
-  public static String uploadToIpfs(String data){
+  public static String uploadToIpfs(byte[] data){
     try{
       IPFS ipfs = new IPFS(Config.IPFS_API_ADDRESS);
       //ipfs.refs.local();
-      NamedStreamable.ByteArrayWrapper file = new NamedStreamable.ByteArrayWrapper("ppkpub-odin.data", data.getBytes());
+      NamedStreamable.ByteArrayWrapper file = new NamedStreamable.ByteArrayWrapper("ppkpub-odin.data", data);
       String addResult = ipfs.ppkAdd(file);
       System.out.println("Util.uploadToIpfs() addResult:"+addResult);
       JSONObject tmp_obj=new JSONObject(addResult);
@@ -973,7 +989,7 @@ public class Util {
     }catch(Exception e){
       System.out.println("Util.getIpfsData() error:"+e.toString());
       
-      String tmp_url=Config.IPFS_PROXY_URL+ipfs_hash_address;
+      String tmp_url=Config.IPFS_DOWNLOAD_URL+ipfs_hash_address;
       System.out.println("Using IPFS Proxy to fetch:"+ tmp_url);
       
       return getPage(tmp_url);
@@ -1011,6 +1027,60 @@ public class Util {
       return getPage(tmp_url);
   }
   
+  //Upload data to Dat and return the uri
+  public static String uploadToDat(byte[] data,String related_subid){
+      String tmp_url=Config.DAT_UPLOAD_URL+"?subid="+ java.net.URLEncoder.encode(related_subid)+"&hex=" + bytesToHexString( data );
+      System.out.println("Using Dat Proxy to upload :"+ tmp_url);
+      
+      try{
+        String str_resp_json=getPage(tmp_url);
+        System.out.println("str_resp_json="+ str_resp_json);
+        
+        JSONObject obj_ap_resp=new JSONObject(str_resp_json);
+        if(obj_ap_resp==null)
+          return null;
+        
+        String resp_status=obj_ap_resp.optString("status",null);
+        if( "success".equalsIgnoreCase(resp_status) )
+            return obj_ap_resp.optString("uri",null);
+        else
+            return null;
+      }catch(Exception e){
+        logger.error("Util.uploadToDat() error:"+e.toString());
+        return null;
+      }
+  }
+  
+  public static String getDatData(String dat_uri){
+      String dat_hash=dat_uri.substring("dat://".length());
+      
+      String tmp_url=null;
+      String tmp_page_result=null;
+      for(int kk=0;kk<Config.DAT_DOWNLOAD_URL_LIST.length;kk++){
+          tmp_url=Config.DAT_DOWNLOAD_URL_LIST[kk]+dat_hash;
+          System.out.println("Using Dat Proxy to fetch:"+ tmp_url);
+          
+          tmp_page_result=getPage(tmp_url);
+          if(tmp_page_result!=null && tmp_page_result.length()>0){
+              return tmp_page_result;
+          }
+      }
+      return null;
+  }
+  
+  //Upload data to the AP (such as btmfs , ipfs, etc )
+  public static String uploadToAP(String ap_type,byte[] data,String related_subid){
+      if(ap_type.equalsIgnoreCase("ipfs")){
+        return uploadToIpfs(data);
+      }else if(ap_type.equalsIgnoreCase("dat")){
+        return uploadToDat(data,related_subid);
+      }else if(ap_type.equalsIgnoreCase("btmfs")){
+        return uploadToBtmfs(data);
+      }else{
+        return null;
+      }
+  }
+
   public static String  fetchURI(String uri){
     try{
       String[] uri_chunks=uri.split(":");
@@ -1021,6 +1091,8 @@ public class Util {
       
       if(uri_chunks[0].equalsIgnoreCase("ipfs")){
         return getIpfsData(uri_chunks[1]);
+      }else if(uri_chunks[0].equalsIgnoreCase("dat")){
+        return getDatData(uri);
       }else if(uri_chunks[0].equalsIgnoreCase("btmfs")){
         return getBtmfsData(uri);
       }else if(uri_chunks[0].equalsIgnoreCase("ppk")){

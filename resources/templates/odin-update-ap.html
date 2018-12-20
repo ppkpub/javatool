@@ -24,7 +24,7 @@
       <#list apids as apid>
       <div class="input-group">
           <span class="input-group-addon">${apid}:</span>
-          <input type="text" placeholder="${LANG_ODIN_AP_URL_SHOULD_BE}" name='ap${apid}_url' value='<#if odin["ap"+apid+"_url"]??>${odin["ap"+apid+"_url"]}</#if>'  size="50">
+          <input type="text" placeholder="${LANG_ODIN_AP_URL_SHOULD_BE}" name='ap${apid}_url' value='<#if odin["ap"+apid+"_url"]??>${odin["ap"+apid+"_url"]}</#if>'  size="50"><a class="btn btn-warning" role="button" href='/odin-create-first-ap?odin=${odin["short_odin"]}&apid=${apid}&old_ap_url=<#if odin["ap"+apid+"_url"]??>${odin["ap"+apid+"_url"]}</#if>'>${LANG_GENERATE}/${LANG_UPDATE}...</a><br>
       </div>
       </#list>
 

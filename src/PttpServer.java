@@ -214,7 +214,8 @@ public class PttpServer implements Runnable {
           String tmp_href_ap_url=Config.ppkDefaultHrefApUrl+"?"+Config.JSON_KEY_PPK_URI+"="+Config.PPK_URI_PREFIX;
 
           ap_resp_content = ap_resp_content.replaceAll("'"+Config.PPK_URI_PREFIX,"'"+tmp_href_ap_url)
-                                           .replaceAll("\""+Config.PPK_URI_PREFIX,"\""+tmp_href_ap_url);
+                                           .replaceAll("\""+Config.PPK_URI_PREFIX,"\""+tmp_href_ap_url)
+                                           .replaceAll("#\"","%23\"");
           
           
         }else if(str_chunk_type.startsWith("text")){ //其他文本
@@ -239,6 +240,8 @@ public class PttpServer implements Runnable {
       }else{
         ap_resp_validate_result="<font color='#F00'>No valid data</font>";
       }
+      
+      ap_resp_content += "\n<!--"+ap_resp_validate_result+"-->";
       
       attributes.put("ap_resp_content", ap_resp_content);   
       attributes.put("ap_resp_ppk_uri", ap_resp_ppk_uri);   

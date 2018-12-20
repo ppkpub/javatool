@@ -266,10 +266,8 @@ public class PPkURI {
       str_ap_resp_json = APoverHTTP.fetchInterest(ap_url,str_interest);
     }else if( ap_url.toLowerCase().startsWith("ethap")){
       str_ap_resp_json = APoverETH.fetchInterest(ap_url,str_interest);
-    }else if( ap_url.toLowerCase().startsWith("btmfs")){
-      str_ap_resp_json = Util.getBtmfsData(ap_url);
-    }else{
-      logger.error("PPkURI.fetchAndValidationAP("+uri+") meet not supported ap url:"+ap_url);
+    }else {
+      str_ap_resp_json = Util.fetchURI(ap_url);
     }
     
     obj_ap_resp=parseRespOfPTTP(ap_url,str_ap_resp_json,vd_set);
