@@ -24,11 +24,11 @@ public class Config {
   
   public static boolean debugKey = false;
   
-  public static String  jdbcUrl      = "";
+  public static String  jdbcUrl  = "";
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 805;
+  public static Integer minorVersion = 80601;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   

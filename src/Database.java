@@ -42,8 +42,8 @@ public class Database {
         System.exit(-1);  
       }
       
-      //Delete the pending transactions exceed 24*3 hours
-      executeUpdate("delete from transactions where block_index<0 and block_time<"+ (Util.getNowTimestamp()-3*24*60*60) );
+      //Delete the pending transactions exceed 24 hours
+      executeUpdate("delete from transactions where block_index<0 and block_time<"+ (Util.getNowTimestamp()-24*60*60) );
     }
   }
 

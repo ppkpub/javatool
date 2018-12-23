@@ -17,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -66,7 +67,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.sun.org.apache.xpath.internal.compiler.OpCodes;
 
 public class Blocks implements Runnable {
-  public NetworkParameters params;
+  public static NetworkParameters params;
   public Logger logger = LoggerFactory.getLogger(Blocks.class);
   private static Blocks instance = null;
   public Wallet wallet;
@@ -82,13 +83,9 @@ public class Blocks implements Runnable {
   public Integer versionCheck = 0;
   public Integer bitcoinBlock = 0;
   public Integer ppkBlock = 0;
-  public String statusMessage = "";
-  
-  private static String lastTransctionSource=null;
-  private static String lastTransctionDestination=null;
-  private static BigInteger lastTransctionBtcAmount=null;
-  private static BigInteger lastTransctionFee=null;
-  private static String lastTransctionDataString=null;
+  public String  statusMessage = "";
+ 
+  private static HashMap<String,List<UnspentOutput>> cachedLastUnspentList=new HashMap<String,List<UnspentOutput>>();
 
   public static Blocks getInstanceSkipVersionCheck() {
     if(instance == null) {
@@ -171,33 +168,6 @@ public class Blocks implements Runnable {
       params = MainNetParams.get();
         
       try {
-        //test
-        //PPkURI.fetchPPkURI("ppk:426137.1411/");
-        //PPkURI.fetchPPkURI("ppk:426195.373/");
-        //PPkURI.fetchApByHTTP("http://ppk001.sinaapp.com/ap/?ppk-uri=ppk:426137.1411/");
-        //PPkURI.fetchApByHTTP("http://ppk001.sinaapp.com/ap/ppk_img.php?ppk-uri=ppk:426195.373/");
-        /*
-        JSONObject key_set=Util.getRSAKeys("test",true,true);
-        String tmpstr=RSACoder.sign(
-                        "test".getBytes(), 
-                        key_set.getString("RSAPrivateKey"),
-                        "SHA256withRSA");
-        System.out.println("tmpstr="+tmpstr);
-        */
-        /*
-        Database test_db = Database.getInstance();
-        int test_tx_index=7;
-        ResultSet rsTx = test_db.executeQuery("select * from transactions where tx_index="+test_tx_index);
-        rsTx.next();
-        String dataString = rsTx.getString("data");
-        System.out.println("dataString="+dataString);
-        rsTx.close();
-        
-        OdinUpdate.parse(test_tx_index,Blocks.getPPkMessageFromTransaction(dataString));
-        System.exit(0);
-        */
-        //test end
-        
         if ((new File(walletFile)).exists()) {
           statusMessage = Language.getLangLabel("Found wallet file"); 
           logger.info(statusMessage);
@@ -252,12 +222,6 @@ public class Blocks implements Runnable {
         logger.error("Error during init: "+e.toString());
         //e.printStackTrace();
         System.exit(-1);
-        /*
-        deleteDatabases();
-        initialized = false;
-        initializing = false;
-        init();
-        */
       }
       initialized = true;
       initializing = false;
@@ -423,13 +387,12 @@ public class Blocks implements Runnable {
       try {
         while (rs.next()) {
           Integer blockIndex = rs.getInt("block_index");
-          Integer blockTime = rs.getInt("block_time");  //Added for POS
+          Integer blockTime = rs.getInt("block_time"); 
           parseBlock(blockIndex,blockTime);
           
           Util.updateLastParsedBlock(blockIndex); 
         }
       } catch (SQLException e) {
-        // TODO Auto-generated catch block
         e.printStackTrace();
       }
       if (!force) {
@@ -480,7 +443,7 @@ public class Blocks implements Runnable {
         Integer txIndex = rsTx.getInt("tx_index");
         String source = rsTx.getString("source");
         String destination = rsTx.getString("destination");
-        BigInteger btcAmount = BigInteger.valueOf(rsTx.getInt("btc_amount"));
+        BigInteger amount_satoshi = BigInteger.valueOf(rsTx.getInt("btc_amount"));
         String dataString = rsTx.getString("data");
         Integer prefix_type = rsTx.getInt("prefix_type");
         
@@ -505,11 +468,6 @@ public class Blocks implements Runnable {
     } catch (SQLException e) {
       e.printStackTrace();
     }    
-  }
-
-  public void deletePending() {
-    Database db = Database.getInstance();
-    db.executeUpdate("delete from transactions where block_index<0 and tx_index<(select max(tx_index) from transactions)-10;");
   }
 
 /*
@@ -610,29 +568,10 @@ public class Blocks implements Runnable {
   }
    */
 
-  public Transaction transaction(String source, String destination, BigInteger btcAmount, BigInteger fee, String markPubkeyHexStr,String dataString) throws Exception {
-    /*
-    //Anti duplicate same reuqest
-    if( source.equals(lastTransctionSource) 
-       && (lastTransctionDestination!=null && lastTransctionDestination.equals(destination) )
-       && btcAmount.compareTo(lastTransctionBtcAmount)==0
-       && fee.compareTo(lastTransctionFee)==0
-       && (lastTransctionDataString!=null && lastTransctionDataString.equals(dataString))
-       ){
-      logger.error("Error for duplicate transaction request");
-      return null;    
-    }
-    */
-    
-    lastTransctionSource=source;
-    lastTransctionDestination=destination;
-    lastTransctionBtcAmount=btcAmount;
-    lastTransctionFee=fee;
-    lastTransctionDataString=dataString;
-    
+  public Transaction transaction(String source, String destination, BigInteger amount_satoshi, BigInteger fee, String markPubkeyHexStr,String dataString) throws Exception {
     Transaction tx = new Transaction(params);
 
-    if (!destination.equals("") && btcAmount.compareTo(BigInteger.valueOf(Config.dustSize))<0) {
+    if (!destination.equals("") && amount_satoshi.compareTo(BigInteger.valueOf(Config.dustSize))<0) {
       tx.verify();
       return tx;
     }
@@ -651,9 +590,9 @@ public class Blocks implements Runnable {
     BigInteger totalInput = BigInteger.ZERO;
 
     try {
-      if (!destination.equals("") && btcAmount.compareTo(BigInteger.ZERO)>0) {
-        totalOutput = totalOutput.add(btcAmount);
-        tx.addOutput(Coin.valueOf(btcAmount.longValue()), new Address(params, destination));
+      if (!destination.equals("") && amount_satoshi.compareTo(BigInteger.ZERO)>0) {
+        totalOutput = totalOutput.add(amount_satoshi);
+        tx.addOutput(Coin.valueOf(amount_satoshi.longValue()), new Address(params, destination));
       }
     } catch (AddressFormatException e) {
     }
@@ -774,7 +713,7 @@ public class Blocks implements Runnable {
               try {
                 if (key.toAddress(params).equals(new Address(params, source))) {
                   System.out.println("Spending "+sha256Hash+" "+unspent.vout);
-                  totalInput = totalInput.add(BigDecimal.valueOf(unspent.amount*Config.btc_unit).toBigInteger());
+                  totalInput = totalInput.add(unspent.amt_satoshi);
                   TransactionInput input = new TransactionInput(params, tx, new byte[]{}, txOutPt);
                   tx.addInput(input);
                   inputScripts.add(script);
@@ -857,7 +796,9 @@ public class Blocks implements Runnable {
       TransactionBroadcast future = null;
       try {
         logger.info("Broadcasting transaction: "+tx.getHashAsString());
-        future = peerGroup.broadcastTransaction(tx);
+        future = peerGroup.broadcastTransaction(tx); //debug
+        
+        cacheLastUnspentTransaction(source,tx); 
         /*Not need waiting for the response,Deled by flyingsee,20160815
         int tries = 2; 
         Boolean success = false;
@@ -895,11 +836,76 @@ public class Blocks implements Runnable {
       throw new Exception(e.getMessage());
     }    
   }
+  
+  //缓存指定地址的最新未花费交易，优先作为下一次交易输入使用,20181220
+  public static boolean cacheLastUnspentTransaction(String source,Transaction tx){
+    List<UnspentOutput>  lastUnspents = new ArrayList<UnspentOutput> ();
+    try{
+        int vout=0;
+        for (TransactionOutput out : tx.getOutputs()) {
+            Script script = out.getScriptPubKey();
+            List<ScriptChunk> asm = script.getChunks();
+            int asm_num = asm.size();
+            BigInteger amount_satoshi = BigInteger.valueOf(out.getValue().getValue());
+            
+            //System.out.println("vout:"+vout+"\nasm:"+asm.toString()+"\nbtcAmount:"+amount_satoshi);
+        
+            //如果金额大于0，且是多重签名输出或者是包含指定地址的普通输出，则是有效的UTXO
+            boolean isValidOut=false;
+            if(amount_satoshi!=BigInteger.ZERO){
+                if (asm_num>=5 && asm.get(0).equalsOpCode(0x51) && asm.get(asm_num-2).isOpCode() && asm.get(asm_num-1).equalsOpCode(0xAE)) { 
+                    //MULTISIG
+                    isValidOut=true;
+                }else{
+                    Address dest_address = script.getToAddress(params);
+                    String destination = dest_address.toString();
+                    
+                    if(source.equalsIgnoreCase(destination) )
+                        isValidOut=true;
+                }
+                
+            }
+            
+            if(isValidOut){
+                UnspentOutput tempUnspentObj=new UnspentOutput();
+                
+                tempUnspentObj.amt_satoshi=amount_satoshi;
+                tempUnspentObj.txid=tx.getHashAsString();
+                tempUnspentObj.vout=vout;
+                tempUnspentObj.scriptPubKeyHex=Util.bytesToHexString(script.getProgram());
+                
+                System.out.println("Cache["+source+"]'s utxo: " +tempUnspentObj.toString());
+            
+                if(tempUnspentObj.scriptPubKeyHex.length()>0){
+                  lastUnspents.add(tempUnspentObj);
+                }
+            }
+            
+            vout++;
+        }
+        
+        cachedLastUnspentList.put(source,lastUnspents);
+        
+        return true;
+    }catch(Exception e){
+        return false;
+    }
+  }
+  
+  //获取缓存的最近一次指定地址的未花费交易输出
+  public static List<UnspentOutput> getCachedLastUnspents(String source){
+    try{  
+        return (List<UnspentOutput>) cachedLastUnspentList.get(source);
+    }catch(Exception e){
+        
+    }
+    return null;
+  }
 
   public boolean importPPkTransaction(Transaction tx,Integer txSnInBlock,Block block, Integer blockHeight) {
     BigInteger fee = BigInteger.ZERO;
     String destination = "";
-    BigInteger btcAmount = BigInteger.ZERO;
+    BigInteger amount_satoshi = BigInteger.ZERO;
     List<Byte> dataArrayList = new ArrayList<Byte>();
     byte[] data = null;
     String source = "";
@@ -940,16 +946,16 @@ public class Blocks implements Runnable {
             }
           }
         }else if( matched_ppk_odin_prefix && asm.get(0).equalsOpCode(0x6A) ){  //OP_RETURN
-          System.out.println("asm_num="+asm_num+"  "+asm.toString());
+          //System.out.println("asm_num="+asm_num+"  "+asm.toString());
           
           for (int i=0; i<asm.get(1).data.length; i++) 
                 dataArrayList.add(asm.get(1).data[i]);
         }
         
-        if (destination.equals("") && btcAmount==BigInteger.ZERO && dataArrayList.size()==0) {
+        if (destination.equals("") && amount_satoshi==BigInteger.ZERO && dataArrayList.size()==0) {
           Address address = script.getToAddress(params);
           destination = address.toString();
-          btcAmount = BigInteger.valueOf(out.getValue().getValue());          
+          amount_satoshi = BigInteger.valueOf(out.getValue().getValue());          
         }
       } catch(ScriptException e) {        
       }
@@ -960,16 +966,18 @@ public class Blocks implements Runnable {
     } else {
       return false;
     }
-        
+    
     for (TransactionInput in : tx.getInputs()) {
         if (in.isCoinBase()) return false;
         try {
             Script script = in.getScriptSig();
             Address address = script.getFromAddress(params);
-            if (source.equals("")) {
-                source = address.toString();
-            }else if (!source.equals(address.toString()) ){ //require all sources to be the same
-                return false;
+            if(address!=null && source.equals("") ){
+                String tmp_str=address.toString();
+                if( tmp_str.startsWith("1") ){
+                    source = tmp_str;
+                    break;
+                }
             }
         } catch(ScriptException e) {
         }
@@ -990,11 +998,11 @@ public class Blocks implements Runnable {
             if (!rs.next()) {
                 if (block!=null) {
                     Integer newTxIndex=Util.getLastTxIndex()+1;
-                    PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data,prefix_type,sn_in_block) VALUES('"+newTxIndex+"','"+tx.getHashAsString()+"','"+blockHeight+"','"+block.getTimeSeconds()+"','"+source+"','"+destination+"','"+btcAmount.toString()+"','"+fee.toString()+"',?,1,'"+txSnInBlock.toString()+"')");
+                    PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data,prefix_type,sn_in_block) VALUES('"+newTxIndex+"','"+tx.getHashAsString()+"','"+blockHeight+"','"+block.getTimeSeconds()+"','"+source+"','"+destination+"','"+amount_satoshi.toString()+"','"+fee.toString()+"',?,1,'"+txSnInBlock.toString()+"')");
                     ps.setString(1, dataString);
                     ps.execute();
                 }else{
-                    PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data,prefix_type,sn_in_block) VALUES('"+(Util.getLastTxIndex()+1)+"','"+tx.getHashAsString()+"','-1','"+Util.getNowTimestamp() +"','"+source+"','"+destination+"','"+btcAmount.toString()+"','"+fee.toString()+"',?,1,-1)");
+                    PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data,prefix_type,sn_in_block) VALUES('"+(Util.getLastTxIndex()+1)+"','"+tx.getHashAsString()+"','-1','"+Util.getNowTimestamp() +"','"+source+"','"+destination+"','"+amount_satoshi.toString()+"','"+fee.toString()+"',?,1,-1)");
                     ps.setString(1, dataString);
                     ps.execute();
                 }

@@ -611,6 +611,7 @@ public class GuiServer implements Runnable {
           Map mapOdinSet = new HashMap(); 
                     
           mapOdinSet.put("ver", Config.ODIN_PROTOCOL_VER); 
+          mapOdinSet.put("x-tool", Config.appName+Config.version); //加上自定义的扩展信息：客户端和版本信息，用于调试,20181222
           mapOdinSet.put("auth", authSet); 
 
           if(register.equals(admin))
@@ -1384,6 +1385,7 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
     attributes.put("LANG_PRIVATE_KEY", Language.getLangLabel("Private key"));
     attributes.put("LANG_ALGORITHM", Language.getLangLabel("Algorithm"));
+    attributes.put("LANG_THE_PRIVATE_KEY_FOR_SIGN_PAGE", Language.getLangLabel("The private key for signing the page."));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_UPDATE_BASEINFO", Language.getLangLabel("Update base info")); 
@@ -1884,13 +1886,7 @@ public class GuiServer implements Runnable {
       
       String vd_set_algo=(String)map.get("vd_set_algo");
       String vd_set_pubkey=(String)map.get("vd_set_pubkey");
-      
-      //暂时允许不配置验证参数也可以获取内容, chenhui,20180309
-      //if(vd_set_algo==null || vd_set_pubkey==null){
-      //  attributes.put("error", "Invalid algorithm or pubkey. Please update the validtion setting.");
-      //  return attributes;
-      //}
-      
+
       JSONObject obj_ap_resp=PPkURI.fetchAndValidationAP(
             Config.PPK_URI_PREFIX+odinInfo.fullOdin+"/",
             odinInfo.fullOdin,

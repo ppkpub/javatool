@@ -88,7 +88,7 @@ public class APoverETH {
           //通过输入流获取二进制数据
           InputStream inStream = connection.getInputStream();
           //得到二进制数据，以二进制封装得到数据，具有通用性
-          byte[] data = Util.readInputStream(inStream);
+          byte[] data = CommonHttpUtil.readInputStream(inStream);
           
           if(data!=null){
             String str_resp=new String(data);

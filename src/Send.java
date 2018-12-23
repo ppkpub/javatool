@@ -28,10 +28,10 @@ public class Send {
   public static Integer length = 8+8;
   public static Integer id = 0;
   
-  public static Transaction create(String source, String destination, String asset, BigInteger amount) throws Exception {
-    if (!source.equals("") && !destination.equals("") && asset.equals("BTC") && amount.compareTo(BigInteger.ZERO)>0) {
+  public static Transaction create(String source, String destination, String asset, BigInteger amount_satoshi) throws Exception {
+    if (!source.equals("") && !destination.equals("") && asset.equals("BTC") && amount_satoshi.compareTo(BigInteger.ZERO)>0) {
       Blocks blocks = Blocks.getInstance();
-      Transaction txBTC = blocks.transaction(source, destination, amount, BigInteger.valueOf(Config.ppkStandardDataFee),null, "");
+      Transaction txBTC = blocks.transaction(source, destination, amount_satoshi, BigInteger.valueOf(Config.ppkStandardDataFee),null, "");
       return txBTC;      
     } else {
       throw new Exception("Please specify a source address and destination address, and send more than 0 BTC.");

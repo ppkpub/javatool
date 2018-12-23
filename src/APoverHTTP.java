@@ -18,35 +18,13 @@ import com.googlecode.jsonrpc4j.JsonRpcHttpClient;
 public class APoverHTTP {
   static Logger logger = LoggerFactory.getLogger(APoverHTTP.class);
 
-
   public static String fetchInterest(String ap_url, String interest) {
     String str_ap_resp_json=null;
     String ap_fetch_url=ap_url+"?pttp_interest="+java.net.URLEncoder.encode(interest);
     logger.info("APoverHTTP.fetchInterest("+ap_fetch_url+") ...");
     
     try{
-      URL url = new URL(ap_fetch_url);
-      HttpURLConnection.setFollowRedirects(true);  
-      HttpURLConnection hc = (HttpURLConnection) url.openConnection();  
-      hc.setRequestMethod("GET");  
-      hc.addRequestProperty("User-Agent", Config.appName+" "+Config.version); 
-      hc.setRequestProperty("Connection", "keep-alive");  
-      hc.setRequestProperty("Cache-Control", "no-cache");  
-      hc.setDoOutput(true);
-      hc.setReadTimeout(5*1000);
-      hc.connect();
-      
-      int httpStatusCode = hc.getResponseCode();
-      if (httpStatusCode == HttpURLConnection.HTTP_OK) {
-        //通过输入流获取二进制数据
-        InputStream inStream = hc.getInputStream();
-        //得到二进制数据，以二进制封装得到数据，具有通用性
-        byte[] data = Util.readInputStream(inStream);
-        
-        if(data!=null){
-          str_ap_resp_json=new String(data);
-        }
-      }
+      str_ap_resp_json=new String(CommonHttpUtil.getSourceFromUrl(ap_fetch_url));
     }catch(Exception e){
       logger.error("APoverHTTP.fetchInterest("+ap_fetch_url+") error: "+e.toString());
     }

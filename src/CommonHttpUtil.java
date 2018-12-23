@@ -1,6 +1,9 @@
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -25,7 +28,7 @@ import javax.net.ssl.X509TrustManager;
 public final class CommonHttpUtil {
    
     //默认超时时间（毫秒）
-    private final static int TIME_OUT_MS = 10000;
+    private final static int TIME_OUT_MS = 10*1000;
 
     //协议类型
     private final static String HTTP = "http:";
@@ -36,7 +39,7 @@ public final class CommonHttpUtil {
      * 判断协议类型，转发到不同的方法进行处理
      * @throws IOException 
      */
-    private static String chooseProtocol(String url) throws IOException{
+    private static byte[] chooseProtocol(String url) throws IOException{
         if (url == null) {
             throw new RuntimeException("url shouldn't be null.");
         }
@@ -61,7 +64,7 @@ public final class CommonHttpUtil {
      * @return
      * @throws IOException
      */
-    private static String getFromHttp(String url) throws IOException{
+    private static byte[] getFromHttp(String url) throws IOException{
         HttpURLConnection con = null;
         try {
             // 打开网页
@@ -71,7 +74,7 @@ public final class CommonHttpUtil {
             //判断状态码
             if (con.getResponseCode() == 200) {
                 //读取流
-                return getTextFromCon(con);
+                return getBinFromCon(con);
             }
         } catch (IOException e) {
             throw new IOException("Connet exception.", e);
@@ -90,7 +93,7 @@ public final class CommonHttpUtil {
      * @return
      * @throws IOException
      */
-    private static String getFromHttps(String url) throws IOException{
+    private static byte[] getFromHttps(String url) throws IOException{
         HttpsURLConnection httpsConn = null;
         try {
             //构造TrustManager 对象数组
@@ -131,7 +134,7 @@ public final class CommonHttpUtil {
             //判断状态码
             if (httpsConn.getResponseCode() == 200) {
                 //读取流
-                return getTextFromCon(httpsConn);
+                return getBinFromCon(httpsConn);
             }
 
         } catch (Exception e) {
@@ -145,40 +148,57 @@ public final class CommonHttpUtil {
         return null;
     }
 
-    /**
-     * 从流中读取数据
-     * @param con
-     * @return
-     * @throws IOException
-     */
-    private static String getTextFromCon(URLConnection con) throws IOException{
+    private static byte[] getBinFromCon(URLConnection con) throws IOException{
         try{
-        	BufferedReader rd  = new BufferedReader(new InputStreamReader(con.getInputStream()));
-      	    StringBuilder sb = new StringBuilder();
-      	    String line;
-      	      
-      	    while ((line = rd.readLine()) != null)
-      	    {
-      	        sb.append(line + '\n');
-      	    }
-
-            return sb.toString();
+            InputStream inStream = con.getInputStream();
+            
+            return readInputStream(inStream);
 
         } catch (IOException e) {
             throw new IOException("Read stream exception.", e);
         }
     }
-
+    
+    public static byte[] readInputStream(InputStream inStream) throws IOException{
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        //创建一个Buffer字符串
+        byte[] buffer = new byte[1024];
+        //每次读取的字符串长度，如果为-1，代表全部读取完毕
+        int len = 0;
+        //使用一个输入流从buffer里把数据读取出来
+        while( (len=inStream.read(buffer)) != -1 ){
+            //用输出流往buffer里写入数据，中间参数代表从哪个位置开始读，len代表读取的长度
+            outStream.write(buffer, 0, len);
+        }
+        //关闭输入流
+        inStream.close();
+        //把outStream里的数据写入内存
+        return outStream.toByteArray();
+    }
 
     /**
-     * 根据URL获取码源
+     * 根据URL获取原始数据
      * @param url
-     * @return 返回字符串型码源
+     * @return 返回字节数组
      * @throws IOException
      */
-    public static String getSourceFromUrl(String url) throws IOException {
+    public static byte[] getSourceFromUrl(String url) throws IOException {
         return chooseProtocol(url);
     }
 
+    /**
+     * 根据URL获取文本字符串
+     * @param url
+     * @return 返回字符串
+     * @throws IOException
+     */
+    public static String getTextFromUrl(String url) {
+        try {
+          return new String(CommonHttpUtil.getSourceFromUrl(url));
+        } catch (Exception e) {
+          System.out.println("Fetch URL error: "+e.toString());
+        }
+        return null;
+    }  
 
 }
