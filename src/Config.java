@@ -9,13 +9,14 @@ public class Config {
   public static String defaultLang = "EN";
 
   public static String log = appName+".log";
-  public static String downloadUrl = "http://ppkpub.org/javatool/";
-  public static String minVersionPage = downloadUrl+"min_version.txt";
+  public static String downloadURL = "http://ppkpub.org/javatool/";
+  public static String proxyURL = null;
+  public static String minVersionPage = downloadURL+"min_version.txt";
   public static String dbPath = "resources/db/";
   public static String cachePath = "resources/cache/";
-  public static String newsUrl = downloadUrl+"news.html";
-  public static String newsUrlCN = downloadUrl+"news_cn.html";
-  public static String downloadZipUrl = downloadUrl+"download.txt"; //Only update package
+  public static String newsUrl = downloadURL+"news.html";
+  public static String newsUrlCN = downloadURL+"news_cn.html";
+  public static String downloadZipUrl = downloadURL+"download.txt"; //Only update package
   public static Integer RPCPort = 44944;
   public static Integer GuiServerPort = 11087;
   public static String RPCUsername = "";
@@ -28,7 +29,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 80601;
+  public static Integer minorVersion = 807;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   
@@ -104,21 +105,22 @@ public class Config {
   public static String JSON_KEY_PPK_REGISTER="register";
   public static String JSON_KEY_PPK_ADMIN="admin";
   public static String JSON_KEY_ORIGINAL_RESP="original_resp";
+  public static String JSON_KEY_STATUS_CODE="status_code";
   
   public static int PPK_VALIDATION_OK        = 0;
   public static int PPK_VALIDATION_IGNORED   = 1;
   public static int PPK_VALIDATION_ERROR     = 2;
 
   //Dat
-  public static String DAT_UPLOAD_URL="http://45.32.19.146/dat/"; 
-  public static String[] DAT_DOWNLOAD_URL_LIST={"http://45.32.19.146/dat/?uri=dat://","https://datbase.org/download/"}; 
+  public static String DAT_UPLOAD_URL="http://tool.ppkpub.org/dat/"; 
+  public static String[] DAT_DOWNLOAD_URL_LIST={"http://tool.ppkpub.org/dat/?uri=dat://","https://datbase.org/download/"}; 
   
   //IPFS
-  public static String IPFS_API_ADDRESS="/ip4/45.32.19.146/tcp/5001"; //"https://ipfs.infura.io:5001"
-  public static String IPFS_DOWNLOAD_URL="http://45.32.19.146:8080/ipfs/";//"https://ipfs.infura.io/ipfs/";
+  public static String IPFS_API_ADDRESS="/ip4/tool.ppkpub.org/tcp/5001"; //"https://ipfs.infura.io:5001"
+  public static String IPFS_DOWNLOAD_URL="http://tool.ppkpub.org:8080/ipfs/";//"https://ipfs.infura.io/ipfs/";
   
   //Bytom File System
-  public static String BTMFS_PROXY_URL="http://45.32.19.146/btmfs/"; //Test service
+  public static String BTMFS_PROXY_URL="http://btmdemo.ppkpub.org/btmfs/"; //Test service
   
   //AP
   public static Integer ppkPttpServicePort = 8088;
@@ -129,11 +131,13 @@ public class Config {
 
   //Charset
   public static String PPK_TEXT_CHARSET="UTF-8";  //适用文本内容
+  public static String PPK_JS_CHARSET="UnicodeBigUnmarked"; //适用JS以HEX编码上传的文本内容
   public static String BINARY_DATA_CHARSET="ISO-8859-1";  //适用原始二进制数据与字符串类型间的转换
 
   //etc.
   public static Integer maxExpiration = 4*2016;
   public static Integer maxInt = ((int) Math.pow(2.0,63.0))-1;
+  public static String  defaultTimeZone = "GMT+8"; //缺省显示时区
 
   public static void loadUserDefined() {
     FileInputStream input;
@@ -259,6 +263,19 @@ public class Config {
         BTMFS_PROXY_URL = strTemp;
       }
       System.out.println("BtmpfsProxyURL:"+BTMFS_PROXY_URL);
+      
+      strTemp = prop.getProperty("ProxyURL");
+      if(strTemp!=null && strTemp.length()>0 ){
+        proxyURL = strTemp;
+      }
+      System.out.println("ProxyURL:"+proxyURL);
+      
+      strTemp = prop.getProperty("TimeZone");
+      if(strTemp!=null && strTemp.length()>0 ){
+        defaultTimeZone = strTemp;
+      }
+      System.out.println("TimeZone:"+defaultTimeZone);
+      
       
     } catch (IOException e) {
     }    

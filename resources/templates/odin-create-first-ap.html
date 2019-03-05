@@ -1,88 +1,582 @@
 <#import "template.html" as template>
 <@template.content>
 <#if !success??  && !error??>
-<div class="row section">
-    <div class="row section">
-    <table border="0" width="100%">
-    <tr>
-        <td><h2>${LANG_CREATE_AP_SAMPLE} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2></td>
-        <td align="right">
-        <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
-        <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
-        <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
-        </td>
-    </tr>
-    </table>
-    </div>
 
-    <form action="/odin-create-first-ap" class="form-inline" method="post">
-      <input type="hidden" name="form" value="odin-create-first-ap">
-      <input type="hidden" name="apid" value="${apid}">
-      <input type="hidden" name="odin" value='${odin["short_odin"]}'>
-      <input type="hidden" name="updater" value="${address}">
-      
-      <div class="input-group">
-          <span class="input-group-addon">${LANG_CREATE_AP_SAMPLE_TITLE}:</span>
-          <input type="text" placeholder="Input the page title" name='ap_page_title' value='我的对等网页示例 My PeerWeb page sample'  size="50">
-      </div>
-      <div class="input-group">
-        <span class="input-group-addon">${LANG_CREATE_AP_SAMPLE_CONTENT}:</span>
-        <textarea rows=10 cols=80 name='ap_page_content'  >
-        <#if old_page_content??>
-        ${old_page_content}
-        <#else>
-        欢迎来到属于 <a href="ppk:${odin["short_odin"]}#">ppk:${odin["short_odin"]}#</a> 的对等网站示例页面。<br>
-        该页面去中心化托管在Dat、IPFS、BtmFS等不同特色的分布式存储服务上。<br>
-        
-        简单的开始，体验PPk新业态（PWEB/DWEB/WEB3.0）的第一步...<br>
-        
-        This is the first PeerWeb page of <a href="ppk:${odin["short_odin"]}#">ppk:${odin["short_odin"]}#</a> <br>
-        The page is storaged on BtmFS which is a distributed file system based Bytom blockchain.<br> 
-        
-        <p><img src="ppk:0/image/logo#1.0"  title="0/image/logo#1.0"><br>Powered by PPkPub <a target="_top" href="ppk:0/">ppk:0/</a></p>
-        <p><img src="http://ppk001.sinaapp.com/ppkpub/ppkn1/images/qrcode_for_PPkPub_WXService.png"></p>
-        </#if>
-        </textarea>
-      </div>
-      
-      <div class="input-group">
-          <span class="input-group-addon">${LANG_SELECT_FIRST_AP_TYPE}</span>
-          
-          <select name="ap_type" id="ap_type" size="3">
-              <option value="dat"  selected="selected" >${LANG_AP_TYPE_DAT}</option>
-              <option value="ipfs">${LANG_AP_TYPE_IPFS}</option>
-              <option value="btmfs" >${LANG_AP_TYPE_BTMFS}</option>
-          </select>
-      </div>
-      
-      <div class="input-group">
-          <span class="input-group-addon">${LANG_ALGORITHM}</span>
-          <input type="text" name="sign_algo" size="40" value='<#if new_vd_set_algo??>${new_vd_set_algo}</#if>' list="algo_list">
-      </div>
-      <datalist id="algo_list">
-        <option value="SHA256withRSA" label="SHA256withRSA">
-        <option value="SHA384withRSA" label="SHA384withRSA">
-        <option value="SHA512withRSA" label="SHA512withRSA">
-        <option value="SHA1withRSA" label="SHA1withRSA">
-        <option value="MD5withRSA" label="MD5withRSA">
-      </datalist>
-      
-      <div class="input-group">
-          <span class="input-group-addon">${LANG_PRIVATE_KEY}</span>
-          <textarea rows=3 cols=100 name="sign_prvkey"><#if new_vd_set_prvkey??>${new_vd_set_prvkey} </#if></textarea>
-          ${LANG_THE_PRIVATE_KEY_FOR_SIGN_PAGE}
-      </div>
-      
-      <div class="input-group">
-          <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
-          <span class="input-group-btn">
-              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_SUBMIT_TO_UPDATE}</button>
-          </span>
-      </div>
-    </form>
-    <hr>
-    
+<!-- codemirror -->
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/codemirror.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/theme/blackboard.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/theme/monokai.min.css">
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/codemirror.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/mode/xml/xml.min.js"></script>
+
+<!-- add summernote -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.11/summernote.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.11/summernote.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.11/lang/summernote-zh-CN.min.js"></script>
+
+<div class="row section">
+  <div class="form-group">
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_CREATE_AP_SAMPLE} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <div class="col-sm-7" id="top_buttons" align="right">
+      <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
+      <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
+      <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
+    </div>
+  </div>
 </div>
+
+<div class="page-container index-section-1">
+  <div id="summernote"></div>
+</div>
+
+<div class="form-group" id="simple_textedit">
+ <textarea class="form-control" id="ap_page_content" rows=8 ><#if old_page_content??>
+${old_page_content}
+<#else>请在这里编辑你需要展现的页面内容
+</#if></textarea><br><div align="right"><button class="btn btn-warning" onclick="changeEditor();this.innerHTML='...';" >切换到图文编辑模式</button></div>
+</div>
+
+<form action="/confirmtx" class="form-horizontal" method="post">
+  <input type="hidden" name="form" value="create-first-ap">
+  <input type="hidden" name="apid" value="${apid}">
+  <input type="hidden" name="odin" id="odin" value='${odin["short_odin"]}'>
+  <input type="hidden" name="updater" value="${address}">
+  <input type="hidden" name="ap_page_content_encoded" id="ap_page_content_encoded" value="">
+  <!--
+  <div class="form-group">
+    <label for="ap_page_title" class="col-sm-2 control-label">${LANG_CREATE_AP_SAMPLE_TITLE}</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" name="ap_page_title" id="ap_page_title" placeholder="Input the page title" value='我的对等网页示例 My PeerWeb page sample' >
+    </div>
+  </div>
+  -->
+
+  <div class="form-group">
+    <label for="ap_type" class="col-sm-2 control-label">导入内容模板</label>
+    <div class="col-sm-10">
+      <select class="form-control" id="template_list" size="3"  onchange="selectTemplate()">
+          <option value="BlankPage">空白页面</option>
+          <option value="WelcomePage">欢迎页面</option>
+          <option value="PersonalPage">个人身份</option>
+          <option value="BtcWallet" >简单的比特币钱包网页</option>
+          <!--<option value="OdinRegister" >ODIN标识注册工具</option>-->
+          <!--<option value="302Page">跳转到新网址(HTML网页)</option>-->
+          <option value="302PTTP">跳转到新网址(PTTP状态码302)</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label for="ap_type" class="col-sm-2 control-label">${LANG_SELECT_FIRST_AP_TYPE}</label>
+    <div class="col-sm-10">
+      <select class="form-control" name="ap_type" id="ap_type" size="3">
+          <option value="dat"  selected="selected" >${LANG_AP_TYPE_DAT}</option>
+          <option value="ipfs">${LANG_AP_TYPE_IPFS}</option>
+          <option value="btmfs" >${LANG_AP_TYPE_BTMFS}</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label for="sign_algo" class="col-sm-2 control-label">${LANG_ALGORITHM}</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" name="sign_algo" id="sign_algo" value='<#if new_vd_set_algo??>${new_vd_set_algo}</#if>'  list="algo_list" >
+    </div>
+  </div>
+  <datalist id="algo_list">
+    <option value="SHA256withRSA" label="SHA256withRSA">
+    <option value="SHA384withRSA" label="SHA384withRSA">
+    <option value="SHA512withRSA" label="SHA512withRSA">
+    <option value="SHA1withRSA" label="SHA1withRSA">
+    <option value="MD5withRSA" label="MD5withRSA">
+  </datalist>
+
+  <div class="form-group">
+    <label for="sign_prvkey" class="col-sm-2 control-label">${LANG_PRIVATE_KEY}</label>
+    <div class="col-sm-10">
+     <textarea class="form-control" name="sign_prvkey" id="sign_prvkey" rows=3 >${new_vd_set_prvkey}</textarea>
+     <span>${LANG_THE_PRIVATE_KEY_FOR_SIGN_PAGE}</span>
+    </div>
+  </div>
+  
+  <div class="form-group" align="center">
+    <div class="col-sm-offset-2 col-sm-10">
+      <button class="btn btn-warning btn-lg" type="submit"  onclick="encodePageContent();this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" >${LANG_SUBMIT_TO_UPDATE}</button>
+    </div>
+  </div>
+</form>
+<hr>
+
+<input type="text" id="debug_info" value="">
+<!-- <input type="file" id='file' accept="image/png, image/jpg, image/jpeg, image/gif" /><br />
+<img src="" alt="Image preview...">
+-->
+<script type="text/javascript">
+var isRichEditor=false;
+/*
+var preview = document.querySelector('img');
+var reader  = new FileReader();
+reader.addEventListener("load", function () {
+  preview.src = reader.result;
+}, false);
+document.getElementById('file').addEventListener('change', function (event) {
+  var file = this.files[0];
+  if (file) {
+    if(window.FileReader)
+        reader.readAsDataURL(file);
+    else
+        debug("JAVAFX不支持图片读取功能，请通过浏览器访问");
+  }
+});
+*/
+
+function changeEditor() {
+    document.getElementById("simple_textedit").style.display="none";
+    $('#summernote').summernote({
+        height: 300,
+        lang: 'zh-CN',  //中文版本
+        minHeight: null,
+        maxHeight: null,
+        focus: true,
+        //调用图片上传
+        callbacks: {
+            onImageUpload: function (files) {
+                debug("files.length="+files.length+",files[0].type="+files[0].type+",size="+files[0].size);
+                
+                insertImg(files[0]);
+                //sendFile(files[0]);
+            }
+        }
+    });
+    
+    isRichEditor=true;
+    $('#summernote').summernote('code', document.getElementById("ap_page_content").value);
+}
+function debug(str){
+    document.getElementById("debug_info").value=str;
+}
+/*
+function insertImg(file) {
+    var reader = new FileReader();
+    reader.onload = function(){
+        var dataURL = reader.result;
+        debug("Upload result:"+dataURL);
+        $('#summernote').summernote('insertImage', dataURL, function ($image) {
+            $image.attr('src', dataURL);
+        });
+    };
+    reader.readAsDataURL(file);
+}
+*/
+function insertImg(file) {
+    //压缩图片需要的一些元素和对象
+    var reader = new FileReader();
+    var img = new Image();
+    
+    // 缩放图片需要的canvas
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+
+    reader.onload = function(e){
+        img.src = e.target.result;
+    };
+    
+    // base64地址图片加载完毕后自动缩放处理
+    img.onload = function () {
+        // 图片原始尺寸
+        var originWidth = this.width;
+        var originHeight = this.height;
+        // 最大尺寸限制
+        var maxWidth = 200, maxHeight = 200;
+        // 目标尺寸
+        var targetWidth = originWidth, targetHeight = originHeight;
+        // 图片尺寸超过限制
+        if (originWidth > maxWidth || originHeight > maxHeight) {
+            if (originWidth / originHeight > maxWidth / maxHeight) {
+                // 更宽，按照宽度限定尺寸
+                targetWidth = maxWidth;
+                targetHeight = Math.round(maxWidth * (originHeight / originWidth));
+            } else {
+                targetHeight = maxHeight;
+                targetWidth = Math.round(maxHeight * (originWidth / originHeight));
+            }
+        }
+            
+        // canvas对图片进行缩放
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        // 清除画布
+        context.clearRect(0, 0, targetWidth, targetHeight);
+        // 图片压缩
+        context.drawImage(img, 0, 0, targetWidth, targetHeight);
+        
+        var dataURL = canvas.toDataURL();
+        $('#summernote').summernote('insertImage', dataURL, function ($image) {
+            $image.attr('src', dataURL);
+        });
+        
+        /*
+        canvas.toBlob(function (blob) {
+            // 图片ajax上传
+            var xhr = new XMLHttpRequest();
+            // 文件上传成功
+            xhr.onreadystatechange = function() {
+                if (xhr.status == 200) {
+                    // xhr.responseText就是返回的数据
+                }
+            };
+            // 开始上传
+            xhr.open("POST", 'upload.php', true);
+            xhr.send(blob);    
+        }, file.type || 'image/png');
+        */
+    };
+    
+    reader.readAsDataURL(file);
+    
+    // 选择的文件是图片
+    if (file.type.indexOf("image") == 0) {
+        reader.readAsDataURL(file);
+    }else{
+        alert("只能上传图片(JPG,PNG或GIF)");
+    }
+}
+
+//ajax上传图片
+function sendFile(file) {
+    var formData = new FormData();
+    formData.append("file_base64", file);
+    //formData.append("ap_type", "dat");
+    //formData.append("odin",  document.getElementById("odin").value);
+    console.log("formData:"+formData);
+    $.ajax({
+        url: "/upload?ap_type=dat&odin="+ document.getElementById("odin").value,//同地址域下上传图片的方法
+        data: formData,
+        cache: false,
+        contentType: false,
+        processData: false,
+        type: 'POST',
+        success: function (data) {
+            alert("Upload result:"+data);
+            $('#summernote').summernote('insertImage', data, function ($image) {
+                $image.attr('src', data);
+            });
+        }
+    });
+}
+
+function selectTemplate(){
+    var obj_select = document.getElementById("template_list");
+    
+    if(obj_select.selectedIndex<0)
+       return;
+       
+    var template_id = obj_select.options[obj_select.selectedIndex].value;
+    if('BlankPage'==template_id){
+        str_content=document.getElementById('template_blank').value; 
+    }else if('WelcomePage'==template_id){
+        str_content=document.getElementById('template_welcome').value; 
+    }else if('PersonalPage'==template_id){
+        str_content=document.getElementById('template_userinfo').value; 
+    }else if('BtcWallet'==template_id){
+        str_content=document.getElementById('template_btcwallet').value;
+    }else if('OdinRegister'==template_id){
+        str_content='OdinRegister';
+    }else if('302Page'==template_id || '302PTTP'==template_id ){
+        var dest_url = prompt("请输入目标网址(如ppk:或http:起始)","http://");
+        if (dest_url == null){
+            return;
+        }
+        
+        if('302PTTP'==template_id)
+            str_content='302 '+dest_url;
+        else
+            str_content="<html><head><meta http-equiv='refresh' content='2;url="+dest_url+"'></head>Redirected to "+dest_url+"</html>";
+    }else{
+        str_content='Unkown template:'+template_id;
+    }
+    
+    if(isRichEditor)
+        $('#summernote').summernote('code', str_content);
+    else
+        document.getElementById("ap_page_content").value=str_content;
+}
+
+//编码可能带有HTML关键字的内容字符串
+function encodePageContent(){
+    var str_page;
+    
+    if(isRichEditor)
+        str_page=$('#summernote').summernote('code');
+    else 
+        str_page=document.getElementById("ap_page_content").value;
+
+    document.getElementById("ap_page_content_encoded").value=stringToHex(encodeURIComponent(str_page)); //encode两次避免提示XSS错误
+}
+
+//Ascii/Unicode字符串转换成16进制表示
+function stringToHex(str){
+    var val="";
+    for(var i = 0; i < str.length; i++){
+        var tmpstr=str.charCodeAt(i).toString(16);  //Unicode
+        val += tmpstr.length==1? '0'+tmpstr : tmpstr;  
+    }
+    return val;
+}
+
+</script>
+<!-- 隐藏的模板内容 -->
+<div id="sample_templates" style="display: none;">
+ <textarea id="template_blank" rows=1 ><html>
+<head>
+<title>你的页面标题</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">   
+</head>
+<body>
+你的页面正文
+</body>
+</html>
+ </textarea>
+ <textarea id="template_userinfo" rows=1 >{"@context":["https://schema.org/", "https://ppkpub.org/peerpub/v1" ],"@type":"PeerPub","name":"YourName","email":"", "avtar":"http://ppkpub.org/images/user.png","authenticationCredential":[{"type": "RsaCryptographicKey","publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----" }]}</textarea>
+ <textarea id="template_welcome" rows=1 ><html>
+<head>
+<title>ppk:${odin["short_odin"]} 的对等网站</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">   
+</head>
+<body>
+欢迎来到属于 <a href="ppk:${odin["short_odin"]}#">ppk:${odin["short_odin"]}#</a> 的对等网站示例页面。<br>
+该页面去中心化托管在Dat、IPFS、BtmFS等不同特色的分布式存储服务上。<br>
+
+简单的开始，体验PPk新业态（PWEB/DWEB/WEB3.0）的第一步...<br>
+
+This is the first PeerWeb page of <a href="ppk:${odin["short_odin"]}#">ppk:${odin["short_odin"]}#</a> <br>
+The page is storaged on BtmFS which is a distributed file system based Bytom blockchain.<br> 
+
+<p><img src="ppk:0/image/logo#1.0"  title="0/image/logo#1.0"><br>Powered by PPkPub <a target="_top" href="ppk:0/">ppk:0/</a></p>
+<p><img src="http://ppk001.sinaapp.com/ppkpub/ppkn1/images/qrcode_for_PPkPub_WXService.png"></p>
+</body>
+</html>
+ </textarea>
+ <textarea id="template_btcwallet" rows=1 ><html>
+<head>
+<title>基于PPk浏览器实现的一个简单BTC钱包网页应用</title>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<!-- 下面两句代码是做手机适配用的 ， 加上之后手机网页就会自动适配-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">   
+
+<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+</head>
+<body>
+<h3>基于PPk浏览器实现的一个简单BTC钱包网页应用</h3>
+<div class="row section">
+    <div class="form-group">
+    <label for="btc_address" class="col-sm-2 control-label">比特币地址</label>
+    <div class="col-sm-10" align="right">
+      <input type="text" class="form-control" placeholder="" id="btc_address" value="" readonly onfocus="this.select()" onmouseover="this.select()"> <button type="text" id="btc_address_summary"  class="btn btn-success" onclick='openBtcDetail();'>...</button> <button type="text" id="btn_send_btc"  class="btn btn-success" onclick='sendBTC();' disabled="true" value="">发送比特币</button> <button type="text" id="btn_new_address"  class="btn btn-success" onclick='generateNewAddress();' disabled="true" value="">创建新地址</button> <button type="text"  id="btn_import_prvkey"  class="btn btn-success" onclick='importPrivateKey();'  disabled="true">导入已有地址</button>
+    </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+var MIN_FEE_SATOSHI = 1000;  //给矿工的费用,单位satoshi，即0.00000001 BTC
+var BTC_SATOSHI_UNIT=100000000;  //satoshi与BTC的单位转换比率
+
+var mCurrentAddress="";
+
+window.onload=function(){
+    init();
+    /*
+    //测试回调方法
+    var test={"address":"1HVSDUmW3abkitZUoZsYMKZ2PbiKhr8Rdo"};
+    callback_setNewAddress('OK',test);
+    test={"status":"OK","balance_satoshi":3000,"unconfirmed_tx_count":0};
+    callback_getBtcAddressSummary('OK',test);
+    */
+}
+
+//页面装载完成后初始化JS应用
+function init(){
+    console.log("init...");
+    
+    if(typeof(PeerWeb) !== 'undefined'){ //检查浏览器提供的PeerWeb JS接口全局对象的可用性
+        console.log("PeerWeb enabled");
+        
+        //读取PPk浏览器内置钱包中缺省比特币地址
+        PeerWeb.getDefaultAddress(
+            'BITCOIN',   //币种标识
+            'callback_setNewAddress'  //回调方法名称
+        );
+    }else{
+        console.log("PeerWeb not valid");
+        //alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.2.6 above.");
+    }
+}
+
+//设置当前BTC地址的回调方法
+function callback_setNewAddress(status,obj_data){
+    if('OK'==status){
+        if(obj_data.address!=null || obj_data.address.trim().length>0){
+            mCurrentAddress=obj_data.address.trim();
+            document.getElementById("btc_address").value=mCurrentAddress;
+            refreshAddressSummary();
+        }
+    }
+
+    document.getElementById("btn_send_btc").disabled=false;
+    document.getElementById("btn_new_address").disabled=false;
+    document.getElementById("btn_import_prvkey").disabled=false;
+}
+
+//向浏览器请求获取当前地址的概要信息（如余额，未确认交易数等）
+function refreshAddressSummary(){
+    document.getElementById("btc_address_summary").innerHTML="...";
+    
+    if(mCurrentAddress.length == 0 ){
+        return;
+    }
+    
+    //读取指定比特币地址的概要汇总信息
+    PeerWeb.getAddressSummary(
+        'BITCOIN',  
+        mCurrentAddress,
+        'callback_getBtcAddressSummary'  //回调方法名称
+    );
+}
+
+//获取地址概要信息的回调方法
+function callback_getBtcAddressSummary(status,obj_data){
+    if('OK'==status){
+        if(obj_data!=null){
+            if(typeof(obj_data.balance_satoshi) !== 'undefined'){
+                document.getElementById("btc_address_summary").innerHTML="余额:"+ (obj_data.balance_satoshi/BTC_SATOSHI_UNIT)+" BTC";
+            }
+        }
+    }
+}
+
+//打开查看BTC地址详细信息的页面
+function openBtcDetail(){
+    if( mCurrentAddress.length ==0 ){
+        alert('浏览器钱包还没有可用的比特币地址，请先创建或导入一个比特币地址！');
+        return;
+    }
+    
+    window.location.href="https://www.blockchain.com/btc/address/"+mCurrentAddress;
+}
+
+//向浏览器请求生成新地址
+function generateNewAddress(){
+    PeerWeb.generateNewAddress(
+            'BITCOIN',
+            'callback_setNewAddress'
+        );
+}
+
+//生成新地址的回调方法
+function importPrivateKey(){
+    var private_key = prompt("请输入以5,L或K起始的比特币私钥字符串","");
+    if (private_key != null){
+        if( private_key.substr(0,1)=='5' || private_key.substr(0,1)=='L' || private_key.substr(0,1)=='K' ){
+            PeerWeb.importPrivateKey(
+                'BITCOIN',
+                private_key,
+                'callback_setNewAddress'
+              );
+        }else{
+            alert("请在地址文本框里输入要导入的比特币地址私钥，必须是以5,L或K起始的字符串");
+        }
+    }
+}
+
+//通过浏览器请求转账发送比特币的示例
+function sendBTC(){
+    if(mCurrentAddress.length ==0 ){
+        alert('浏览器钱包还没有可用的比特币地址，请先创建或导入一个比特币地址！');
+        return;
+    }
+    
+    var dest_address = prompt("请输入收款的比特币公开地址（以1起始的字符串）","");
+    if (dest_address != null){
+        if( dest_address.substr(0,1)=='1' ){
+            var send_amount = prompt("请输入要发送给\n"+dest_address+"\n的BTC数额：","0.0");
+            if (send_amount != null){
+                if(!isNaN(send_amount)){
+                    var send_amount_satoshi= Math.floor( send_amount * BTC_SATOSHI_UNIT );
+                    var tx_argus_json='{"source":"'+mCurrentAddress             //交易发送者地址
+                                     +'","destination":"'+dest_address                 //交易接收者地址
+                                     +'","amount_satoshi":'+send_amount_satoshi //转账金额,单位satoshi
+                                     +',"fee_satoshi":'+MIN_FEE_SATOSHI+'}';    //给矿工的费用,单位satoshi
+                    
+                    document.getElementById("btn_send_btc").disabled=true;
+                    document.getElementById("btn_send_btc").innerHTML="正在处理，请稍候...";
+    
+                    PeerWeb.getSignedTX(
+                        'BITCOIN',
+                        stringToHex(tx_argus_json),  //待生成交易的参数数据
+                        'callback_getSignedTX'
+                      );
+                }else{
+                    alert("输入的金额数值无效！");
+                }
+             }
+        }else{
+            alert("请在地址文本框里输入对方收款的比特币公开地址（以1起始的字符串）！");
+        }
+    }
+}
+
+//请求浏览器对BTC原始交易进行签名后的回调方法
+function callback_getSignedTX(status,obj_data){
+    if('OK'==status){
+        //调用PeerWeb接口发送已签名的比特币交易
+        PeerWeb.sendSignedTX(
+                "BITCOIN",
+                mCurrentAddress,  //交易发送者地址
+                obj_data.signed_tx_hex,  //已签名的比特币交易数据，HEX格式
+                'callback_sendBtcTX' //回调方法 
+            );
+    }else{
+        if('CANCELED'!=status){
+            alert("生成比特币转账交易失败!\n(status="+status+")\n请确认当前帐户有足够余额.");
+        }
+        document.getElementById("btn_send_btc").disabled=false;
+        document.getElementById("btn_send_btc").innerHTML="发送比特币";
+    }
+}
+
+//请求浏览器广播已签名交易后的回调方法
+function callback_sendBtcTX(status,obj_data){
+    if('OK'==status){
+        refreshAddressSummary();
+        alert("已发出比特币转账交易!\点击左侧余额可以查看交易确认状态.");
+    }else{
+        alert("发送比特币失败!\n(status="+status+")\n网络服务可能有异常，请稍后再试.");
+    }
+    document.getElementById("btn_send_btc").disabled=false;
+    document.getElementById("btn_send_btc").innerHTML="发送比特币";
+}
+
+//Ascii/Unicode字符串转换成16进制表示
+function stringToHex(str){
+    var val="";
+    for(var i = 0; i < str.length; i++){
+        var tmpstr=str.charCodeAt(i).toString(16);  //Unicode
+        val += tmpstr.length==1? '0'+tmpstr : tmpstr;  
+    }
+    return val;
+}
+
+</script>
+</body>
+</textarea>
+</div>
+
 </#if>
 
 </@template.content>

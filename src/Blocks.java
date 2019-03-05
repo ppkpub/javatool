@@ -25,7 +25,7 @@ import java.text.NumberFormat;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
+//import org.spongycastle.util.encoders.Hex;
 
 import org.json.JSONObject;
 
@@ -62,15 +62,15 @@ import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.BlockStoreException;
 import org.bitcoinj.store.H2FullPrunedBlockStore;
 import org.bitcoinj.wallet.WalletTransaction;
-import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.sun.org.apache.xpath.internal.compiler.OpCodes;
+
 
 public class Blocks implements Runnable {
   public static NetworkParameters params;
   public Logger logger = LoggerFactory.getLogger(Blocks.class);
   private static Blocks instance = null;
-  public Wallet wallet;
+  private static boolean bRemoteWalletMode = false;
+  
+  public Wallet wallet=null;
   public String walletFile = "resources/db/wallet";
   public PeerGroup peerGroup;
   public BlockChain blockChain;
@@ -168,32 +168,41 @@ public class Blocks implements Runnable {
       params = MainNetParams.get();
         
       try {
-        if ((new File(walletFile)).exists()) {
-          statusMessage = Language.getLangLabel("Found wallet file"); 
-          logger.info(statusMessage);
-          wallet = Wallet.loadFromFile(new File(walletFile));
-        } else {
-          statusMessage = Language.getLangLabel("Creating new wallet file"); 
-          logger.info(statusMessage);
-          wallet = new Wallet(params);
-          ECKey newKey = new ECKey();
-          newKey.setCreationTimeSeconds(Config.ppkToolCreationTime);
-          wallet.addKey(newKey);
+        if(!bRemoteWalletMode){  //本地钱包模式
+            if ((new File(walletFile)).exists()) {
+              statusMessage = Language.getLangLabel("Found wallet file"); 
+              logger.info(statusMessage);
+              wallet = Wallet.loadFromFile(new File(walletFile));
+            } else {
+              statusMessage = Language.getLangLabel("Creating new wallet file"); 
+              logger.info(statusMessage);
+              wallet = new Wallet(params);
+              ECKey newKey = new ECKey();
+              newKey.setCreationTimeSeconds(Config.ppkToolCreationTime);
+              wallet.addKey(newKey);
+            }
         }
         String fileBTCdb = Config.dbPath+Config.appName.toLowerCase()+".h2.db";
         String fileODINdb = Config.defaultSqliteFile;
         if (!new File(fileODINdb).exists()) {
           statusMessage = "Downloading ODIN database"; 
           logger.info(statusMessage);
-          Util.downloadToFile(Config.downloadUrl+Config.appName.toLowerCase()+"-"+Config.majorVersionDB.toString()+".db", fileODINdb);
+          Util.downloadToFile(Config.downloadURL+Config.appName.toLowerCase()+"-"+Config.majorVersionDB.toString()+".db", fileODINdb);
         }
         statusMessage = Language.getLangLabel("Downloading Bitcoin blocks");
         blockStore = new H2FullPrunedBlockStore(params, Config.dbPath+Config.appName.toLowerCase(), 2000);
-        blockChain = new BlockChain(params, wallet, blockStore);
-        peerGroup = new PeerGroup(params, blockChain);
-        peerGroup.addWallet(wallet);
-        peerGroup.setFastCatchupTimeSecs(Config.ppkToolCreationTime);
-        wallet.autosaveToFile(new File(walletFile), 1, TimeUnit.MINUTES, null);
+        
+        if(wallet==null){
+            blockChain = new BlockChain(params,  blockStore);
+            peerGroup = new PeerGroup(params, blockChain);
+            peerGroup.setFastCatchupTimeSecs(Config.ppkToolCreationTime);
+        }else{
+            blockChain = new BlockChain(params, wallet, blockStore);
+            peerGroup = new PeerGroup(params, blockChain);
+            peerGroup.setFastCatchupTimeSecs(Config.ppkToolCreationTime);
+            //peerGroup.addWallet(wallet); //不需要同步保存历史交易到wallet文件中，减少损坏可能
+            //wallet.autosaveToFile(new File(walletFile), 1, TimeUnit.MINUTES, null);
+        }
         peerGroup.addPeerDiscovery(new DnsDiscovery(params));
         peerGroup.start();//peerGroup.startAndWait(); //for bitcoinj0.14
         peerGroup.addEventListener(new PPkPeerEventListener());
@@ -402,36 +411,6 @@ public class Blocks implements Runnable {
     }
   }
 
-  public List<Byte> getMessageFromTransaction(String txDataString) {
-    byte[] data;
-    List<Byte> message = null;
-    try {
-      data = txDataString.getBytes(Config.BINARY_DATA_CHARSET);
-      List<Byte> dataArrayList = Util.toByteArrayList(data);
-
-      message = dataArrayList.subList(4, dataArrayList.size());    
-      return message;
-    } catch (UnsupportedEncodingException e) {
-    }
-    return message;
-  }
-
-  public List<Byte> getMessageTypeFromTransaction(String txDataString) {
-    byte[] data;
-    List<Byte> messageType = null;
-    try {
-      data = txDataString.getBytes(Config.BINARY_DATA_CHARSET);
-      List<Byte> dataArrayList = Util.toByteArrayList(data);
-
-      messageType = dataArrayList.subList(0, 4);
-      return messageType;
-    } catch (UnsupportedEncodingException e) {
-    }
-    return messageType;
-  }  
-    
-    
-
   public void parseBlock(Integer blockIndex,Integer blockTime) { 
     Database db = Database.getInstance();
     ResultSet rsTx = db.executeQuery("select * from transactions where block_index="+blockIndex.toString()+" order by tx_index asc;");
@@ -444,12 +423,12 @@ public class Blocks implements Runnable {
         String source = rsTx.getString("source");
         String destination = rsTx.getString("destination");
         BigInteger amount_satoshi = BigInteger.valueOf(rsTx.getInt("btc_amount"));
-        String dataString = rsTx.getString("data");
+        byte[] odin_data = Util.hexStringToBytes(rsTx.getString("data"));
         Integer prefix_type = rsTx.getInt("prefix_type");
         
         if(1==prefix_type){ //PPk ODIN
-            Byte messageType = getPPkMessageTypeFromTransaction(dataString);
-            List<Byte> message = getPPkMessageFromTransaction(dataString);
+            Byte messageType = getPPkMessageTypeFromTransaction(odin_data);
+            List<Byte> message = getPPkMessageFromTransaction(odin_data);
             
             logger.info("\n--------------------\n Parsing PPk txIndex "+txIndex.toString()+"\n------------\n");
             
@@ -568,7 +547,18 @@ public class Blocks implements Runnable {
   }
    */
 
-  public Transaction transaction(String source, String destination, BigInteger amount_satoshi, BigInteger fee, String markPubkeyHexStr,String dataString) throws Exception {
+  public Transaction transaction(OdinTransctionData odin_tx_data) throws Exception {
+      byte[] data= Util.hexStringToBytes(odin_tx_data.data_hex);
+      return transaction(
+        odin_tx_data.source,
+        odin_tx_data.destination,
+        odin_tx_data.amount_satoshi,
+        odin_tx_data.fee_satoshi,
+        odin_tx_data.mark_hex,
+        data
+      );
+  }
+  public Transaction transaction(String source, String destination, BigInteger amount_satoshi, BigInteger fee, String markPubkeyHexStr,byte[] data) throws Exception {
     Transaction tx = new Transaction(params);
 
     if (!destination.equals("") && amount_satoshi.compareTo(BigInteger.valueOf(Config.dustSize))<0) {
@@ -576,13 +566,8 @@ public class Blocks implements Runnable {
       return tx;
     }
 
-    byte[] data = null;
-    List<Byte> dataArrayList = new ArrayList<Byte>();
-    try {
-      data = dataString.getBytes(Config.BINARY_DATA_CHARSET);
-      dataArrayList = Util.toByteArrayList(data);
-    } catch (UnsupportedEncodingException e) {
-    }
+    List<Byte> dataArrayList = (data==null)?
+                               new ArrayList<Byte>() : Util.toByteArrayList(data);
 
     int odin_data_length = dataArrayList.size();
 
@@ -597,19 +582,23 @@ public class Blocks implements Runnable {
     } catch (AddressFormatException e) {
     }
 
-    ECKey register_key=null; 
-    for (ECKey key : wallet.getImportedKeys()) {
-        try {
-          if (key.toAddress(params).equals(new Address(params, source))) {
-            register_key=key;
-            break;
-          }
-        } catch (AddressFormatException e) {
+    ECKey source_key=null; 
+    if(bRemoteWalletMode){
+        //source_key=new ECKey(null,Util.hexStringToBytes(source_pubkey_hex));
+    }else{
+        for (ECKey key : wallet.getImportedKeys()) {
+            try {
+              if (key.toAddress(params).equals(new Address(params, source))) {
+                source_key=key;
+                break;
+              }
+            } catch (AddressFormatException e) {
 
+            }
         }
     }
     
-    if(null==register_key)
+    if(null==source_key)
        return null;
 
     //组织多重交易来嵌入所需存放的数据
@@ -620,7 +609,7 @@ public class Blocks implements Runnable {
       int from = 0;
       for (int tt=0; tt==0 || (tt<max_tx_num && from < odin_data_length - Config.MAX_OP_RETURN_LENGTH);tt++ ) {
         List<ECKey> keys = new ArrayList<ECKey>();
-        keys.add(register_key);
+        keys.add(source_key);
         
         if(tt==0){ //第一条多重交易的第二个公钥固定为指定特征公钥
           keys.add(new ECKey(null, Util.hexStringToBytes(markPubkeyHexStr)));
@@ -636,7 +625,7 @@ public class Blocks implements Runnable {
           byte[] tmp_pub_key=Util.generateValidPubkey(Util.toByteArray(chunk));
           
           if(tmp_pub_key==null){
-            throw new Exception("Unable to generate valid pubkey for embedding data["+dataString+"].Please change your request contents!");
+            throw new Exception("Unable to generate valid pubkey for embedding data.Please change your request contents!");
           }
           
           keys.add(new ECKey(null,tmp_pub_key));
@@ -662,14 +651,14 @@ public class Blocks implements Runnable {
     }
     List<UnspentOutput> unspents = Util.getUnspents(source);
     List<Script> inputScripts = new ArrayList<Script>();      
-    List<ECKey> inputKeys = new ArrayList<ECKey>();      
 
     Boolean atLeastOneRegularInput = false;
     Integer usedUnspents=0;
     for (UnspentOutput unspent : unspents) {
       String txHash = unspent.txid;
 
-      byte[] scriptBytes = Hex.decode(unspent.scriptPubKeyHex.getBytes(Charset.forName(Config.BINARY_DATA_CHARSET)));
+      //byte[] scriptBytes = Hex.decode(unspent.scriptPubKeyHex.getBytes(Charset.forName(Config.BINARY_DATA_CHARSET)));
+      byte[] scriptBytes = Util.hexStringToBytes(unspent.scriptPubKeyHex);
       Script script = new Script(scriptBytes);
       //if it's sent to an address and we don't yet have enough inputs or we don't yet have at least one regular input, or if it's sent to a multisig
       //in other words, we sweep up any unused multisig inputs with every transaction
@@ -677,8 +666,12 @@ public class Blocks implements Runnable {
       try {
         if ((script.isSentToAddress() && (totalOutput.compareTo(totalInput)>0 || !atLeastOneRegularInput)) 
           || (script.isSentToMultiSig() && ((usedUnspents<2 && !atLeastOneRegularInput)||(usedUnspents<3 && atLeastOneRegularInput ) || fee.compareTo(BigInteger.valueOf(Config.maxFee))==0 ) )) {
-          //if we have this transaction in our wallet already, we need confirm that it is not already spent
-          if (wallet.getTransaction(new Sha256Hash(txHash))==null || wallet.getTransaction(new Sha256Hash(txHash)).getOutput(unspent.vout).isAvailableForSpending()) {
+          if(
+            bRemoteWalletMode
+            ||( !bRemoteWalletMode 
+               && wallet.getTransaction(new Sha256Hash(txHash))==null || wallet.getTransaction(new Sha256Hash(txHash)).getOutput(unspent.vout).isAvailableForSpending() 
+               )
+            ) {
             if (script.isSentToAddress()) {
               atLeastOneRegularInput = true;
             }
@@ -709,22 +702,12 @@ public class Blocks implements Runnable {
             */
             Sha256Hash sha256Hash = new Sha256Hash(txHash);  
             TransactionOutPoint txOutPt = new TransactionOutPoint(params, unspent.vout, sha256Hash);
-            for (ECKey key : wallet.getImportedKeys()) {
-              try {
-                if (key.toAddress(params).equals(new Address(params, source))) {
-                  System.out.println("Spending "+sha256Hash+" "+unspent.vout);
-                  totalInput = totalInput.add(unspent.amt_satoshi);
-                  TransactionInput input = new TransactionInput(params, tx, new byte[]{}, txOutPt);
-                  tx.addInput(input);
-                  inputScripts.add(script);
-                  inputKeys.add(key);
-                                      
-                  usedUnspents++;
-                  break;
-                }
-              } catch (AddressFormatException e) {
-              }
-            }
+            
+            System.out.println("Spending "+sha256Hash+" "+unspent.vout);
+            totalInput = totalInput.add(unspent.amt_satoshi);
+            TransactionInput input = new TransactionInput(params, tx, new byte[]{}, txOutPt);
+            tx.addInput(input);
+            inputScripts.add(script);
           }
         }
                   
@@ -754,24 +737,27 @@ public class Blocks implements Runnable {
     } catch (AddressFormatException e) {
     }
 
-    //sign inputs
-    for (int i = 0; i<tx.getInputs().size(); i++) {
-      Script script = inputScripts.get(i);
-      ECKey key = inputKeys.get(i);
-      TransactionInput input = tx.getInput(i);
-      TransactionSignature txSig = tx.calculateSignature(i, key, script, SigHash.ALL, false);
-      if (script.isSentToAddress()) {
-        input.setScriptSig(ScriptBuilder.createInputScript(txSig, key));
-      } else if (script.isSentToMultiSig()) {
-        //input.setScriptSig(ScriptBuilder.createMultiSigInputScript(txSig));
-        ScriptBuilder builder = new ScriptBuilder();
-        builder.smallNum(0);
-        builder.data(txSig.encodeToBitcoin());
-        input.setScriptSig(builder.build());
-      }
+    if(!bRemoteWalletMode){
+        //sign inputs while use local wallet
+        for (int i = 0; i<tx.getInputs().size(); i++) {
+          Script script = inputScripts.get(i);
+          TransactionInput input = tx.getInput(i);
+          TransactionSignature txSig = tx.calculateSignature(i, source_key, script, SigHash.ALL, false);
+          if (script.isSentToAddress()) {
+            input.setScriptSig(ScriptBuilder.createInputScript(txSig, source_key));
+          } else if (script.isSentToMultiSig()) {
+            //input.setScriptSig(ScriptBuilder.createMultiSigInputScript(txSig));
+            ScriptBuilder builder = new ScriptBuilder();
+            builder.smallNum(0);
+            builder.data(txSig.encodeToBitcoin());
+            input.setScriptSig(builder.build());
+          }
+        }
+        
+        tx.verify();
     }
 
-    tx.verify();
+    
     //Util.exportTextToFile(tx.toString(), "resources/db/last_transaction.log");
     //System.exit(0);
     return tx;
@@ -779,13 +765,12 @@ public class Blocks implements Runnable {
 
   public Boolean sendTransaction(String source, Transaction tx) throws Exception {
     try {
-      System.out.println("Try to send transaction:");
+      System.out.println("Try to send ("+source+") transaction:");
       System.out.println(tx.toString());
 
-      byte[] rawTxBytes = tx.bitcoinSerialize();
-      
       //for debug
       /*
+      byte[] rawTxBytes = tx.bitcoinSerialize();
       System.out.println("The Raw TX:");
       for(int kk=0;kk<rawTxBytes.length;kk++){
           System.out.printf("%02x",rawTxBytes[kk]);
@@ -796,36 +781,11 @@ public class Blocks implements Runnable {
       TransactionBroadcast future = null;
       try {
         logger.info("Broadcasting transaction: "+tx.getHashAsString());
-        future = peerGroup.broadcastTransaction(tx); //debug
+        future = peerGroup.broadcastTransaction(tx); 
         
-        cacheLastUnspentTransaction(source,tx); 
-        /*Not need waiting for the response,Deled by flyingsee,20160815
-        int tries = 2; 
-        Boolean success = false;
-        while (tries>0 && !success) {
-          tries--;
-          List<UnspentOutput> unspents = Util.getUnspents(source);
-          logger.info("unspents count: " + unspents.size() ); 
-          for (UnspentOutput unspent : unspents) {
-            if (unspent.txid.equals(tx.getHashAsString())) {
-              success = true;
-              break;
-            }
-          }
-          //if (Util.getTransaction(tx.getHashAsString())!=null) {
-          //  success = true;
-          //}
-          Thread.sleep(5000); 
-        }
+        if(source!=null)
+            cacheLastUnspentTransaction(source,tx); 
 
-        if (!success) {
-          throw new Exception(Language.getLangLabel("Transaction timed out. Please try again.")+"[1]");
-        }
-        */
-        //future.get(60, TimeUnit.SECONDS);
-        //} catch (TimeoutException e) {
-        //  logger.error(e.toString());
-        //  future.cancel(true);
       } catch (Exception e) {
         throw new Exception(Language.getLangLabel("Transaction timed out. Please try again.")+"[2]");
       }
@@ -986,12 +946,11 @@ public class Blocks implements Runnable {
     logger.info("Incoming PPk transaction from "+source+" to "+destination+" ("+tx.getHashAsString()+")");
 
     if ( !source.equals("") && dataArrayList.size()>0 ) {
-        String dataString = "";
-        try {
-            dataString = new String(data,Config.BINARY_DATA_CHARSET);
-            logger.info("PPk dataString : ["+dataString+"] length="+dataString.length());
-        } catch (UnsupportedEncodingException e) {
-        }
+        String str_data_hex = "";
+
+        str_data_hex = Util.bytesToHexString(data);
+        //logger.info("PPk str_data_hex : ["+str_data_hex+"] length="+str_data_hex.length());
+
         db.executeUpdate("delete from transactions where tx_hash='"+tx.getHashAsString()+"' and block_index<0");
         ResultSet rs = db.executeQuery("select * from transactions where tx_hash='"+tx.getHashAsString()+"';");
         try {
@@ -999,11 +958,11 @@ public class Blocks implements Runnable {
                 if (block!=null) {
                     Integer newTxIndex=Util.getLastTxIndex()+1;
                     PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data,prefix_type,sn_in_block) VALUES('"+newTxIndex+"','"+tx.getHashAsString()+"','"+blockHeight+"','"+block.getTimeSeconds()+"','"+source+"','"+destination+"','"+amount_satoshi.toString()+"','"+fee.toString()+"',?,1,'"+txSnInBlock.toString()+"')");
-                    ps.setString(1, dataString);
+                    ps.setString(1, str_data_hex);
                     ps.execute();
                 }else{
                     PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data,prefix_type,sn_in_block) VALUES('"+(Util.getLastTxIndex()+1)+"','"+tx.getHashAsString()+"','-1','"+Util.getNowTimestamp() +"','"+source+"','"+destination+"','"+amount_satoshi.toString()+"','"+fee.toString()+"',?,1,-1)");
-                    ps.setString(1, dataString);
+                    ps.setString(1, str_data_hex);
                     ps.execute();
                 }
                 
@@ -1016,29 +975,44 @@ public class Blocks implements Runnable {
     return true;
   }
     
-  public static Byte getPPkMessageTypeFromTransaction(String txDataString) {
-    byte[] data;
-    Byte messageType = null;
-    try {
-      data = txDataString.getBytes(Config.BINARY_DATA_CHARSET);
-      messageType=data[0];
-      return messageType;
-    } catch (UnsupportedEncodingException e) {
-    }
-    return messageType;
+  public static Byte getPPkMessageTypeFromTransaction(byte[] odin_data) {
+    if(odin_data==null || odin_data.length==0 )
+        return null;
+    else
+        return odin_data[0];
   }  
     
-  public static List<Byte> getPPkMessageFromTransaction(String txDataString) {
-    byte[] data;
+  public static List<Byte> getPPkMessageFromTransaction(byte[] odin_data) {
     List<Byte> message = null;
     try {
-      data = txDataString.getBytes(Config.BINARY_DATA_CHARSET);
-      List<Byte> dataArrayList = Util.toByteArrayList(data);
+      List<Byte> dataArrayList = Util.toByteArrayList(odin_data);
 
       message = dataArrayList.subList(1, dataArrayList.size());    
       return message;
-    } catch (UnsupportedEncodingException e) {
+    } catch (Exception e) {
     }
     return message;
+  }
+  
+  //打开远程钱包模式 2019-01-15
+  public static void enableRemoteWalletMode() {
+    bRemoteWalletMode=true;
+  }
+  
+  public static boolean isRemoteWalletMode() {
+    return bRemoteWalletMode;
+  }
+  
+  //获取当前地址列表 2019-01-15
+  public List<String> getAddresses() {
+    List<String> addresses = new ArrayList<String>();
+    if(!bRemoteWalletMode){//本地钱包模式
+        List<ECKey> keys = wallet.getImportedKeys();
+        
+        for(ECKey key : keys) {
+          addresses.add(key.toAddress(params).toString());
+        }
+    }
+    return addresses;
   }
 }

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Calendar;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.Base64;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,83 +48,19 @@ public class GuiServer implements Runnable {
     init(); 
   } 
   
-  public Map<String, Object> updateCommonStatus(Request request, Map<String, Object> attributes) {
-    Blocks blocks = Blocks.getInstance();
-    attributes.put("blocksBTC", blocks.bitcoinBlock);
-    attributes.put("blocksPPK", blocks.ppkBlock);
-    attributes.put("version", Config.version);
-    attributes.put("version_major", Config.majorVersion);
-    attributes.put("version_minor", Config.minorVersion);
-    attributes.put("system_charset", java.nio.charset.Charset.defaultCharset().toString());
-    
-    String str_ipfs_status = Util.isIpfsRuning() ? "IPFS:OK":"IPFS:<font color='#F00'>Not running</font>";
-    
-    str_ipfs_status += "("+Config.IPFS_API_ADDRESS+")";
-    
-    attributes.put("ipfs_status", str_ipfs_status);
-    
-    //Blocks.getInstance().versionCheck();
-    if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
-    
-    String address = Util.getAddresses().get(0);
-    if (request.session().attributes().contains("address")) {
-      address = request.session().attribute("address");
-    }
-    if (request.queryParams().contains("address")) {
-      address = request.queryParams("address");
-      request.session().attribute("address", address);
-    }
-    ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
-    for (String addr : Util.getAddresses()) {
-      HashMap<String,Object> map = new HashMap<String,Object>();  
-      map.put("address", addr);
-      //map.put("balance_BTC", Util.getBalance(addr, "BTC").doubleValue() / Config.btc_unit.doubleValue());
-      addresses.add(map);
-    }
-    attributes.put("address", address);        
-    attributes.put("addresses", addresses);
-    for (ECKey key : blocks.wallet.getImportedKeys()) {
-      if (key.toAddress(blocks.params).toString().equals(address)) {
-        attributes.put("own", true);
-      }
-    }
-    
-    //attributes.put("balanceBTC", Util.getBalance(address, "BTC").doubleValue() / Config.btc_unit.doubleValue());
-        
-    attributes.put("LANG_PPKPUB", Language.getLangLabel("PPkPub"));
-    attributes.put("LANG_ODIN", Language.getLangLabel("ODIN"));
-    attributes.put("LANG_BROWSER", Language.getLangLabel("Browser"));
-    attributes.put("LANG_WALLET", Language.getLangLabel("Wallet"));
-    attributes.put("LANG_TECHNICAL", Language.getLangLabel("Technical"));
-    attributes.put("LANG_COMMUNITY", Language.getLangLabel("Community"));
-
-    attributes.put("LANG_BLOCKS", Language.getLangLabel("blocks"));
-    attributes.put("LANG_VERSION", Language.getLangLabel("Version"));
-
-    attributes.put("LANG_VIEWING_OTHER_ADDRESS", Language.getLangLabel("Viewing other address"));
-    attributes.put("LANG_VIEWING_OTHER_ADDRESS_NOTICE", Language.getLangLabel("Notice: Click your address listed on the right side to go back your wallet."));
-    attributes.put("LANG_REPARSE_TRANSACTIONS", Language.getLangLabel("Reparse transactions"));
-    attributes.put("LANG_VERSION_OUT_OF_DATE", Language.getLangLabel("You must update to the latest version. Your version is out of date."));
-    attributes.put("LANG_PARSING_TRANSACTIONS", Language.getLangLabel("The software is parsing transactions. You can still use the software, but the information you see will be out of date."));
-
-    attributes.put("LANG_ERROR", Language.getLangLabel("Error"));
-        
-    return attributes;
-  }
-  
   public void init() {
     //start Blocks thread
+    /*
     Blocks blocks = Blocks.getInstance();
     Thread blocksThread = new Thread(blocks);
     blocksThread.setDaemon(true);
     blocksThread.start(); 
-    
+    */
     boolean inJar = false;
     try {
       CodeSource cs = this.getClass().getProtectionDomain().getCodeSource();
       inJar = cs.getLocation().toURI().getPath().endsWith(".jar");
-    }
-    catch (URISyntaxException e) {
+    }catch (URISyntaxException e) {
       e.printStackTrace();
     }
     
@@ -141,37 +78,16 @@ public class GuiServer implements Runnable {
     } catch (Exception e) {
     }
 
-    get(new Route("/chat_status_update") {
-      @Override
-      public Object handle(Request request, Response response) {
-        request.session(true);
-        if (request.queryParams().contains("chat_open")) {
-          request.session().attribute("chat_open", request.queryParams("chat_open"));  
-        }
-        return request.session().attribute("chat_open");
-      }
-    });
     get(new FreeMarkerRoute("/") {
       @Override
       public ModelAndView handle(Request request, Response response) {
         setConfiguration(configuration);
-        
-        Blocks blocks = Blocks.getInstance();
-        
-        if (request.queryParams().contains("reparse")) {
-          blocks.reparse();
-        }
 
         Map<String, Object> attributes = new HashMap<String, Object>();
         request.session(true);
         attributes = updateCommonStatus(request, attributes);
       
-        attributes.put("title", "A tool focusing on decentralized applications");
-                
-        if(Language.getCurrentLang().equals("CN"))
-            attributes.put("news_url", Config.newsUrlCN);
-        else
-            attributes.put("news_url", Config.newsUrl);
+        attributes.put("title", "Open tools focusing on decentralized applications");
 
         Database db = Database.getInstance();
         String address=(String)attributes.get("address");
@@ -210,13 +126,14 @@ public class GuiServer implements Runnable {
         }
         
         attributes.put("LANG_A_UNIQUE_GROUP", Language.getLangLabel("a public group that focus on open decentralized protocols and tools."));
-        attributes.put("LANG_MADE_FOR_A_LITTLE_JOY", Language.getLangLabel("ODIN is a decentralized DNS based on blockchains (BTC,ETH,BYTOM,Fabric,etc) . It's made for a little joy."));
+        attributes.put("LANG_MADE_FOR_A_LITTLE_JOY", Language.getLangLabel("ODIN(Open Data Index Name) is a decentralized DNS based on blockchains (BTC,ETH,BYTOM,Fabric,etc) . It's made for a little joy."));
         attributes.put("LANG_DOWNLOAD", Language.getLangLabel("Download"));
         attributes.put("LANG_SOFTWARE_INCLUDING", Language.getLangLabel("this opensource software -- including a tool for registing and managing ODIN , a simple bitcoin wallet . Start playing today!"));
         attributes.put("LANG_BUILT_ON_BITCOIN_BLOCKCHAIN", Language.getLangLabel("Built on top of the blockchain technology, PPkPub will research and develope a few fully open decentralized protocols & tools. There is no central control and central point of failure. It's owned by the people."));
         attributes.put("LANG_LEARN_MORE", Language.getLangLabel("Learn more"));
         attributes.put("LANG_NEWS", Language.getLangLabel("News"));
 
+        attributes.put("LANG_RECENT_ODINS", Language.getLangLabel("Recent ODINs"));
         attributes.put("LANG_REGISTE_A_NEW_ODIN", Language.getLangLabel("Registe a new ODIN"));
         attributes.put("LANG_FULL_ODIN", Language.getLangLabel("Full ODIN"));
         attributes.put("LANG_SHORT_ODIN", Language.getLangLabel("SN"));
@@ -233,19 +150,16 @@ public class GuiServer implements Runnable {
         attributes.put("LANG_VALID", Language.getLangLabel("valid"));    
         attributes.put("LANG_UPDATE", Language.getLangLabel("Update"));      
         attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
-
+        
+        if(!Blocks.isRemoteWalletMode()){
+            if(Language.getCurrentLang().equals("CN"))
+                attributes.put("news_url", Config.newsUrlCN);
+            else
+                attributes.put("news_url", Config.newsUrl);
+        }
+        
+        //return modelAndView(attributes, "index_nowallet.html");
         return modelAndView(attributes, "index.html");
-      }
-    });
-    get(new FreeMarkerRoute("/participate") {
-      @Override
-      public ModelAndView handle(Request request, Response response) {
-        setConfiguration(configuration);
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        request.session(true);
-        attributes = updateCommonStatus(request, attributes);
-        attributes.put("title", "Participate");
-        return modelAndView(attributes, "participate.html");
       }
     });
     get(new FreeMarkerRoute("/community") {
@@ -290,15 +204,36 @@ public class GuiServer implements Runnable {
       }
     });  
     
-    
-    post(new FreeMarkerRoute("/odin") {
+    post(new FreeMarkerRoute("/confirmtx") {
       @Override
       public ModelAndView handle(Request request, Response response) {
         setConfiguration(configuration);
-        Map<String, Object> attributes = handleOdinRequest(request);
-        return modelAndView(attributes, "odin.html");
+        Map<String, Object> attributes = handleConfirmTxRequest(request);
+        
+        return modelAndView(attributes, "confirm-tx.html");
       }
     });
+
+    get(new FreeMarkerRoute("/broadcasttx") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        Map<String, Object> attributes = handleBroadcastTxRequest(request);
+        
+        return modelAndView(attributes, "broadcast-tx.html");
+      }
+    });    
+    
+    post(new FreeMarkerRoute("/broadcasttx") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        Map<String, Object> attributes = handleBroadcastTxRequest(request);
+        
+        return modelAndView(attributes, "broadcast-tx.html");
+      }
+    });    
+    
     get(new FreeMarkerRoute("/odin") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -307,6 +242,7 @@ public class GuiServer implements Runnable {
         return modelAndView(attributes, "odin.html");
       }
     });
+    
     get(new FreeMarkerRoute("/odin-add") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -315,7 +251,6 @@ public class GuiServer implements Runnable {
         request.session(true);
         attributes = updateCommonStatus(request, attributes);
         attributes.put("title", "Register a new odin");
-
 
         attributes.put("LANG_REGISTE_A_NEW_ODIN", Language.getLangLabel("Registe a new ODIN"));
         attributes.put("LANG_ODIN_ADMIN_ADDRESS", Language.getLangLabel("Admin BTC address"));
@@ -337,14 +272,7 @@ public class GuiServer implements Runnable {
         return modelAndView(attributes, "odin-add.html");
       }
     });
-    post(new FreeMarkerRoute("/odin-confirm") {
-      @Override
-      public ModelAndView handle(Request request, Response response) {
-        setConfiguration(configuration);
-        Map<String, Object> attributes = handleOdinConfirmRequest(request);
-        return modelAndView(attributes, "odin-confirm.html");
-      }
-    });  
+
     get(new FreeMarkerRoute("/odin-detail") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -361,14 +289,7 @@ public class GuiServer implements Runnable {
         return modelAndView(attributes, "odin-match.html");
       }
     });  
-    post(new FreeMarkerRoute("/odin-update") {
-      @Override
-      public ModelAndView handle(Request request, Response response) {
-        setConfiguration(configuration);
-        Map<String, Object> attributes = handleOdinUpdateRequest(request);
-        return modelAndView(attributes, "odin-update.html");
-      }
-    });  
+    
     get(new FreeMarkerRoute("/odin-update") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -377,14 +298,7 @@ public class GuiServer implements Runnable {
         return modelAndView(attributes, "odin-update.html");
       }
     });  
-    post(new FreeMarkerRoute("/odin-update-ap") {
-      @Override
-      public ModelAndView handle(Request request, Response response) {
-        setConfiguration(configuration);
-        Map<String, Object> attributes = handleOdinUpdateApSetRequest(request);
-        return modelAndView(attributes, "odin-update-ap.html");
-      }
-    });  
+
     get(new FreeMarkerRoute("/odin-update-ap") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -393,14 +307,7 @@ public class GuiServer implements Runnable {
         return modelAndView(attributes, "odin-update-ap.html");
       }
     }); 
-    post(new FreeMarkerRoute("/odin-create-first-ap") {
-      @Override
-      public ModelAndView handle(Request request, Response response) {
-        setConfiguration(configuration);
-        Map<String, Object> attributes = handleOdinCreateFirstApRequest(request);
-        return modelAndView(attributes, "odin-create-first-ap.html");
-      }
-    });  
+
     get(new FreeMarkerRoute("/odin-create-first-ap") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -409,15 +316,7 @@ public class GuiServer implements Runnable {
         return modelAndView(attributes, "odin-create-first-ap.html");
       }
     });     
-    post(new FreeMarkerRoute("/odin-update-vd") {
-      @Override
-      public ModelAndView handle(Request request, Response response) {
-        setConfiguration(configuration);
-        Map<String, Object> attributes = handleOdinUpdateVdSetRequest(request);
-        
-        return modelAndView(attributes, "odin-update-vd.html");
-      }
-    });  
+
     get(new FreeMarkerRoute("/odin-update-vd") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -427,14 +326,7 @@ public class GuiServer implements Runnable {
         return modelAndView(attributes, "odin-update-vd.html");
       }
     }); 
-    post(new FreeMarkerRoute("/odin-trans") {
-      @Override
-      public ModelAndView handle(Request request, Response response) {
-        setConfiguration(configuration);
-        Map<String, Object> attributes = handleOdinTransRequest(request);
-        return modelAndView(attributes, "odin-trans.html");
-      }
-    });  
+
     get(new FreeMarkerRoute("/odin-trans") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -460,7 +352,254 @@ public class GuiServer implements Runnable {
         return modelAndView(attributes, "error.html");
       }
     });
+    
+    post(new FreeMarkerRoute("/upload") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        Map<String, Object> attributes = handleUploadRequest(request);
+        
+        return modelAndView(attributes, "upload-result.html");
+      }
+    });
+   
   }
+  
+  
+  public Map<String, Object> handleUploadRequest(Request request) {
+    Map<String, Object> attributes = new HashMap<String, Object>();
+    request.session(true);
+    
+    //attributes = updateCommonStatus(request, attributes);
+    //String address=(String)attributes.get("address");
+    String odin=request.queryParams("odin");
+    if(odin==null){
+        attributes.put("error", "handleUploadRequest: no odin.");
+        return attributes;
+    } 
+    String tmp_ap_type = request.queryParams("ap_type");
+    
+    String file_base64=request.queryParams("file_base64");
+    if(file_base64==null){
+        attributes.put("error", "handleUploadRequest: no file_base64.");
+        return attributes;
+    } 
+    byte[] file_data=Base64.getDecoder().decode(file_base64);
+
+    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    if(odinInfo==null){
+      attributes.put("error", "handleUploadRequest Invalid odin.");
+    } else {  
+      try{
+       //Upload to th AP
+        String tmp_ap_url_str=Util.uploadToAP(tmp_ap_type,file_data,odinInfo.shortOdin.toString()+"_"+Util.getNowTimestamp() );
+        System.out.println("tmp_ap_url_str="+tmp_ap_url_str);
+        if(tmp_ap_url_str!=null && tmp_ap_url_str.length()>0 ){
+            attributes.put("upload_result", tmp_ap_url_str);
+        }
+      }catch (Exception e) {
+        logger.error(e.toString());
+        attributes.put("error", "handleUploadRequest Invalid request:"+e.toString());
+      }
+    }    
+        
+    return attributes;
+  }
+  
+  public Map<String, Object> updateCommonStatus(Request request, Map<String, Object> attributes) {
+    Blocks blocks = Blocks.getInstance();
+    attributes.put("blocksBTC", blocks.bitcoinBlock);
+    attributes.put("blocksPPK", blocks.ppkBlock);
+    attributes.put("version", Config.version);
+    attributes.put("version_major", Config.majorVersion);
+    attributes.put("version_minor", Config.minorVersion);
+    attributes.put("system_charset", java.nio.charset.Charset.defaultCharset().toString());
+    
+    String str_ipfs_status = Util.isIpfsRuning() ? "IPFS:OK":"IPFS:<font color='#F00'>Not running</font>";
+    
+    str_ipfs_status += "("+Config.IPFS_API_ADDRESS+")";
+    
+    attributes.put("ipfs_status", str_ipfs_status);
+    
+    //Blocks.getInstance().versionCheck();
+    if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
+    
+    String address = null;
+    List<String> local_address_list = Util.getAddresses();  
+    
+    if (request.queryParams().contains("address")) {
+      address = request.queryParams("address").trim();
+      request.session().attribute("address", address);
+    }else if (request.session().attributes().contains("address")) {
+      address = request.session().attribute("address");
+    }else if( local_address_list!=null && !local_address_list.isEmpty() ){
+      address =  local_address_list.get(0);
+    }
+    
+    if(address==null || address.length()==0){
+        address="No address";
+    }
+    
+    ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
+    if(local_address_list==null || local_address_list.isEmpty() ){ //远程钱包模式
+        HashMap<String,Object> map = new HashMap<String,Object>();  
+        map.put("address", address);
+        //map.put("balance_BTC", Util.getBalance(addr, "BTC").doubleValue() / Config.btc_unit.doubleValue());
+        addresses.add(map);
+        //attributes.put("own", true);
+    }else{ //本地钱包模式
+        for (String addr : local_address_list) {
+          HashMap<String,Object> map = new HashMap<String,Object>();  
+          map.put("address", addr);
+          //map.put("balance_BTC", Util.getBalance(addr, "BTC").doubleValue() / Config.btc_unit.doubleValue());
+          addresses.add(map);
+        }
+        
+        for (ECKey key : blocks.wallet.getImportedKeys()) {
+          if (key.toAddress(blocks.params).toString().equals(address)) {
+            //attributes.put("own", true);
+            attributes.put("isLocalWalletAddress", true);
+          }
+        }
+    }
+    attributes.put("address", address);        
+    attributes.put("addresses", addresses);
+
+    attributes.put("LANG_PPKPUB", Language.getLangLabel("PPkPub"));
+    attributes.put("LANG_ODIN", Language.getLangLabel("ODIN"));
+    attributes.put("LANG_MY_ODIN", Language.getLangLabel("MyODIN"));
+    attributes.put("LANG_BROWSER", Language.getLangLabel("Browser"));
+    attributes.put("LANG_WALLET", Language.getLangLabel("Wallet"));
+    attributes.put("LANG_TECHNICAL", Language.getLangLabel("Technical"));
+    attributes.put("LANG_COMMUNITY", Language.getLangLabel("Community"));
+
+    attributes.put("LANG_BLOCKS", Language.getLangLabel("blocks"));
+    attributes.put("LANG_VERSION", Language.getLangLabel("Version"));
+
+    attributes.put("LANG_VIEWING_OTHER_ADDRESS", Language.getLangLabel("Viewing other address"));
+    attributes.put("LANG_VIEWING_OTHER_ADDRESS_NOTICE", Language.getLangLabel("Notice: Click your address listed on the right side to go back your wallet."));
+    attributes.put("LANG_REPARSE_TRANSACTIONS", Language.getLangLabel("Reparse transactions"));
+    attributes.put("LANG_VERSION_OUT_OF_DATE", Language.getLangLabel("You must update to the latest version. Your version is out of date."));
+    attributes.put("LANG_PARSING_TRANSACTIONS", Language.getLangLabel("The software is parsing transactions. You can still use the software, but the information you see will be out of date."));
+
+    attributes.put("LANG_ERROR", Language.getLangLabel("Error"));
+        
+    return attributes;
+  }
+  
+  public Map<String, Object> handleConfirmTxRequest(Request request) {
+    Map<String, Object> attributes = new HashMap<String, Object>();
+    request.session(true);
+    attributes = updateCommonStatus(request, attributes);
+    attributes.put("title", "ConfirmTX");
+    
+    OdinTransctionData odin_data=null;
+   
+    try {
+        if (request.queryParams().contains("form")) {
+          String form_type=request.queryParams("form");
+          if(form_type.equals("add-odin"))
+            odin_data=GenOdinDataByRequest.genOdinDataOfAdd(request,attributes);
+          else if(form_type.equals("update-baseinfo"))
+            odin_data=GenOdinDataByRequest.genOdinDataOfUpdateBaseInfo(request,attributes);
+          else if(form_type.equals("update-aplist"))
+            odin_data=GenOdinDataByRequest.genOdinDataOfUpdateAP(request,attributes);
+          else if(form_type.equals("update-vdset"))
+            odin_data=GenOdinDataByRequest.genOdinDataOfUpdateVdSet(request,attributes);
+          else if(form_type.equals("trans-register"))
+            odin_data=GenOdinDataByRequest.genOdinDataOfTransRegister(request,attributes);
+          else if(form_type.equals("create-first-ap")){
+            odin_data=GenOdinDataByRequest.genOdinDataOfCreateFirstAP(request,attributes);
+            if(odin_data==null){
+                attributes.put("success", Language.getLangLabel("The content had been updated while the AP url remain as "));
+            }
+          }else if(form_type.equals("confirm-update-log"))
+            odin_data=GenOdinDataByRequest.genOdinDataOfConfirmUpdateLog(request,attributes);
+          else if(form_type.equals("send"))
+            odin_data=GenOdinDataByRequest.genNormalSendTX(request,attributes);
+        } 
+    }catch (Exception e) {
+      e.printStackTrace();
+      logger.error("************* handleConfirmTxRequest error: "+e.getMessage());
+      attributes.put("error", "GuiServer:"+e.getMessage());
+    }
+    
+    if(odin_data==null){
+        if( !attributes.containsKey("success") ){
+            attributes.put("error", "Invalid ODIN setting!");
+        }
+    }else{
+        try {
+            Blocks blocks = Blocks.getInstance();
+            
+            if(!blocks.isRemoteWalletMode()){ //对于带有私钥的本地钱包模式，可以直接产生签名交易
+                odin_data.genSignedTransctionHex();
+            }
+            
+            String odin_tx_json=odin_data.toJSONString();
+            System.out.println("GuiServer odin_tx_json="+odin_tx_json);
+            String odin_tx_json_hex=null;
+            try{
+                odin_tx_json_hex=Util.bytesToHexString(odin_tx_json.getBytes(Config.BINARY_DATA_CHARSET));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            if(odin_tx_json_hex!=null){
+                attributes.put("odin_tx_source", odin_data.source);
+                attributes.put("odin_data_desc", odin_data.toString());
+                attributes.put("signed_tx_hex", odin_data.strSignedTxHex);
+                attributes.put("odin_tx_json_hex",odin_tx_json_hex );
+            }else{
+                attributes.put("error", "Invalid ODIN setting!");
+            }
+        }catch (Exception e) {
+          e.printStackTrace();
+          logger.error("************* handleConfirmTxRequest error: "+e.getMessage());
+          attributes.put("error", "GuiServer:"+e.getMessage());
+        } 
+    }
+
+    attributes.put("GENERATING_ODIN_TX", Language.getLangLabel("Generating ODIN TX"));
+    attributes.put("SENDER_ADDRESS", Language.getLangLabel("Sender Address"));
+    attributes.put("ODIN_DATA", Language.getLangLabel("ODIN Data"));
+    attributes.put("SIGNED_BTC_TX", Language.getLangLabel("Signed BTC TX"));
+    attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+    attributes.put("LANG_CONFIRM", Language.getLangLabel("Confirm"));  
+    
+    return attributes;
+  }
+  
+  
+  public Map<String, Object> handleBroadcastTxRequest(Request request) {
+      Map<String, Object> attributes = new HashMap<String, Object>();
+      request.session(true);
+      attributes = updateCommonStatus(request, attributes);
+      attributes.put("title", "BroadcastTX");
+
+      logger.info("************* do Broadcast TX **************");
+      String odin_tx_source = request.queryParams("odin_tx_source");
+      String signed_tx_hex = request.queryParams("signed_tx_hex");
+      
+      if( signed_tx_hex!=null && signed_tx_hex.length()>0 ){
+        try{
+          Blocks blocks = Blocks.getInstance();
+          Transaction tx = new Transaction( blocks.params , Util.hexStringToBytes(signed_tx_hex));
+          blocks.sendTransaction(odin_tx_source,tx);
+          attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
+        }catch (Exception e) {
+          logger.error("************* do Broadcast TX error: "+e.getMessage());
+          e.printStackTrace();
+          attributes.put("error", "GuiServer:"+e.getMessage());
+        }
+      } else {
+        attributes.put("error", Language.getLangLabel("Please input valid TX."));
+      } 
+    
+    attributes.put("LANG_MY_ODIN", Language.getLangLabel("MyODIN"));
+    attributes.put("LANG_REGISTE_A_NEW_ODIN", Language.getLangLabel("Registe a new ODIN"));
+    return attributes;
+  }
+
   
   public Map<String, Object> handleWalletRequest(Request request) {
     Map<String, Object> attributes = new HashMap<String, Object>();
@@ -487,6 +626,12 @@ public class GuiServer implements Runnable {
           blocks.wallet.addKey(newKey);
         }
       }
+      
+      //save wallet file
+      try {
+          blocks.wallet.saveToFile(new File(blocks.walletFile));
+      } catch (IOException e) {
+      }
     }
     if (request.queryParams().contains("form") && request.queryParams("form").equals("reimport")) {
       ECKey importKey = null;
@@ -506,35 +651,6 @@ public class GuiServer implements Runnable {
         }
       }
     }
-    
-    if (request.queryParams().contains("form") && request.queryParams("form").equals("send")) {
-      String source = request.queryParams("source");
-      String destination = request.queryParams("destination");
-      String quantityStr=request.queryParams("quantity");
-      
-      try{
-        Address.getParametersFromAddress(destination);
-      } catch(Exception e){
-        destination="";
-      }
-
-      if(destination.length()==0){
-        attributes.put("error", Language.getLangLabel("Please input a valid destination address that you want to send."));
-      }else if(quantityStr.length()==0){
-        attributes.put("error", Language.getLangLabel("Please input the BTC amount that you want to send."));
-      } else {
-        try {
-          Double rawQuantity = Double.parseDouble(quantityStr);
-          BigInteger quantity = new BigDecimal(rawQuantity*Config.btc_unit).toBigInteger();
-        
-          Transaction tx = Send.create(source, destination, "BTC", quantity);
-          blocks.sendTransaction(source,tx);
-          attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
-        } catch (Exception e) {
-          attributes.put("error", "GuiServer:"+e.getMessage());
-        }
-      }
-    }
 
     if (request.queryParams().contains("form") && request.queryParams("form").equals("import")) {
       String privateKey = request.queryParams("privatekey");
@@ -545,6 +661,12 @@ public class GuiServer implements Runnable {
         attributes.put("success", Language.getLangLabel("Your private key has been imported."));
       } catch (Exception e) {
         attributes.put("error", Language.getLangLabel("Error when importing private key: ")+e.getMessage());
+      }
+      
+      //save wallet file
+      try {
+          blocks.wallet.saveToFile(new File(blocks.walletFile));
+      } catch (IOException e) {
       }
     }
     
@@ -558,14 +680,6 @@ public class GuiServer implements Runnable {
     }
 
     attributes.put("balanceBTC", Util.getBalance(address, "BTC").doubleValue() / Config.btc_unit.doubleValue());
-    
-    Database db = Database.getInstance();
-
-    //save wallet file
-    try {
-      blocks.wallet.saveToFile(new File(blocks.walletFile));
-    } catch (IOException e) {
-    }
         
     attributes.put("LANG_MY", Language.getLangLabel("My "));
     attributes.put("LANG_HIS", Language.getLangLabel("His "));
@@ -593,49 +707,8 @@ public class GuiServer implements Runnable {
     request.session(true);
     attributes = updateCommonStatus(request, attributes);
     attributes.put("title", "Odin");
-    
-    Blocks blocks = Blocks.getInstance();
+
     String address=(String)attributes.get("address");
-    
-    if (request.queryParams().contains("form") && request.queryParams("form").equals("add-odin")) {
-      logger.info("************* do add-odin **************");
-    
-      String register = request.queryParams("register");
-      String admin = request.queryParams("admin_address");
-      String titleStr=request.queryParams("title");
-      String emailStr=request.queryParams("email");
-      String authSet=request.queryParams("auth");
-
-      if(admin.length()>0 && authSet.length()>0 ){
-        try {
-          Map mapOdinSet = new HashMap(); 
-                    
-          mapOdinSet.put("ver", Config.ODIN_PROTOCOL_VER); 
-          mapOdinSet.put("x-tool", Config.appName+Config.version); //加上自定义的扩展信息：客户端和版本信息，用于调试,20181222
-          mapOdinSet.put("auth", authSet); 
-
-          if(register.equals(admin))
-             admin="";
-        
-          if(titleStr.length()>0)
-             mapOdinSet.put("title", titleStr); 
-         
-          if(emailStr.length()>0)
-             mapOdinSet.put("email", emailStr); 
-           
-          JSONObject odin_set = new JSONObject(mapOdinSet); 
-          
-          Transaction tx = Odin.createOdin(register, admin,odin_set);
-          blocks.sendTransaction(register,tx);
-          attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
-        } catch (Exception e) {
-          logger.error("************* do add-odin error: "+e.getMessage());
-          attributes.put("error", "GuiServer:"+e.getMessage());
-        }
-      } else {
-        attributes.put("error", Language.getLangLabel("Please input valid admin address,title and AP URLs."));
-      } 
-    }
     
     Database db = Database.getInstance();
     
@@ -931,91 +1004,12 @@ public class GuiServer implements Runnable {
         return attributes;
     } 
        
-    Blocks blocks = Blocks.getInstance();
     String address=(String)attributes.get("address");
     
     OdinInfo odinInfo=Odin.getOdinInfo(odin);
 
     if(odinInfo==null){
       attributes.put("error", "handleOdinUpdateRequest Invalid odin.");
-    }else if (request.queryParams().contains("form") && request.queryParams("form").equals("update-odin-baseinfo")) {
-      logger.info("************* do update-odin **************");
-
-      String admin = request.queryParams("admin");
-      String titleStr=request.queryParams("title");
-      String emailStr=request.queryParams("email");
-      String authSet=request.queryParams("auth");
-
-      if( titleStr.length()>0 ){
-        try {
-            HashMap<String,Object> map = new HashMap<String,Object>();
-            map.put("full_odin", odinInfo.fullOdin);
-            map.put("short_odin", odinInfo.shortOdin.toString());
-            map.put("register", odinInfo.register);
-            map.put("admin", admin);
-            map.put("tx_index",odinInfo.txIndex.toString());
-            map.put("tx_hash", odinInfo.txHash);
-            map.put("block_index", odinInfo.blockIndex.toString());
-            map.put("block_time", Util.timeFormat(odinInfo.blockTime));
-            map.put("validity",odinInfo.validity);
-
-            JSONObject odin_set = odinInfo.odinSet; 
-            map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
-
-            if(map.containsKey("me_updatable"))
-            {
-                Map mapNewOdinSet = new HashMap(); 
-                boolean  needBroadcast=false;
-            
-                mapNewOdinSet.put("ver", Config.ODIN_PROTOCOL_VER); 
-                mapNewOdinSet.put("cmd", Config.ODIN_CMD_UPDATE_BASE_INFO); 
-                
-                if(!admin.equals(odinInfo.admin) ){ //Need update while admin was changed
-                  needBroadcast=true;
-                }else{
-                  admin=""; //Not need update admin while not changed
-                }
-                
-                if(!titleStr.equals(map.get("title").toString()) ){//Only value that changed need to be updated
-                  mapNewOdinSet.put("title", titleStr); 
-                  needBroadcast=true;
-                }
-                
-                if(!emailStr.equals(map.get("email").toString()) ) {
-                  mapNewOdinSet.put("email", emailStr); 
-                  needBroadcast=true;
-                }
-                
-                if(!authSet.equals(map.get("auth").toString()) ) {
-                  mapNewOdinSet.put("auth", authSet); 
-                  needBroadcast=true;
-                }
-                
-                if(needBroadcast){
-                  JSONObject new_odin_set = new JSONObject(mapNewOdinSet); 
-                  
-                  Transaction tx = OdinUpdate.updateOdinBaseInfo(odinInfo.fullOdin,address,admin,new_odin_set);
-                  blocks.sendTransaction(address,tx);
-                  attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
-                } else {
-                  attributes.put("warning", Language.getLangLabel("Please make sure that you have changed some values then submit."));
-                }
-            } else {
-                attributes.put("error", Language.getLangLabel("No permission."));
-            }
-            
-            map.put("title", titleStr);
-            map.put("email", emailStr);  
-            map.put("auth", authSet); 
-
-            attributes.put("odin", map);  
-        } catch (Exception e) {
-          logger.error("************* do update-odin error: "+e.getMessage());
-          attributes.put("error", "GuiServer:"+e.getMessage());
-        }
-      } else {
-        attributes.put("error", Language.getLangLabel("Please input valid title."));
-      }
     } else {  
       HashMap<String,Object> map = new HashMap<String,Object>();
       map.put("full_odin", odinInfo.fullOdin);
@@ -1073,96 +1067,18 @@ public class GuiServer implements Runnable {
     attributes = updateCommonStatus(request, attributes);
     attributes.put("title", "Update an ODIN's AP setting");
     
+    String address=(String)attributes.get("address");
     String odin=request.queryParams("odin");
     if(odin==null){
         attributes.put("error", "handleOdinUpdateApSetRequest: no odin.");
         return attributes;
     } 
-       
-    Blocks blocks = Blocks.getInstance();
-    String address=(String)attributes.get("address");
-    
     OdinInfo odinInfo=Odin.getOdinInfo(odin);
-
     if(odinInfo==null){
       attributes.put("error", "handleOdinUpdateApSetRequest Invalid odin.");
-    }else if (request.queryParams().contains("form") && request.queryParams("form").equals("update-odin-aplist")) {
-      logger.info("************* do update-odin-aplist **************");
-
-      try {
-          HashMap<String,Object> map = new HashMap<String,Object>();
-          map.put("full_odin", odinInfo.fullOdin);
-          map.put("short_odin", odinInfo.shortOdin.toString());
-          map.put("register", odinInfo.register);
-          map.put("admin", odinInfo.admin);
-          map.put("tx_index",odinInfo.txIndex.toString());
-          map.put("tx_hash", odinInfo.txHash);
-          map.put("block_index", odinInfo.blockIndex.toString());
-          map.put("block_time", Util.timeFormat(odinInfo.blockTime));
-          map.put("validity",odinInfo.validity);
-
-          JSONObject odin_set = odinInfo.odinSet; 
-          map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
-
-          JSONObject apUpdate = new JSONObject(); 
-          for(int tt=0;tt<5;tt++){
-              String tmp_ap_url_str = request.queryParams("ap"+tt+"_url");
-              if(tmp_ap_url_str==null)
-                tmp_ap_url_str="";
-              else
-                tmp_ap_url_str.trim();
-              
-              String old_ap_url_str=(String)map.get("ap"+tt+"_url");
-              if(old_ap_url_str==null)
-                old_ap_url_str="";
-
-              System.out.println("tmp_ap_url_str="+tmp_ap_url_str+"  oldurl="+old_ap_url_str);
-              if( !tmp_ap_url_str.equals(old_ap_url_str) ){
-                  Map map_new_ap_record = new HashMap(); 
-                  map_new_ap_record.put("url", tmp_ap_url_str); 
-                  apUpdate.put(""+tt,new JSONObject(map_new_ap_record));
-              } 
-              map.put("ap"+tt+"_url", tmp_ap_url_str);
-          }
-          
-          if(map.containsKey("me_updatable"))
-          {
-              if( apUpdate.length()==0 ){
-                  attributes.put("error", Language.getLangLabel("Please update at least one valid access point."));
-              } else {
-                  Transaction tx = OdinUpdate.updateOdinApSet(odinInfo.fullOdin,address,apUpdate);
-                  blocks.sendTransaction(address,tx);
-                  attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
-              }
-          } else {
-              attributes.put("error", Language.getLangLabel("No permission."));
-          }
-
-          attributes.put("odin", map);  
-      } catch (Exception e) {
-        logger.error("************* do update-odin-aplist error: "+e.getMessage());
-        attributes.put("error", "GuiServer:"+e.getMessage());
-      }
     } else {  
-      HashMap<String,Object> map = new HashMap<String,Object>();
-      map.put("full_odin", odinInfo.fullOdin);
-      map.put("short_odin", odinInfo.shortOdin.toString());
-      map.put("register", odinInfo.register);
-      map.put("admin", odinInfo.admin);
-      map.put("tx_index",odinInfo.txIndex.toString());
-      map.put("tx_hash", odinInfo.txHash);
-      map.put("block_index", odinInfo.blockIndex.toString());
-      map.put("block_time", Util.timeFormat(odinInfo.blockTime));
-      map.put("validity",odinInfo.validity);
-      
-      try{
-        JSONObject odin_set = odinInfo.odinSet; 
-        map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
-
+        HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
         attributes.put("odin", map);    
-      }catch (Exception e) {
-        logger.error(e.toString());
-      }
     }          
     
     attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
@@ -1198,136 +1114,24 @@ public class GuiServer implements Runnable {
     attributes = updateCommonStatus(request, attributes);
     attributes.put("title", "Create AP sample based distributed system like Blockchain");
     
+    String address=(String)attributes.get("address");
     String odin=request.queryParams("odin");
     if(odin==null){
         attributes.put("error", "handleOdinCreateFirstApRequest: no odin.");
         return attributes;
     } 
-    
     String tmp_apid = request.queryParams("apid");
     if(tmp_apid==null || tmp_apid.length()==0){
         tmp_apid="0";
     } 
     attributes.put("apid", tmp_apid);  
     
-    Blocks blocks = Blocks.getInstance();
-    String address=(String)attributes.get("address");
     
     OdinInfo odinInfo=Odin.getOdinInfo(odin);
-
     if(odinInfo==null){
       attributes.put("error", "handleOdinCreateFirstApRequest Invalid odin.");
-    }else if (request.queryParams().contains("form") && request.queryParams("form").equals("odin-create-first-ap")) {
-      logger.info("************* do odin-create-first-ap **************");
-
-      try {
-          HashMap<String,Object> map = new HashMap<String,Object>();
-          map.put("full_odin", odinInfo.fullOdin);
-          map.put("short_odin", odinInfo.shortOdin.toString());
-          map.put("register", odinInfo.register);
-          map.put("admin", odinInfo.admin);
-          map.put("tx_index",odinInfo.txIndex.toString());
-          map.put("tx_hash", odinInfo.txHash);
-          map.put("block_index", odinInfo.blockIndex.toString());
-          map.put("block_time", Util.timeFormat(odinInfo.blockTime));
-          map.put("validity",odinInfo.validity);
-
-          JSONObject odin_set = odinInfo.odinSet; 
-          map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
-
-          //Generate PTTP data package of the sample page 
-          String tmp_page_title = request.queryParams("ap_page_title");
-          String tmp_page_content = request.queryParams("ap_page_content");
-          String tmp_ap_type = request.queryParams("ap_type");
-          
-          String tmp_private_key=request.queryParams("sign_prvkey");
-          String tmp_sign_algo=request.queryParams("sign_algo");
-          
-          String chunk_content="<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>"+tmp_page_title+"</title><meta content=\"IE=edge\" http-equiv=\"X-UA-Compatible\"><meta content=\"width=device-width, initial-scale=1\" name=\"viewport\"></head><body><h2>"+tmp_page_title+"</h2>"+tmp_page_content+"</body></html>";
-          
-          String sample_ppk_uri =  Config.PPK_URI_PREFIX + odinInfo.fullOdin +"/#" + Util.getNowTimestamp();
-          System.out.println("sample_ppk_uri="+sample_ppk_uri);
-          
-          JSONObject obj_chunk_metainfo=new JSONObject();
-          obj_chunk_metainfo.put("chunk_index", 0 );
-          obj_chunk_metainfo.put("chunk_count", 1 );
-          obj_chunk_metainfo.put("content_type", "text/html"  );
-          obj_chunk_metainfo.put("content_length", chunk_content.length()  );
-
-          JSONObject obj_newest_ap_chunk=new JSONObject();
-          obj_newest_ap_chunk.put("uri",sample_ppk_uri);
-          obj_newest_ap_chunk.put("status_code",200);
-          obj_newest_ap_chunk.put("status_info","OK");
-
-          obj_newest_ap_chunk.put("metainfo",obj_chunk_metainfo);
-          obj_newest_ap_chunk.put("content",chunk_content);
-          
-          String obj_newest_ap_chunk_str=obj_newest_ap_chunk.toString();
-          String tmp_sign="";
-          
-          if(tmp_private_key!=null && tmp_private_key.length()>0
-            && tmp_sign_algo!=null && tmp_sign_algo.length()>0
-             ){
-              tmp_sign=tmp_sign_algo+":"+RSACoder.sign(
-                    obj_newest_ap_chunk_str.getBytes() , tmp_private_key,tmp_sign_algo
-                 );
-          }
-
-          JSONObject obj_newest_ap_data=new JSONObject();
-          obj_newest_ap_data.put("ver",1);
-          obj_newest_ap_data.put("data",obj_newest_ap_chunk_str);
-          obj_newest_ap_data.put("sign", tmp_sign );
-
-          //Upload to th AP
-          String tmp_ap_url_str=Util.uploadToAP(tmp_ap_type,obj_newest_ap_data.toString().getBytes(Config.PPK_TEXT_CHARSET),odinInfo.shortOdin.toString()+"P");
-          if(tmp_ap_url_str!=null && tmp_ap_url_str.length()>0 ){
-              System.out.println("tmp_ap_url_str="+tmp_ap_url_str);
-              
-              JSONObject apUpdate = new JSONObject(); 
-              
-              //检查AP地址是否发生有效变更
-              String old_ap_url_str=(String)map.get("ap"+tmp_apid+"_url");
-              if(old_ap_url_str==null)
-                old_ap_url_str="";
-
-              System.out.println("tmp_ap_url_str="+tmp_ap_url_str+"  oldurl="+old_ap_url_str);
-              if( !tmp_ap_url_str.equals(old_ap_url_str) ){
-                  Map map_new_ap_record = new HashMap(); 
-                  map_new_ap_record.put("url", tmp_ap_url_str); 
-                  apUpdate.put(tmp_apid,new JSONObject(map_new_ap_record));
-              } 
-
-              if(map.containsKey("me_updatable")){
-                  if( apUpdate.length()==0 ){
-                      attributes.put("success", Language.getLangLabel("The content had been updated while the AP url remain as ")+tmp_ap_url_str);
-                  } else {
-                      Transaction tx = OdinUpdate.updateOdinApSet(odinInfo.fullOdin,address,apUpdate);
-                      blocks.sendTransaction(address,tx);
-                      attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
-                  }
-              } else {
-                  attributes.put("error", Language.getLangLabel("No permission."));
-              }
-          }else{
-              attributes.put("error", Language.getLangLabel("Invalid Inputs"));
-          }
-          
-          attributes.put("odin", map);  
-      } catch (Exception e) {
-        logger.error("************* do odin-create-first-ap error: "+e.getMessage());
-        attributes.put("error", "GuiServer:"+e.getMessage());
-      }
     } else {  
-      HashMap<String,Object> map = new HashMap<String,Object>();
-      map.put("full_odin", odinInfo.fullOdin);
-      map.put("short_odin", odinInfo.shortOdin.toString());
-      map.put("register", odinInfo.register);
-      map.put("admin", odinInfo.admin);
-      map.put("tx_index",odinInfo.txIndex.toString());
-      map.put("tx_hash", odinInfo.txHash);
-      map.put("block_index", odinInfo.blockIndex.toString());
-      map.put("block_time", Util.timeFormat(odinInfo.blockTime));
-      map.put("validity",odinInfo.validity);
+      HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
       
       try{
         String old_ap_url=request.queryParams("old_ap_url");
@@ -1336,18 +1140,20 @@ public class GuiServer implements Runnable {
                 String str_ap_resp_json=Util.fetchURI(old_ap_url);
                 JSONObject obj_ap_resp=PPkURI.parseRespOfPTTP(old_ap_url,str_ap_resp_json,null);
                 if(obj_ap_resp!=null){
+                    int status_code =  obj_ap_resp.getInt("status_code");
                     byte[] old_page_content= (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) ;
                     if(old_page_content!=null){
-                        attributes.put("old_page_content", new String(old_page_content));
+                        if(status_code==200)
+                            attributes.put("old_page_content", new String(old_page_content));
+                        else
+                            attributes.put("old_page_content", ""+status_code+" "+(new String(old_page_content)));
+                        
                     }
                 }
             }catch (Exception e) {
                 logger.error(e.toString());
             }
         } 
-        
-        JSONObject odin_set = odinInfo.odinSet; 
-        map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
         
         //系统为用户自动产生一对RSA公私钥供选用
         JSONObject keyMap=Util.getRSAKeys(odinInfo.fullOdin,true,true);
@@ -1403,100 +1209,20 @@ public class GuiServer implements Runnable {
     
     attributes = updateCommonStatus(request, attributes);
     attributes.put("title", "Update an ODIN's validtion setting");
+    String address=(String)attributes.get("address");
     
     String odin=request.queryParams("odin");
     if(odin==null){
         attributes.put("error", "handleOdinUpdateVdSetRequest: no odin.");
         return attributes;
     } 
-       
-    Blocks blocks = Blocks.getInstance();
-    String address=(String)attributes.get("address");
-    
     OdinInfo odinInfo=Odin.getOdinInfo(odin);
 
     if(odinInfo==null){
       attributes.put("error", "handleOdinUpdateApSetRequest Invalid odin.");
-    }else if (request.queryParams().contains("form") && request.queryParams("form").equals("update-odin-vdset")) {
-      logger.info("************* do update-odin-vdset **************");
-
-      try {
-          HashMap<String,Object> map = new HashMap<String,Object>();
-          map.put("full_odin", odinInfo.fullOdin);
-          map.put("short_odin", odinInfo.shortOdin.toString());
-          map.put("register", odinInfo.register);
-          map.put("admin", odinInfo.admin);
-          map.put("tx_index",odinInfo.txIndex.toString());
-          map.put("tx_hash", odinInfo.txHash);
-          map.put("block_index", odinInfo.blockIndex.toString());
-          map.put("block_time", Util.timeFormat(odinInfo.blockTime));
-          map.put("validity",odinInfo.validity);
-
-          JSONObject odin_set = odinInfo.odinSet; 
-          map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
-
-          String new_vd_set_cert_uri=request.queryParams("new_vd_set_cert_uri");
-          String new_vd_set_algo=request.queryParams("new_vd_set_algo");
-          //String new_vd_set_format=request.queryParams("new_vd_set_format");
-          String new_vd_set_pubkey=request.queryParams("new_vd_set_pubkey");
-          
-          if(new_vd_set_cert_uri!=null){
-             new_vd_set_cert_uri=new_vd_set_cert_uri.trim();
-             attributes.put("new_vd_set_cert_uri", new_vd_set_cert_uri);
-             if( new_vd_set_cert_uri.length()==0 ){
-                  attributes.put("error", Language.getLangLabel("Please input valid URI of certificate."));
-             }
-          }else if(new_vd_set_pubkey!=null && new_vd_set_pubkey.trim().length()>0 ){
-            String tmp_ap_type = request.queryParams("ap_type");
-            new_vd_set_cert_uri=Util.uploadToAP(tmp_ap_type,new_vd_set_pubkey.getBytes(),odinInfo.shortOdin.toString()+"K");
-            if( new_vd_set_cert_uri==null){
-              attributes.put("error", "["+tmp_ap_type+"]"+Language.getLangLabel(" is invalid. Please retry the other storage service."));
-              //new_vd_set_cert_uri="data:,"+new_vd_set_pubkey;
-            }
-            
-            attributes.put("new_vd_set_algo", new_vd_set_algo);
-            //attributes.put("new_vd_set_format", new_vd_set_format);
-            attributes.put("new_vd_set_pubkey", new_vd_set_pubkey);
-          }
-          
-          if(map.containsKey("me_updatable"))
-          {
-              if( new_vd_set_cert_uri!=null && new_vd_set_cert_uri.length()>0 ){
-                  JSONObject new_vd_set=new JSONObject();
-                  new_vd_set.put(Config.JSON_KEY_PPK_ALGO,new_vd_set_algo);
-                  new_vd_set.put(Config.JSON_KEY_PPK_CERT_URI,new_vd_set_cert_uri);
-                  Transaction tx = OdinUpdate.updateOdinVdSet(odinInfo.fullOdin,address,new_vd_set);
-                  if(tx==null){
-                      attributes.put("error", Language.getLangLabel("Invalid Inputs"));
-                  }else{
-                      blocks.sendTransaction(address,tx);
-                      attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
-                  }
-              }
-          } else {
-              attributes.put("error", Language.getLangLabel("No permission."));
-          }
-
-          attributes.put("odin", map);  
-      } catch (Exception e) {
-        logger.error("************* do update-odin-vdset error: "+e.getMessage());
-        attributes.put("error", "do update-odin-vdset : "+e.getMessage());
-      }
     } else {  
-      HashMap<String,Object> map = new HashMap<String,Object>();
-      map.put("full_odin", odinInfo.fullOdin);
-      map.put("short_odin", odinInfo.shortOdin.toString());
-      map.put("register", odinInfo.register);
-      map.put("admin", odinInfo.admin);
-      map.put("tx_index",odinInfo.txIndex.toString());
-      map.put("tx_hash", odinInfo.txHash);
-      map.put("block_index", odinInfo.blockIndex.toString());
-      map.put("block_time", Util.timeFormat(odinInfo.blockTime));
-      map.put("validity",odinInfo.validity);
-      
       try{
-        JSONObject odin_set = odinInfo.odinSet; 
-        map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
+        HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
 
         //系统为用户自动产生一对RSA公私钥供选用
         JSONObject keyMap=Util.getRSAKeys(odinInfo.fullOdin,true,true);
@@ -1549,53 +1275,17 @@ public class GuiServer implements Runnable {
     
     attributes = updateCommonStatus(request, attributes);
     attributes.put("title", "Transfer an ODIN");
+    String address=(String)attributes.get("address");
     
     String odin=request.queryParams("odin");
     if(odin==null){
       attributes.put("error", "handleOdinTransRequest : no odin.");
       return attributes;
     } 
-        
-    Blocks blocks = Blocks.getInstance();
-    String address=(String)attributes.get("address");
-
     OdinInfo odinInfo=Odin.getOdinInfo(odin);
 
     if(odinInfo==null){
       attributes.put("error", "handleOdinTransRequest : Invalid odin.");
-    }else if (request.queryParams().contains("form") && request.queryParams("form").equals("trans-register")) {
-      logger.info("************* do trans-register **************");
-
-      String new_register = request.queryParams("new_register");
-
-      if( new_register.length()>0 && !new_register.equals(address) ){
-        try {
-            HashMap<String,Object> map = new HashMap<String,Object>();
-            map.put("full_odin", odinInfo.fullOdin);
-            map.put("short_odin", odinInfo.shortOdin.toString());
-            map.put("register", odinInfo.register);
-            map.put("validity",odinInfo.validity);
-
-            JSONObject odin_set = odinInfo.odinSet; 
-            map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
-
-            if(map.containsKey("me_updatable"))
-            {
-                Transaction tx = OdinUpdate.transOdinRegister(odinInfo.fullOdin,address,new_register);
-                blocks.sendTransaction(address,tx);
-                attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
-            } else {
-                attributes.put("error", Language.getLangLabel("No permission."));
-            }
-
-            attributes.put("odin", map);  
-        } catch (Exception e) {
-          logger.error("************* do trans-odin error: "+e.getMessage());
-          attributes.put("error", "GuiServer:"+e.getMessage());
-        }
-      } else {
-        attributes.put("error", Language.getLangLabel("Please input another valid register address."));
-      }
     } else {  
       HashMap<String,Object> map = new HashMap<String,Object>();
       map.put("full_odin", odinInfo.fullOdin);
@@ -1618,57 +1308,6 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_ODIN_NEW_REGISTER_ADDRESS", Language.getLangLabel("The new register address"));
     attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
     attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
-        
-    return attributes;
-  }
-    
-  public Map<String, Object> handleOdinConfirmRequest(Request request) {
-    Map<String, Object> attributes = new HashMap<String, Object>();
-    request.session(true);
-    
-    attributes = updateCommonStatus(request, attributes);
-    attributes.put("title", "Confirm ODIN updates");
-    
-    String odin=request.queryParams("odin");
-    if(odin==null){
-      attributes.put("error", "handleOdinConfirmRequest : no odin.");
-      return attributes;
-    } 
-
-    Blocks blocks = Blocks.getInstance();
-    String address=(String)attributes.get("address");
-    
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
-    if(odinInfo==null){
-      attributes.put("error", "handleOdinConfirmRequest: Invalid odin.");
-      return attributes;
-    }
-    
-    logger.info("************* do confirm-update **************");
-    
-    JSONArray confirm_update_list=new JSONArray();
-    int awaiting_update_log_num=Integer.parseInt(request.queryParams("awaiting_update_log_num"));
-    
-    try {
-        for(int sn=0; sn<awaiting_update_log_num;sn++ ){
-          String awaiting_update_log_id=request.queryParams("update_log_id"+sn);
-
-          if(awaiting_update_log_id!=null){
-              confirm_update_list.put(awaiting_update_log_id);
-          }
-        }
-        if(confirm_update_list.length()>0){
-            Transaction tx = OdinUpdate.confirmUpdate(odinInfo.fullOdin,address,confirm_update_list);
-            blocks.sendTransaction(address,tx);
-            attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
-        }else{
-            attributes.put("error", Language.getLangLabel("Invalid awaiting_update_log_id."));
-        }
-    } catch (Exception e) {
-      e.printStackTrace();
-      logger.error("************* do confirm-update error: "+e.getMessage());
-      attributes.put("error", "GuiServer:"+e.getMessage());
-    }
         
     return attributes;
   }

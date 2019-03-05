@@ -1,295 +1,250 @@
 <#import "template.html" as template>
 <@template.content>
-		<div class="row section">
-			<table border="0" width="100%">
-			<tr>
-				<td><h2>${LANG_ODIN}(Open Data Index Name)</h2></td>
-				<td align="right"><a class="btn btn-success btn-lg" role="button" href="/odin-add">${LANG_REGIST_NEW_ODIN}...</a></td>
-			</tr>
-			</table>
-		</div>
-		<div class="row section padding-top">
-		    <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
-				<li class="active"><a href="#recent_odins" data-toggle="tab">${LANG_RECENT_ODINS}</a></li>
-				<li><a href="#my_registed_odins" data-toggle="tab">${LANG_MY_REGISTED_ODINS}(${my_registed_odin_num})</a></li>
-				<li><a href="#my_admin_odins" data-toggle="tab">${LANG_MY_ADMIN_ODINS}(${my_admin_odin_num})</a></li>
+    <div class="row section">
+      <div class="form-group">
+        <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_ODIN}</h3></label>
+        <div class="col-sm-7" id="top_buttons" align="right">
+         <a class="btn btn-primary" role="button" href="/">${LANG_RECENT_ODINS}</a> 
+         <a class="btn btn-success" role="button" href="/odin-add">${LANG_REGIST_NEW_ODIN}...</a>
+        </div>
+      </div>
+    </div>
+    <div class="row section padding-top">
+      <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+        <li class="active"><a href="#my_registed_odins" data-toggle="tab">${LANG_MY_REGISTED_ODINS}(${my_registed_odin_num})</a></li>
+        <li><a href="#my_admin_odins" data-toggle="tab">${LANG_MY_ADMIN_ODINS}(${my_admin_odin_num})</a></li>
         <li><a href="#my_update_logs" data-toggle="tab">${LANG_MY_UPDATE_LOGS}</a></li>
         <li><a href="#query_odin" data-toggle="tab">${LANG_QUERY_ODIN}</a></li>
-		    </ul>
+      </ul>
 
-		    <div id="my-tab-content" class="tab-content">
-		        <div class="tab-pane active" id="recent_odins">
-					<table class="table table-striped">
-						<thead>
-							<tr>
-								<th>${LANG_FULL_ODIN}</th>
-								<th>${LANG_SHORT_ODIN}</th>
-								<th>${LANG_TIME}</th>
-								<th>${LANG_ADMIN_REGISTER}</th>
-								<th>${LANG_STATUS}</th>
-								<th>${LANG_AP_LIST}</th>
-                </tr>
-						</thead>
-
-						<tbody>
-							<#if all_pending_odins??>
-							<#list all_pending_odins as odin>
-								<tr>
-									<td>${LANG_PENDING}</td>
-									<td>${LANG_PENDING}</td>
-									<td>${LANG_PENDING}</td>
-									<td>
-                  ${odin["title"]}<br>
-                  ${LANG_ADMIN_BY} ${odin["admin"]}<br>
-                  ${LANG_REGISTED_BY} ${odin["register"]}
-                  </td>
-                  <td>${LANG_PENDING}
-									<td>${odin["ap_set_debug"]}</td>
-									</td>
-								</tr>
-							</#list>
-							</#if>
-							
-							<#if recent_odins??>
-							<#list recent_odins as odin>
-								<tr>
-									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
-                                    <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-								    <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
-									<td>
-                  ${LANG_ADMIN_BY} ${odin["admin"]}<br>
-                  ${LANG_REGISTED_BY} ${odin["register"]}
-                  </td>
-									<td>
-										${odin["validity"]}<br>
-                    <#if odin["me_updatable"]??>
-                    <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
-                    </#if>
-									</td>
-                  <td>${odin["ap_set_debug"]}</td>
-								</tr>
-							</#list>
-							</#if>
-						</tbody>
-					</table>
-				</div>
-
-				<div class="tab-pane" id="my_registed_odins">
-					<table class="table table-striped">
-					<thead>
-						<tr>
-							<th>${LANG_FULL_ODIN}</th>
-							<th>${LANG_SHORT_ODIN}</th>
-							<th>${LANG_TIME}</th>
-							<th>${LANG_ODIN_TITLE}</th>
+      <div id="my-tab-content" class="tab-content">
+        <div class="tab-pane active" id="my_registed_odins">
+          <div class="table-responsive">
+          <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>${LANG_FULL_ODIN}</th>
+              <th>${LANG_SHORT_ODIN}</th>
+              <th>${LANG_TIME}</th>
+              <th>${LANG_ODIN_TITLE}</th>
               <th>${LANG_ADMIN_REGISTER}</th>
               <th>${LANG_STATUS}</th>
-						  <th>${LANG_AP_LIST}</th>
-						</tr>
-					</thead>
+              <th>${LANG_AP_LIST}</th>
+            </tr>
+          </thead>
 
-					<tbody>
-						<#if my_pending_odins??>
-						<#list my_pending_odins as odin>
-							<tr>
-								<td>${LANG_PENDING}</td>
-								<td>${LANG_PENDING}</td>
-								<td>${LANG_PENDING}</td>
-								<td>${odin["title"]}</td>
+          <tbody>
+            <#if my_pending_odins??>
+            <#list my_pending_odins as odin>
+              <tr>
+                <td>${LANG_PENDING}</td>
+                <td>${LANG_PENDING}</td>
+                <td>${LANG_PENDING}</td>
+                <td>${odin["title"]}</td>
                 <td>
                 ${LANG_ADMIN_BY} ${odin["admin"]}<br>
                 ${LANG_REGISTED_BY} ${odin["register"]}
                 </td>
-								<td>${LANG_PENDING}
-								</td>
+                <td>${LANG_PENDING}
+                </td>
                 <td>${odin["ap_set_debug"]}</td>
-							</tr>
-						</#list>
-						</#if>
-						
-						<#if my_registed_odins??>
-						<#list my_registed_odins as odin>
-							<tr>
+              </tr>
+            </#list>
+            </#if>
+            
+            <#if my_registed_odins??>
+            <#list my_registed_odins as odin>
+              <tr>
                 <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                 <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-								<td><a  href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
-								<td>${odin["title"]}</td>
+                <td><a  href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+                <td>${odin["title"]}</td>
                 <td>
                 ${LANG_ADMIN_BY} ${odin["admin"]}<br>
                 ${LANG_REGISTED_BY} ${odin["register"]}
                 </td>
-								<td>
-									${odin["validity"]}
+                <td>
+                  ${odin["validity"]}
                   <br>
                   <#if odin["me_updatable"]??>
                   <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
                   </#if>
-								</td>
+                </td>
                 <td>${odin["ap_set_debug"]}</td>
-							</tr>
-						</#list>
-						</#if>
-					</tbody>
-					</table>
-				</div>
-				
-				<div class="tab-pane" id="my_admin_odins">
-					<table class="table table-striped">
-						<thead>
-							<tr>
-								<th>${LANG_FULL_ODIN}</th>
-								<th>${LANG_SHORT_ODIN}</th>
-								<th>${LANG_TIME}</th>
-								<th>${LANG_ODIN_TITLE}</th>
+              </tr>
+            </#list>
+            </#if>
+          </tbody>
+          </table>
+          </div>
+        </div>
+        
+        <div class="tab-pane" id="my_admin_odins">
+          <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>${LANG_FULL_ODIN}</th>
+                <th>${LANG_SHORT_ODIN}</th>
+                <th>${LANG_TIME}</th>
+                <th>${LANG_ODIN_TITLE}</th>
                 <th>${LANG_ADMIN_REGISTER}</th>
                 <th>${LANG_STATUS}</th>
-								<th>${LANG_AP_LIST}</th>
-							</tr>
-						</thead>
+                <th>${LANG_AP_LIST}</th>
+              </tr>
+            </thead>
 
-						<tbody>
-							<#if my_admin_odins??>
-							<#list my_admin_odins as odin>
-								<tr>
-									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+            <tbody>
+              <#if my_admin_odins??>
+              <#list my_admin_odins as odin>
+                <tr>
+                  <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
                   <td><a  href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
-									<td>${odin["title"]}</td>
-									<td>
+                  <td>${odin["title"]}</td>
+                  <td>
                   ${LANG_ADMIN_BY} ${odin["admin"]}<br>
                   ${LANG_REGISTED_BY} ${odin["register"]}
                   </td>
-									<td>
-										${odin["validity"]}<br>
+                  <td>
+                    ${odin["validity"]}<br>
                     <#if odin["me_updatable"]??>
                     <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
                     </#if>
-									</td>
+                  </td>
                   <td>${odin["ap_set_debug"]}</td>
-								</tr>
-							</#list>
-							</#if>
-						</tbody>
-					</table>
-				</div>
+                </tr>
+              </#list>
+              </#if>
+            </tbody>
+          </table>
+          </div>
+        </div>
                 
         <div class="tab-pane" id="my_update_logs">
-					<table class="table table-striped">
-						<thead>
-							<tr>
-								<th>${LANG_FULL_ODIN}</th>
-								<th>${LANG_SHORT_ODIN}</th>
-								<th>${LANG_TIME}</th>
-								<th>${LANG_UPDATE_DESC}</th>
-								<th>${LANG_STATUS}</th>
-							</tr>
-						</thead>
+          <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>${LANG_FULL_ODIN}</th>
+                <th>${LANG_SHORT_ODIN}</th>
+                <th>${LANG_TIME}</th>
+                <th>${LANG_UPDATE_DESC}</th>
+                <th>${LANG_STATUS}</th>
+              </tr>
+            </thead>
 
-						<tbody>
-							<#if my_pending_update_logs??>
-							<#list my_pending_update_logs as odin>
-								<tr>
-									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+            <tbody>
+              <#if my_pending_update_logs??>
+              <#list my_pending_update_logs as odin>
+                <tr>
+                  <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-									<td>${LANG_PENDING}</td>
-									<td>${odin["update_desc"]}
+                  <td>${LANG_PENDING}</td>
+                  <td>${odin["update_desc"]}
                   <hr>
                     <p align="right">Submit time:  ${odin["block_time"]}</p>
                   </td>
-									<td>${LANG_PENDING}</td>
-								</tr>
-							</#list>
-							</#if>
+                  <td>${LANG_PENDING}</td>
+                </tr>
+              </#list>
+              </#if>
               
               <#if my_receipting_updates??>
-							<#list my_receipting_updates as odin>
-								<tr>
-									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+              <#list my_receipting_updates as odin>
+                <tr>
+                  <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-								  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
-									<td>${odin["update_desc"]}</td>
-									<td>
-										${odin["validity"]}<br>
+                  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+                  <td>${odin["update_desc"]}</td>
+                  <td>
+                    ${odin["validity"]}<br>
                     <#if odin["awaiting_my_receipting"]??>
                     <a class="btn btn-danger" role="button" href='/odin-detail?odin=${odin["short_odin"]}&awaiting_update_log_id=${odin["log_id"]}'>${LANG_AWAIT_YOUR_RECEIPT}...</a>
                     </#if>
-									</td>
-								</tr>
-							</#list>
-							</#if>
+                  </td>
+                </tr>
+              </#list>
+              </#if>
                             
               <#if my_awaiting_updates??>
-							<#list my_awaiting_updates as odin>
-								<tr>
-									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+              <#list my_awaiting_updates as odin>
+                <tr>
+                  <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-								  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
-									<td>${odin["update_desc"]}</td>
-									<td>
-										${odin["validity"]}<br>
+                  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+                  <td>${odin["update_desc"]}</td>
+                  <td>
+                    ${odin["validity"]}<br>
                     <#if odin["awaiting_my_confirm"]??>
                     <a class="btn btn-danger" role="button" href='/odin-detail?odin=${odin["short_odin"]}&awaiting_update_log_id=${odin["log_id"]}'>${LANG_AWAIT_YOUR_CONFIRM}...</a>
                     </#if>
-									</td>
-								</tr>
-							</#list>
-							</#if>
-							
-							<#if my_update_logs??>
-							<#list my_update_logs as odin>
-								<tr>
-									<td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+                  </td>
+                </tr>
+              </#list>
+              </#if>
+              
+              <#if my_update_logs??>
+              <#list my_update_logs as odin>
+                <tr>
+                  <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-								  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
-									<td>
+                  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+                  <td>
                     ${odin["update_desc"]}
                     <hr>
                     <p align="right">Updated by  ${odin["updater"]}</p>
                   </td>
-									<td>
-										${odin["validity"]}
-									</td>
-								</tr>
-							</#list>
-							</#if>
-						</tbody>
-					</table>
-				</div>
+                  <td>
+                    ${odin["validity"]}
+                  </td>
+                </tr>
+              </#list>
+              </#if>
+            </tbody>
+          </table>
+          </div>
+        </div>
         
         <div class="tab-pane" id="query_odin">
           <div class="row section">
           <center>
           <br>
-          <form action="/odin-detail" class="form-inline" method="get">
-          <div class="input-group">
-            <span class="input-group-addon">${LANG_INPUT_ODIN}</span>
-            <input type="text" placeholder="${LANG_INPUT_ODIN_DESC}" name="odin" value=""  size="30">
-          </div>
-          <div class="input-group">
-            <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
-            <span class="input-group-btn">
-              <button class="btn btn-success btn-lg" type="submit" >${LANG_QUERY_ODIN}</button>
-            </span>
-          </div>
+          <form action="/odin-detail" class="form-horizontal" method="get">
+              <div class="form-group">
+                <label for="odin" class="col-sm-2 control-label">${LANG_INPUT_ODIN}</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" placeholder="${LANG_INPUT_ODIN_DESC}" name="odin" id="odin" value="">
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <button class="btn btn-success btn-lg" type="submit" >${LANG_QUERY_ODIN}</button>
+                </div>
+              </div>
           </form>
           
           <br>
           <br>
-          <form action="/odin-match" class="form-inline" method="get">
-          <div class="input-group">
-            <span class="input-group-addon">${LANG_INPUT_WORD}</span>
-            <input type="text" placeholder="${LANG_INPUT_WORD_DESC}" name="word" value=""  size="30">
-          </div>
-          <div class="input-group">
-            <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
-            <span class="input-group-btn">
-              <button class="btn btn-success btn-lg" type="submit" >${LANG_MATCH_WORD}</button>
-            </span>
-          </div>
+          <form action="/odin-match" class="form-horizontal" method="get">
+              <div class="form-group">
+                <label for="word" class="col-sm-2 control-label">${LANG_INPUT_WORD}</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" placeholder="${LANG_INPUT_WORD_DESC}" name="word" id="word" value="">
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <button class="btn btn-success btn-lg" type="submit" >${LANG_MATCH_WORD}</button>
+                </div>
+              </div>
           </form>
+          
           </center>
           </div>
         </div>
-		</div>
+    </div>
 
 </@template.content>

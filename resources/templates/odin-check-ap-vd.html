@@ -2,31 +2,68 @@
 <@template.content>
 <#if !success??  && !error??>
 <div class="row section">
-    <div class="row section">
-    <table border="0" width="100%">
-    <tr>
-        <td><h2>${LANG_VALIDATE_AN_AP} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2></td>
-        <td align="right">
-        <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
-        <a class="btn btn-warning" role="button" href='/odin-update-ap?odin=${odin["short_odin"]}'>${LANG_UPDATE_AP_SET}...</a>
-        <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
-        </td>
-    </tr>
-    </table>
+  <div class="form-group">
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_VALIDATE_AN_AP} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <div class="col-sm-7" id="top_buttons" align="right">
+      <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
+      <a class="btn btn-warning" role="button" href='/odin-update-ap?odin=${odin["short_odin"]}'>${LANG_UPDATE_AP_SET}...</a>
+      <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
     </div>
-    
-    <h3>AP[${apid}]:${ap_url}</h3>
-
-    ${LANG_RESPONSE_URI}:<input name='ppk-uri' type='text' size='100' value='<#if ap_resp_ppk_uri??>${ap_resp_ppk_uri}</#if>'><br>
-    ${LANG_RESPONSE_URL}:${ap_resp_url}<br>
-    ${LANG_RESPONSE_CONTENT}:<br><textarea rows=3 cols=100>${ap_resp_content}</textarea><br>
-    ${LANG_RESPONSE_SIGNATURE}:<br><textarea rows=3 cols=100>${ap_resp_sign}</textarea><br>
-    ${LANG_VALIDATE_PUBKEY}:<br><textarea rows=2 cols=100><#if vd_set_pubkey??>${vd_set_pubkey}</#if></textarea><br>
-    ${LANG_VALIDATE_RESULT}:${ap_resp_validate_result}<br>
-        
-    <hr>
-    
+  </div>
 </div>
+
+<div class="form-group">
+    <label for="ap_url_set" class="col-sm-2 control-label">AP[${apid}]</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" id="ap_url_set" value='${ap_url}' readonly >
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="ppk-uri" class="col-sm-2 control-label">${LANG_RESPONSE_URI}</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" id="ppk-uri" value='<#if ap_resp_ppk_uri??>${ap_resp_ppk_uri}</#if>' readonly >
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="ap_resp_url" class="col-sm-2 control-label">${LANG_RESPONSE_URL}</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" id="ap_resp_url" value='${ap_resp_url}' readonly >
+    </div>
+</div>
+  
+<div class="form-group">
+    <label for="ap_resp_content" class="col-sm-2 control-label">${LANG_RESPONSE_CONTENT}</label>
+    <div class="col-sm-10">
+     <textarea class="form-control" id="ap_resp_content" rows=3 readonly >${ap_resp_content}</textarea>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="ap_resp_sign" class="col-sm-2 control-label">${LANG_RESPONSE_SIGNATURE}</label>
+    <div class="col-sm-10">
+     <textarea class="form-control" id="ap_resp_sign" rows=3 readonly >${ap_resp_sign}</textarea>
+    </div>
+</div>
+
+
+<div class="form-group">
+    <label for="vd_set_pubkey" class="col-sm-2 control-label">${LANG_VALIDATE_PUBKEY}</label>
+    <div class="col-sm-10">
+     <textarea class="form-control" id="vd_set_pubkey" rows=2 readonly ><#if vd_set_pubkey??>${vd_set_pubkey}</#if></textarea>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="ap_resp_validate_result" class="col-sm-2 control-label">${LANG_VALIDATE_RESULT}</label>
+    <div class="col-sm-10">
+     <div id="ap_resp_validate_result">${ap_resp_validate_result}</div>
+    </div>
+</div>
+
+<hr>
+
 </#if>
 
 </@template.content>

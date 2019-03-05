@@ -203,28 +203,37 @@ public class PttpServer implements Runnable {
       
       if(obj_ap_resp!=null){
         ap_resp_url=obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_URL,"");
-        String str_chunk_type = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase();
-        if( str_chunk_type.startsWith("text/html") ){ //网页
-          ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
-          
-          //处理页面内容中的图片
-          ap_resp_content = processPPkImagesInPage(ap_resp_content); 
-          
-          //将页面内容中以ppk:起始的href链接替换为适合本地浏览的链接格式
-          String tmp_href_ap_url=Config.ppkDefaultHrefApUrl+"?"+Config.JSON_KEY_PPK_URI+"="+Config.PPK_URI_PREFIX;
+        
+        int status_code = obj_ap_resp.getInt("status_code");
+        if(status_code==200){
+            String str_chunk_type = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase();
+            if( str_chunk_type.startsWith("text/html") ){ //网页
+              ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
+              
+              //处理页面内容中的图片
+              ap_resp_content = processPPkImagesInPage(ap_resp_content); 
+              
+              //将页面内容中以ppk:起始的href链接替换为适合本地浏览的链接格式
+              String tmp_href_ap_url=Config.ppkDefaultHrefApUrl+"?"+Config.JSON_KEY_PPK_URI+"="+Config.PPK_URI_PREFIX;
 
-          ap_resp_content = ap_resp_content.replaceAll("'"+Config.PPK_URI_PREFIX,"'"+tmp_href_ap_url)
-                                           .replaceAll("\""+Config.PPK_URI_PREFIX,"\""+tmp_href_ap_url)
-                                           .replaceAll("#\"","%23\"");
-          
-          
-        }else if(str_chunk_type.startsWith("text")){ //其他文本
-          ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
-        }else if(str_chunk_type.startsWith("image")){
-          ap_resp_content = "<img src='"+Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK))+"'>";
+              ap_resp_content = ap_resp_content.replaceAll("'"+Config.PPK_URI_PREFIX,"'"+tmp_href_ap_url)
+                                               .replaceAll("\""+Config.PPK_URI_PREFIX,"\""+tmp_href_ap_url)
+                                               .replaceAll("#\"","%23\"");
+              
+              
+            }else if(str_chunk_type.startsWith("text")){ //其他文本
+              ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
+            }else if(str_chunk_type.startsWith("image")){
+              ap_resp_content = "<img src='"+Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK))+"'>";
+            }else{
+              //Not supported chunk_type now
+              ap_resp_content =  obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"");
+            }
+        }else if(status_code==302){
+            String dest_url = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
+            ap_resp_content="<head><meta http-equiv='refresh' content='2;url="+dest_url+"'></head>Redirected to "+dest_url;
         }else{
-          //Not supported chunk_type now
-          ap_resp_content =  obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"");
+            ap_resp_content = status_code+" "+(new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) ));
         }
         
         ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI);

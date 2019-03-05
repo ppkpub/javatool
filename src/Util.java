@@ -116,6 +116,7 @@ public class Util {
 
   public static String timeFormat(Date date) {
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); // the format of your date
+    sdf.setTimeZone(TimeZone.getTimeZone(Config.defaultTimeZone));
     String formattedDate = sdf.format(date);
     return formattedDate;
   }
@@ -123,6 +124,7 @@ public class Util {
   public static String timeFormat(Integer timestamp) {
     Date date = new Date(timestamp*1000L); // *1000 is to convert seconds to milliseconds
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); // the format of your date
+    sdf.setTimeZone(TimeZone.getTimeZone(Config.defaultTimeZone));
     String formattedDate = sdf.format(date);
     return formattedDate;
   }
@@ -220,7 +222,7 @@ public class Util {
   
   /*
   public static List<UnspentOutput> getUnspents(String address) {
-    String result = CommonHttpUtil.getTextFromUrl( "http://btc.blockr.io/api/v1/address/unspent/"+address+"?multisigs=1" );
+    String result = CommonHttpUtil.getInstance().getContentFromUrl( "http://btc.blockr.io/api/v1/address/unspent/"+address+"?multisigs=1" );
     List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
     try {
         JSONObject tempObject=new JSONObject(result);
@@ -300,19 +302,25 @@ public class Util {
         String result=null;
         JSONObject tempObject=null;
         
+        /*
         //检查API服务是否正常更新到最新区块
         Blocks blocks = Blocks.getInstance();
         int block_height=blocks.bitcoinBlock ; // Current block height in the longest chain
-        result = CommonHttpUtil.getTextFromUrl( "https://chain.api.btc.com/v3/block/" + block_height  );
+        result = CommonHttpUtil.getInstance().getContentFromUrl( "https://chain.api.btc.com/v3/block/" + block_height  );
         tempObject=new JSONObject(result);
         
         //System.out.println("block_height: "+block_height +"\ntempObject="+tempObject);
         if(tempObject.getJSONObject("data").getInt("height")!=block_height){
             throw new IOException("API mismatched the block height:"+block_height);
         }
-
+        
         //API服务正常则继续调用查询未花费交易列表
-        result = CommonHttpUtil.getTextFromUrl( "https://chain.api.btc.com/v3/address/" + address + "/unspent" );
+        result = CommonHttpUtil.getInstance().getContentFromUrl( "https://chain.api.btc.com/v3/address/" + address + "/unspent" );
+        */
+        String api_url="https://chain.api.btc.com/v3/address/" + address + "/unspent";
+        if(Config.proxyURL!=null && Config.proxyURL.length()>0)
+            api_url=Config.proxyURL+"?url=" + java.net.URLEncoder.encode(api_url);
+        result = CommonHttpUtil.getInstance().getContentFromUrl( api_url );
         
         tempObject=new JSONObject(result);
         
@@ -320,7 +328,7 @@ public class Util {
         Integer pagesize=tempObject.getJSONObject("data").getInt("pagesize");
         
         if(total_count>pagesize){
-          result = CommonHttpUtil.getTextFromUrl( "https://chain.api.btc.com/v3/address/" + address + "/unspent?page="+ 
+          result = CommonHttpUtil.getInstance().getContentFromUrl( "https://chain.api.btc.com/v3/address/" + address + "/unspent?page="+ 
                             Math.round( Math.ceil((double)total_count/(double)pagesize) ) );
           tempObject=new JSONObject(result);
         }
@@ -342,7 +350,7 @@ public class Util {
             System.out.println("  tempUnspentObj: "+tempUnspentObj.toString());
             
             try {
-                result = CommonHttpUtil.getTextFromUrl( "https://blockchain.info/zh-cn/rawtx/" + tempUnspentObj.txid );
+                result = CommonHttpUtil.getInstance().getContentFromUrl( "https://blockchain.info/zh-cn/rawtx/" + tempUnspentObj.txid );
                 JSONObject tempObjectTx=new JSONObject(result);
                 JSONArray tempArrayOutputs=tempObjectTx.getJSONArray("out");
                 JSONObject item_output=(JSONObject)tempArrayOutputs.get(tempUnspentObj.vout);
@@ -351,7 +359,7 @@ public class Util {
             }catch (Exception e1) {
               logger.error(" getUnspents() blockchain.info  : "+e1.toString());
               try {
-                  result = CommonHttpUtil.getTextFromUrl( "https://chain.api.btc.com/v3/tx/" + tempUnspentObj.txid + "?verbose=3" );
+                  result = CommonHttpUtil.getInstance().getContentFromUrl( "https://chain.api.btc.com/v3/tx/" + tempUnspentObj.txid + "?verbose=3" );
                   //System.out.println("Get https://chain.api.btc.com/v3/tx/" + tempUnspentObj.txid + "?verbose=3\n  result: "+result);
                   JSONObject tempObjectTx=new JSONObject(result);
                   JSONArray tempArrayOutputs=tempObjectTx.getJSONObject("data").getJSONArray("outputs");
@@ -388,7 +396,7 @@ public class Util {
   public static List<UnspentOutput> getUnspentsWithoutDustTX(String address) {
     List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
     try {
-        String result = CommonHttpUtil.getTextFromUrl( "https://blockchain.info/unspent?active="+address );
+        String result = CommonHttpUtil.getInstance().getContentFromUrl( "https://blockchain.info/unspent?active="+address );
         JSONObject tempResultObject=new JSONObject(result);
         JSONArray tempArray=tempResultObject.getJSONArray("unspent_outputs");
         ArrayList<HashMap<String, Object>> item_set_array = new ArrayList<HashMap<String, Object>>();
@@ -412,37 +420,9 @@ public class Util {
     }
     return unspents;
   }
-  /*
-  public static List<UnspentOutput> getUnspentsWithoutDustTX(String address) {
-    String result = CommonHttpUtil.getTextFromUrl( "http://blockmeta.com/api/v1/address/unspent/"+address );
-    List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
-    try {
-            JSONObject tempResultObject=new JSONObject(result);
-            JSONArray tempArray=tempResultObject.getJSONArray("data");
-            tempResultObject=(JSONObject)tempArray.get(0);
-            tempArray=tempResultObject.getJSONArray("unspent_outputs");
-
-            for(int tt=0;tt<tempArray.length();tt++){
-                JSONObject item_obj=(JSONObject)tempArray.get(tt);
-                
-                UnspentOutput tempUnspentObj=new UnspentOutput();
-                tempUnspentObj.amt_satoshi=item_obj.getDouble("value")*Config.btc_unit;
-                tempUnspentObj.txid=item_obj.getString("tx_hash");
-                tempUnspentObj.vout=item_obj.getInt("tx_output_n");
-
-                tempUnspentObj.scriptPubKeyHex=item_obj.getString("script");
-
-                unspents.add(tempUnspentObj);
-            }
-    } catch (Exception e) {
-      logger.error(e.toString());
-    }
-    return unspents;
-  }
-  */
 
   public static TransactionInfo getTransaction(String txHash) {
-    String result = CommonHttpUtil.getTextFromUrl(transactionAddress(txHash));
+    String result = CommonHttpUtil.getInstance().getContentFromUrl(transactionAddress(txHash));
     try {
       ObjectMapper objectMapper = new ObjectMapper();
       objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -459,7 +439,7 @@ public class Util {
       return getBTCBalanceWithoutDustTX(address);
     }
     
-    String result = CommonHttpUtil.getTextFromUrl( "https://chain.api.btc.com/v3/address/"+address);
+    String result = CommonHttpUtil.getInstance().getContentFromUrl( "https://chain.api.btc.com/v3/address/"+address);
     try {
       JSONObject tempResultObject=new JSONObject(result);
       tempResultObject=tempResultObject.getJSONObject("data");
@@ -471,7 +451,7 @@ public class Util {
   }
 
   public static BigInteger getBTCBalanceWithoutDustTX(String address) {
-    String result = CommonHttpUtil.getTextFromUrl( "https://blockchain.info/zh-cn/address/"+address+"?format=json&limit=0" );
+    String result = CommonHttpUtil.getInstance().getContentFromUrl( "https://blockchain.info/zh-cn/address/"+address+"?format=json&limit=0" );
     try {
       JSONObject addressInfo=new JSONObject(result);
       return BigInteger.valueOf(addressInfo.getLong("final_balance"));
@@ -510,6 +490,7 @@ public class Util {
     return BigInteger.ZERO;
   }
   
+  /*
   public static List<String> getAddresses() {
     Blocks blocks = Blocks.getInstance();
     List<ECKey> keys = blocks.wallet.getImportedKeys();
@@ -518,6 +499,11 @@ public class Util {
       addresses.add(key.toAddress(blocks.params).toString());
     }
     return addresses;
+  }
+  */
+  public static List<String> getAddresses() { //2019-01-15
+    Blocks blocks = Blocks.getInstance();
+    return blocks.getAddresses();
   }
 
   public static Integer getAssetId(String asset) {
@@ -556,7 +542,7 @@ public class Util {
     if(mMinVersion!=null && mMinVersion.length()>0)
       return mMinVersion;
     
-    mMinVersion = CommonHttpUtil.getTextFromUrl(Config.minVersionPage);
+    mMinVersion = CommonHttpUtil.getInstance().getContentFromUrl(Config.minVersionPage);
     if( mMinVersion == null || mMinVersion.trim().length()==0 ) {
       mMinVersion="0.0";
     }else
@@ -812,20 +798,40 @@ public class Util {
    * @return byte[]  
    */  
   public static byte[] hexStringToBytes(String hexString) {   
-      if (hexString == null || hexString.equals("")) {   
+    try{
+      if (hexString == null) {   
           return null;   
-      }   
-      hexString = hexString.toUpperCase();   
-      int length = hexString.length() / 2;   
-      char[] hexChars = hexString.toCharArray();   
-      byte[] d = new byte[length];   
-      for (int i = 0; i < length; i++) {   
-          int pos = i * 2;   
-          d[i] = (byte) (charToByte(hexChars[pos]) << 4 | charToByte(hexChars[pos + 1]));   
-      }   
-      return d;   
+      }
+      if (hexString.equals("")) {   
+          return new byte[0];   
+      }
+      
+      if(isHexNumberRex(hexString)){
+          hexString = hexString.toUpperCase();   
+          int length = hexString.length() / 2;   
+          char[] hexChars = hexString.toCharArray();   
+          byte[] d = new byte[length];   
+          for (int i = 0; i < length; i++) {   
+              int pos = i * 2;   
+              d[i] = (byte) (charToByte(hexChars[pos]) << 4 | charToByte(hexChars[pos + 1]));   
+          }   
+          return d;   
+      }else{
+          return hexString.getBytes(Config.BINARY_DATA_CHARSET);
+      }
+    }catch(Exception e){
+      return null;
+    }
   }   
   
+  //判断是16进制HEX格式的字符窜
+  //判断是16进制HEX格式的字符窜
+  //判断是16进制HEX格式的字符窜
+  public static boolean isHexNumberRex(String str){
+    String validate = "(?i)[0-9a-f]+";
+    return str.matches(validate);
+  }
+    
   
   //生成指定字节长度的HEX文本，如果长度不足则尾部追加指定字节值补足
   public static String generateSegmentHex(byte[] data,int segment_len,byte ch_append){
@@ -960,7 +966,7 @@ public class Util {
       String tmp_url=Config.IPFS_DOWNLOAD_URL+ipfs_hash_address;
       System.out.println("Using IPFS Proxy to fetch:"+ tmp_url);
       
-      return CommonHttpUtil.getTextFromUrl(tmp_url);
+      return CommonHttpUtil.getInstance().getContentFromUrl(tmp_url);
     }
   }
   
@@ -970,7 +976,7 @@ public class Util {
       System.out.println("Using BTMFS Proxy to upload :"+ tmp_url);
       
       try{
-        String str_resp_json=CommonHttpUtil.getTextFromUrl(tmp_url);
+        String str_resp_json=CommonHttpUtil.getInstance().getContentFromUrl(tmp_url);
         System.out.println("str_resp_json ="+ str_resp_json);
         
         JSONObject obj_ap_resp=new JSONObject(str_resp_json);
@@ -992,16 +998,18 @@ public class Util {
       String tmp_url=Config.BTMFS_PROXY_URL+"?uri=" + java.net.URLEncoder.encode(btmfs_uri);
       System.out.println("Using BTMFS Proxy to fetch:"+ tmp_url);
       
-      return CommonHttpUtil.getTextFromUrl(tmp_url);
+      return CommonHttpUtil.getInstance().getContentFromUrl(tmp_url);
   }
   
   //Upload data to Dat and return the uri
   public static String uploadToDat(byte[] data,String related_subid){
-      String tmp_url=Config.DAT_UPLOAD_URL+"?subid="+ java.net.URLEncoder.encode(related_subid)+"&hex=" + bytesToHexString( data );
-      System.out.println("Using Dat Proxy to upload :"+ tmp_url);
+      String tmp_url=Config.DAT_UPLOAD_URL;
       
       try{
-        String str_resp_json=CommonHttpUtil.getTextFromUrl(tmp_url);
+        System.out.println("Using Dat Proxy to upload :"+ tmp_url);
+        
+        String tmp_post_content="subid="+ java.net.URLEncoder.encode(related_subid)+"&hex=" + bytesToHexString( data );
+        String str_resp_json=CommonHttpUtil.getInstance().sendPostContent(tmp_url,tmp_post_content,"application/x-www-form-urlencoded");
         System.out.println("str_resp_json="+ str_resp_json);
         
         JSONObject obj_ap_resp=new JSONObject(str_resp_json);
@@ -1028,7 +1036,7 @@ public class Util {
           tmp_url=Config.DAT_DOWNLOAD_URL_LIST[kk]+dat_hash;
           System.out.println("Using Dat Proxy to fetch:"+ tmp_url);
           
-          tmp_page_result=CommonHttpUtil.getTextFromUrl(tmp_url);
+          tmp_page_result=CommonHttpUtil.getInstance().getContentFromUrl(tmp_url);
           if(tmp_page_result!=null && tmp_page_result.length()>0){
               return tmp_page_result;
           }
@@ -1076,7 +1084,7 @@ public class Util {
         } else
           return uri_chunks[1];
       }else{
-        return CommonHttpUtil.getTextFromUrl(uri) ;
+        return CommonHttpUtil.getInstance().getContentFromUrl(uri) ;
       }
     }catch(Exception e){
       logger.error("Util.fetchURI("+uri+") error:"+e.toString());

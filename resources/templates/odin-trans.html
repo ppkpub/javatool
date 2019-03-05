@@ -2,27 +2,32 @@
 <@template.content>
 <#if !success??  && !error??>
 <div class="row section">
-    <h2>${LANG_TRANSFER_THE_REGISTER_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2>
-    <form action="/odin-trans" class="form-inline" method="post">
-            <input type="hidden" name="form" value="trans-register">
-            <input type="hidden" name="odin" value="${odin["short_odin"]}">
-            <input type="hidden" name="updater" value="${address}">
+<h3>${LANG_TRANSFER_THE_REGISTER_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3>
+<form action="/confirmtx" class="form-horizontal" method="post">
+    <input type="hidden" name="form" value="trans-register">
+    <input type="hidden" name="odin" value="${odin["short_odin"]}">
+    <input type="hidden" name="updater" value="${address}">
 
-            <div class="input-group">
-                <span class="input-group-addon">${LANG_ODIN_REGISTER_ADDRESS}</span>
-                ${odin["register"]}
-            </div>
-            <div class="input-group">
-                <span class="input-group-addon">${LANG_ODIN_NEW_REGISTER_ADDRESS}</span>
-                <input type="text" placeholder="${LANG_ODIN_NEW_REGISTER_ADDRESS}" name="new_register" value="" size="40">
-            </div>
-            <div class="input-group">
-                <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                <span class="input-group-btn">
-                    <button class="btn btn-danger btn-lg" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_TRANSFER_REGISTER}</button>
-                </span>
-            </div>
-    </form>
+    <div class="form-group">
+        <label for="old_register" class="col-sm-2 control-label">${LANG_ODIN_REGISTER_ADDRESS}</label>
+        <div class="col-sm-10">
+        <input class="form-control" type="text" id="old_register" value='${odin["register"]}' readonly>
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label for="new_register" class="col-sm-2 control-label">${LANG_ODIN_NEW_REGISTER_ADDRESS}</label>
+        <div class="col-sm-10">
+         <input class="form-control" type="text" placeholder="${LANG_ODIN_NEW_REGISTER_ADDRESS}" name="new_register" id="new_register" value='' >
+        </div>
+    </div>
+
+    <div class="form-group" align="center">
+        <div class="col-sm-offset-2 col-sm-10">
+          <button class="btn btn-danger btn-lg" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled2="disabled"</#if>>${LANG_TRANSFER_REGISTER}</button>
+        </div>
+    </div>
+</form>
 </div>
 </#if>
 

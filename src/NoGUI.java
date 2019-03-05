@@ -2,23 +2,36 @@ import java.util.Locale;
 
 public class NoGUI  {
   public static void main(String[] args) throws Exception {
+    if(args!=null){
+      System.out.println("args.length:"+args.length);
+      
+      for(int aa=0;aa<args.length;aa++){
+        if(args[aa].equalsIgnoreCase("nowallet"))
+          Blocks.enableRemoteWalletMode();
+      }
+    }
+    
     Config.loadUserDefined();
     
     Language.setLang(Config.defaultLang);
     System.out.println(Language.getLangLabel("PPkPub"));
-    System.out.println("Loading "+Config.appName+" V"+Config.version+"  GUIServer service ...");
+    System.out.println("Loading "+Config.appName+" V"+Config.version+"  GuiServer service without wallet  ...");
 
     Locale.setDefault(new Locale("en", "US"));
-    
-    GuiServer gs = new GuiServer();
-    Thread serverThread = new Thread(gs);
+        
+    //Start GuiServer thread
+    GuiServer server = new GuiServer();
+    Thread serverThread = new Thread(server);
     serverThread.setDaemon(true);
     serverThread.start(); 
+    
+    //Start Blocks sync thread
+    final Blocks blocks = Blocks.getInstanceFresh();
+    Thread blocksThread = new Thread(blocks);
+    blocksThread.setDaemon(true);
+    blocksThread.start(); 
 
     while(true){    
-      // Start Blocks
-      final Blocks blocks = Blocks.getInstanceFresh();
-      
       Thread progressUpdateThread = new Thread(blocks) { 
           public void run() {
               Integer lastParsedBlock=Util.getLastParsedBlock();

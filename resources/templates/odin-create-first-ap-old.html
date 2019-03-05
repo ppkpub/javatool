@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>${LANG_PPKPUB}<#if title??> - ${title}</#if></title>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+<#import "template.html" as template>
+<@template.content>
+<#if !success??  && !error??>
+
+<!-- codemirror -->
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/codemirror.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/theme/blackboard.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/theme/monokai.min.css">
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/codemirror.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.41.0/mode/xml/xml.min.js"></script>
+
+<!-- add summernote -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.11/summernote.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.11/summernote.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.11/lang/summernote-zh-CN.min.js"></script>
+
+<div class="row section">
+  <div class="form-group">
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_CREATE_AP_SAMPLE} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <div class="col-sm-7" id="top_buttons" align="right">
+      <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
+      <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
+      <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
+    </div>
+  </div>
+</div>
+
+<form action="/confirmtx" class="form-horizontal" method="post">
+  <input type="hidden" name="form" value="create-first-ap">
+  <input type="hidden" name="apid" value="${apid}">
+  <input type="hidden" name="odin" id="odin" value='${odin["short_odin"]}'>
+  <input type="hidden" name="updater" value="${address}">
+  <input type="hidden" name="ap_page_content_encoded" id="ap_page_content_encoded" value="">
+  <!--
+  <div class="form-group">
+    <label for="ap_page_title" class="col-sm-2 control-label">${LANG_CREATE_AP_SAMPLE_TITLE}</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" name="ap_page_title" id="ap_page_title" placeholder="Input the page title" value='我的对等网页示例 My PeerWeb page sample' >
+    </div>
+  </div>
+  -->
+
+<div class="form-group">
+<label for="ap_page_content" class="col-sm-2 control-label">${LANG_CREATE_AP_SAMPLE_CONTENT}</label>
+<div class="col-sm-10">
+ <textarea class="form-control" id="ap_page_content" rows=8 ><#if old_page_content??>
+${old_page_content}
+<#else>
+欢迎来到属于 <a href="ppk:${odin["short_odin"]}#">ppk:${odin["short_odin"]}#</a> 的对等网站示例页面。<br>
+该页面去中心化托管在Dat、IPFS、BtmFS等不同特色的分布式存储服务上。<br>
+
+简单的开始，体验PPk新业态（PWEB/DWEB/WEB3.0）的第一步...<br>
+
+This is the first PeerWeb page of <a href="ppk:${odin["short_odin"]}#">ppk:${odin["short_odin"]}#</a> <br>
+The page is storaged on BtmFS which is a distributed file system based Bytom blockchain.<br> 
+
+<p><img src="ppk:0/image/logo#1.0"  title="0/image/logo#1.0"><br>Powered by PPkPub <a target="_top" href="ppk:0/">ppk:0/</a></p>
+<p><img src="http://ppk001.sinaapp.com/ppkpub/ppkn1/images/qrcode_for_PPkPub_WXService.png"></p>
+</#if></textarea>
+</div>
+</div>
+  
+  <div class="form-group">
+    <label for="ap_type" class="col-sm-2 control-label">使用内容模板</label>
+    <div class="col-sm-10">
+      <select class="form-control" id="template_list" size="3"  onchange="selectTemplate()">
+          <option value="BlankPage">空白页面</option>
+          <option value="WelcomePage">欢迎页面</option>
+          <option value="PersonalPage">个人主页</option>
+          <option value="BtcWallet" >简单的比特币钱包</option>
+          <option value="OdinRegister" >ODIN标识注册工具</option>
+          <option value="302Page">跳转到新网址(HTML网页)</option>
+          <option value="302PTTP">跳转到新网址(PTTP状态码302测试)</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label for="ap_type" class="col-sm-2 control-label">${LANG_SELECT_FIRST_AP_TYPE}</label>
+    <div class="col-sm-10">
+      <select class="form-control" name="ap_type" id="ap_type" size="3">
+          <option value="dat"  selected="selected" >${LANG_AP_TYPE_DAT}</option>
+          <option value="ipfs">${LANG_AP_TYPE_IPFS}</option>
+          <option value="btmfs" >${LANG_AP_TYPE_BTMFS}</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label for="sign_algo" class="col-sm-2 control-label">${LANG_ALGORITHM}</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" name="sign_algo" id="sign_algo" value='<#if new_vd_set_algo??>${new_vd_set_algo}</#if>'  list="algo_list" >
+    </div>
+  </div>
+  <datalist id="algo_list">
+    <option value="SHA256withRSA" label="SHA256withRSA">
+    <option value="SHA384withRSA" label="SHA384withRSA">
+    <option value="SHA512withRSA" label="SHA512withRSA">
+    <option value="SHA1withRSA" label="SHA1withRSA">
+    <option value="MD5withRSA" label="MD5withRSA">
+  </datalist>
+
+  <div class="form-group">
+    <label for="sign_prvkey" class="col-sm-2 control-label">${LANG_PRIVATE_KEY}</label>
+    <div class="col-sm-10">
+     <textarea class="form-control" name="sign_prvkey" id="sign_prvkey" rows=3 >${new_vd_set_prvkey}</textarea>
+     <span>${LANG_THE_PRIVATE_KEY_FOR_SIGN_PAGE}</span>
+    </div>
+  </div>
+  
+  <div class="form-group" align="center">
+    <div class="col-sm-offset-2 col-sm-10">
+      <button class="btn btn-warning btn-lg" type="submit"  onclick="encodePageContent();this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" >${LANG_SUBMIT_TO_UPDATE}</button>
+    </div>
+  </div>
+</form>
+<hr>
+<script type="text/javascript">
+function selectTemplate(){
+    var obj_select = document.getElementById("template_list");
+    
+    if(obj_select.selectedIndex<0)
+       return;
+       
+    var template_id = obj_select.options[obj_select.selectedIndex].value;
+    if('WelcomePage'==template_id){
+       str_content='欢迎到访对等网站示例页面。<br> \
+该页面去中心化托管在Dat、IPFS、BtmFS等不同特色的分布式存储服务上。<br>  \
+简单的开始，体验PPk新业态（PWEB/DWEB/WEB3.0）的第一步...<br>  \
+This is the first PeerWeb page.<br> \
+The page is storaged on a distributed file system such as Dat,IPFS,BtmFS.<br> \
+<p><img src="ppk:0/image/logo#1.0"  title="0/image/logo#1.0"><br>Powered by PPkPub <a target="_top" href="ppk:0/">ppk:0/</a></p>\
+<p><img src="http://ppk001.sinaapp.com/ppkpub/ppkn1/images/qrcode_for_PPkPub_WXService.png"></p>'; 
+    }else if('PersonalPage'==template_id){
+        str_content='PersonalPage';
+    }else if('BtcWallet'==template_id){
+        str_content='BtcWallet';
+    }else if('OdinRegister'==template_id){
+        str_content='OdinRegister';
+    }else if('302Page'==template_id || '302PTTP'==template_id ){
+        var dest_url = prompt("请输入目标网址(如ppk:或http:起始)","http://");
+        if (dest_url == null){
+            return;
+        }
+        
+        if('302PTTP'==template_id)
+            str_content='302 '+dest_url;
+        else
+            str_content="<html><head><meta http-equiv='refresh' content='2;url="+dest_url+"'></head>Redirected to "+dest_url+"</html>";
+    }else{
+        str_content='Unkown template:'+template_id;
+    }
+    
+    document.getElementById("ap_page_content").value=str_content;
+}
+
+//编码可能带有HTML关键字的内容字符串
+function encodePageContent(){
+    var str=document.getElementById("ap_page_content").value;
+    document.getElementById("ap_page_content_encoded").value=stringToHex(encodeURIComponent(str)); //encode两次避免提示XSS错误
+}
+
+//Ascii/Unicode字符串转换成16进制表示
+function stringToHex(str){
+    var val="";
+    for(var i = 0; i < str.length; i++){
+        var tmpstr=str.charCodeAt(i).toString(16);  //Unicode
+        val += tmpstr.length==1? '0'+tmpstr : tmpstr;  
+    }
+    return val;
+}
+
+</script>
+</#if>
+
+</@template.content>

@@ -2,45 +2,41 @@
 <@template.content>
 <#if !success??  && !error??>
 <div class="row section">
-    <div class="row section">
-    <table border="0" width="100%">
-    <tr>
-        <td><h2>${LANG_UPDATE_AP_SET} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2></td>
-        <td align="right">
-        <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
-        <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
-        <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
-        </td>
-    </tr>
-    </table>
+  <div class="form-group">
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_UPDATE_AP_SET} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <div class="col-sm-7" id="top_buttons" align="right">
+     <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
+     <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
+     <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
     </div>
-    
-    <form action="/odin-update-ap" class="form-inline" method="post">
-      <input type="hidden" name="form" value="update-odin-aplist">
-      <input type="hidden" name="odin" value='${odin["short_odin"]}'>
-      <input type="hidden" name="updater" value="${address}">
-      
-      <#assign apids=0..4/>
-      <#list apids as apid>
-      <div class="input-group">
-          <span class="input-group-addon">${apid}:</span>
-          <input type="text" placeholder="${LANG_ODIN_AP_URL_SHOULD_BE}" name='ap${apid}_url' value='<#if odin["ap"+apid+"_url"]??>${odin["ap"+apid+"_url"]}</#if>'  size="50"><a class="btn btn-warning" role="button" href='/odin-create-first-ap?odin=${odin["short_odin"]}&apid=${apid}&old_ap_url=<#if odin["ap"+apid+"_url"]??>${odin["ap"+apid+"_url"]}</#if>'>${LANG_GENERATE}/${LANG_UPDATE}...</a><br>
-      </div>
-      </#list>
-
-      <div class="input-group">
-          <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
-          <span class="input-group-btn">
-              <button class="btn btn-warning" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_SUBMIT_TO_UPDATE}</button>
-          </span>
-      </div>
-      
-      <h3 align="center"><a href="/odin-create-first-ap?odin=${odin["short_odin"]}" >${LANG_SUBMIT_TO_CREATE_FIRST_AP}</a></h3>
-
-    </form>
-    <hr>
-    
+  </div>
 </div>
+
+<form action="/confirmtx" class="form-horizontal" method="post">
+  <input type="hidden" name="form" value="update-aplist">
+  <input type="hidden" name="odin" value='${odin["short_odin"]}'>
+  <input type="hidden" name="updater" value="${address}">
+  
+  <#assign apids=0..4/>
+  <#list apids as apid>
+  <div class="form-group">
+    <label for="ap${apid}_url" class="col-sm-2 control-label">${apid}:</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" placeholder="${LANG_ODIN_AP_URL_SHOULD_BE}" name="ap${apid}_url" id="ap${apid}_url" value='<#if odin["ap"+apid+"_url"]??>${odin["ap"+apid+"_url"]}</#if>'> <a class="btn btn-warning" role="button" href='/odin-create-first-ap?odin=${odin["short_odin"]}&apid=${apid}&old_ap_url=<#if odin["ap"+apid+"_url"]??>${odin["ap"+apid+"_url"]}</#if>'>${LANG_GENERATE}/${LANG_UPDATE}...</a>
+    </div>
+  </div>
+  </#list>
+
+  <div class="form-group" align="center">
+    <div class="col-sm-offset-2 col-sm-10">
+      <button class="btn btn-warning btn-lg" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled2="disabled"</#if>>${LANG_SUBMIT_TO_UPDATE}</button>
+    </div>
+  </div>
+  
+  <h3 align="center"><a href="/odin-create-first-ap?odin=${odin["short_odin"]}" >${LANG_SUBMIT_TO_CREATE_FIRST_AP}</a></h3>
+
+</form>
+<hr>
 </#if>
 
 </@template.content>

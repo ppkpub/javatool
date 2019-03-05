@@ -57,7 +57,7 @@ public class PPkPeerEventListener extends AbstractPeerEventListener {
 
   @Override
   public void onTransaction(Peer peer, Transaction tx) {
-    logger.info("Got transaction");    
+    //logger.info("Got transaction");    
   }
     
     @Override

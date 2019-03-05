@@ -1,71 +1,111 @@
 <#import "template.html" as template>
 <@template.content>
 <#if !success??  && !error??>
+
 <div class="row section">
-    <div class="row section">
-    <table border="0" width="100%">
-    <tr>
-      <h2>${LANG_VIEW_THE_DETAIL_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h2></td>
-      <td align="right">
-      <#if odin["me_updatable"]??>
+  <div class="form-group">
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_VIEW_THE_DETAIL_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <div class="col-sm-7" id="top_buttons" align="right">
+     <#if odin["me_updatable"]??>
       <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a>
-      </#if>
-      </td>
-    </tr>
-    </table>
+     </#if>
     </div>
-    <ul>
-    <li>${LANG_ODIN_ADMIN_ADDRESS} : ${odin["admin"]}</li>
-    <li>${LANG_ODIN_TITLE} : ${odin["title"]}
-    <li>${LANG_EMAIL} : ${odin["email"]}</li>
-    
-    <li>${LANG_ODIN_AUTHORITY} : <#if odin["auth"]="0">${LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE}</#if><#if odin["auth"]="1">${LANG_ONLY_THE_ADMIN_CAN_UPDATE}</#if><#if odin["auth"]="2">${LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER}</#if></li>
-    
-    <li>${LANG_ODIN_REGISTER_ADDRESS} : ${odin["register"]}</li>
-    <li>${LANG_TIME}: ${odin["block_time"]}   ${LANG_BLOCK}:${odin["block_index"]}</li>
-
-    <li>${LANG_ODIN_AP}</li>
-    <ul>
-    <#assign apids=0..9/>
-      <#list apids as apid>
-      <#if odin["ap"+apid+"_url"]??><li>${odin["ap"+apid+"_url"]}  <a class="btn btn-success" role="button" href='/odin-check-ap-vd?odin=${odin["short_odin"]}&apid=${apid}'>${LANG_BROWSE_AP}...</a></li></#if>
-      </#list>
-      <#if odin["me_updatable"]?? && !odin["ap0_url"]??>
-      <ul><a href="/odin-create-first-ap?odin=${odin["short_odin"]}" >${LANG_SUBMIT_TO_CREATE_FIRST_AP}</a></ul>
-      </#if>
-    </ul>
-
-    <li>${LANG_ODIN_VALIDTION} : <br><ul><textarea rows=3 cols=80>${odin["vd_set_debug"]}</textarea></ul></li>
-    <li>${LANG_ESCAPED_LIST} : <br><ul><textarea rows=2 cols=80>${odin["escaped_list_debug"]}</textarea></ul></li>
-    </ul>
-    <#if awaiting_update_log_num??>
-    <hr>
-    <h3>${LANG_CONFIRM_THE_BELOW_UPDATE_OF}:</h3>
-    <form action="/odin-confirm" class="form-inline" method="post">
-    <input type="hidden" name="odin" value='${odin["short_odin"]}'>
-    <input type="hidden" name="awaiting_update_log_num" value='${awaiting_update_log_num}'>
-    
-    <#list awaiting_update_logs as update_info>
-    ${update_info["log_sn"]+1}.
-    <ul>
-    <input type="hidden" name='update_log_id${update_info["log_sn"]}' value='${update_info["log_id"]}'>
-    <!--<li>update_log_id:${update_info["log_id"]}</li>-->
-    <li>Submit time: ${update_info["block_time"]}   Block:${update_info["block_index"]}</li>
-    <li>Updater: ${update_info["updater"]}</li>
-    <li>Update setting:${update_info["update_desc"]}</li>
-    </ul>
-    <hr size=1>
-    </#list>
-    
-    <div class="input-group">
-        <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
-        <span class="input-group-btn">
-            <button class="btn btn-danger btn-lg" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_CONFIRM_THE_UPDATE}</button>
-        </span>
-    </div>
-    </form>
-    </#if>
+  </div>
 </div>
+
+<ul>
+<li>${LANG_ODIN_ADMIN_ADDRESS} : ${odin["admin"]}</li>
+<li>${LANG_ODIN_TITLE} : ${odin["title"]}</li>
+<li>${LANG_EMAIL} : ${odin["email"]}</li>
+
+<li>${LANG_ODIN_AUTHORITY} : <#if odin["auth"]="0">${LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE}</#if><#if odin["auth"]="1">${LANG_ONLY_THE_ADMIN_CAN_UPDATE}</#if><#if odin["auth"]="2">${LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER}</#if></li>
+
+<li>${LANG_ODIN_REGISTER_ADDRESS} : ${odin["register"]}</li>
+<li>${LANG_TIME}: ${odin["block_time"]}   ${LANG_BLOCK}:${odin["block_index"]}</li>
+
+<li>${LANG_ODIN_AP}</li>
+<ul>
+<#assign apids=0..9/>
+  <#list apids as apid>
+  <#if odin["ap"+apid+"_url"]??><div class="form-group">
+    <div class="col-sm-10" align="left">
+     <input class="form-control" type="text" value='<#if odin["ap"+apid+"_url"]??>${odin["ap"+apid+"_url"]}</#if>'>
+    </div>
+    <div class="col-sm-2" align="center">
+     <a class="btn btn-success" role="button" href='/odin-check-ap-vd?odin=${odin["short_odin"]}&apid=${apid}'>${LANG_BROWSE_AP}...</a>
+    </div>
+  </div></#if>
+  </#list>
+  <#if odin["me_updatable"]?? && !odin["ap0_url"]??>
+  <ul><a href='/odin-create-first-ap?odin=${odin["short_odin"]}' >${LANG_SUBMIT_TO_CREATE_FIRST_AP}</a></ul>
+  </#if>
+</ul>
+
+<li>${LANG_ODIN_VALIDTION} : </li>
+<div class="row section">
+    <ul><textarea class="form-control" rows=3>${odin["vd_set_debug"]}</textarea></ul>
+</div>
+
+<li>${LANG_ESCAPED_LIST} :  </li>
+<div class="row section">
+    <ul><textarea class="form-control" rows=2>${odin["escaped_list_debug"]}</textarea></ul>
+</div>
+</ul>
+<#if awaiting_update_log_num??>
+<hr>
+<h3>${LANG_CONFIRM_THE_BELOW_UPDATE_OF}:</h3>
+<form action="/confirmtx" class="form-inline" method="post">
+<input type="hidden" name="form" value="confirm-update-log">
+<input type="hidden" name="odin" value='${odin["short_odin"]}'>
+<input type="hidden" name="awaiting_update_log_num" value='${awaiting_update_log_num}'>
+
+<#list awaiting_update_logs as update_info>
+${update_info["log_sn"]+1}.
+<ul>
+<input type="hidden" name='update_log_id${update_info["log_sn"]}' value='${update_info["log_id"]}'>
+<!--<li>update_log_id:${update_info["log_id"]}</li>-->
+<li>Submit time: ${update_info["block_time"]}   Block:${update_info["block_index"]}</li>
+<li>Updater: ${update_info["updater"]}</li>
+<li>Update setting:${update_info["update_desc"]}</li>
+</ul>
+<hr size=1>
+</#list>
+
+<div class="input-group">
+    <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    <span class="input-group-btn">
+        <button class="btn btn-danger" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled2="disabled"</#if>>${LANG_CONFIRM_THE_UPDATE}</button>
+    </span>
+</div>
+</form>
+</#if>
+
+<#if odin["me_updatable"]??>
+<p align=center><a class="btn btn-warning" role="button" href='javascript:setAsDefaultODIN();'>使用该ODIN标识作为用户身份</a></p>
+
+<script type="text/javascript">
+    function setAsDefaultODIN(){
+        if(typeof(PeerWeb) !== 'undefined'){ //检查PPk开放协议相关PeerWeb JS接口可用性
+            console.log("PeerWeb enabled");
+            
+            //设置PPk浏览器中缺省ODIN标识
+            PeerWeb.changeAnotherODIN(
+                'ppk:${odin["short_odin"]}#',  
+                'callback_setNewODIN'  //回调方法名称
+            );
+        }else{
+            alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.3.2 above.");
+        }
+    }
+    function callback_setNewODIN(status,obj_data){
+        if('OK'!=status){
+           alert("抱歉出错了！\n"+status+"\n"+obj_data.errdesc);
+        }
+    }
+</script>
+
+</#if>
+
 </#if>
 
 </@template.content>

@@ -70,34 +70,14 @@ public class APoverETH {
         System.out.println("APoverETH.fetchInterest() jsonRequest:"+jsonRequest.toString());
         
         //实例化请求地址，注意服务端地址的配置
-        URL destRpcUrl = new URL( mapEthNetworkJsonRPCs.get( strEthNet ) );
-        HttpURLConnection connection = (HttpURLConnection) destRpcUrl.openConnection();
-
-        connection.setRequestMethod("POST");
-        connection.setDoOutput(true);
-        connection.connect();
-
-        OutputStream out = connection.getOutputStream();
-
-        out.write(jsonRequest.toString().getBytes());
-        out.flush();
-        out.close();
-
-        int statusCode = connection.getResponseCode();
-        if (statusCode == HttpURLConnection.HTTP_OK) {
-          //通过输入流获取二进制数据
-          InputStream inStream = connection.getInputStream();
-          //得到二进制数据，以二进制封装得到数据，具有通用性
-          byte[] data = CommonHttpUtil.readInputStream(inStream);
-          
-          if(data!=null){
-            String str_resp=new String(data);
+        String str_resp=CommonHttpUtil.getInstance().sendPostJSON(mapEthNetworkJsonRPCs.get( strEthNet ),jsonRequest.toString());
+        
+        if(str_resp!=null){
             System.out.println("APoverETH.fetchInterest() str_resp:"+str_resp);
             JSONObject obj_resp=new JSONObject(str_resp);
             String str_result_hex=obj_resp.getString("result");
             
             str_ap_resp_json=getFirstSegmentFromABIHex(str_result_hex);
-          }
         }
     }catch (Throwable e) {
         logger.error("APoverETH.fetchInterest() error: "+e.toString());
@@ -143,18 +123,18 @@ public class APoverETH {
     return strHexABI;
   }
   
-  //按以太坊ABI规范从HEX文本中提取出第一段的字符串，注意起始的0x
+  //按以太坊ABI规范从HEX文本中提取出第一段的字符串，注意去掉起始的0x
   protected static String getFirstSegmentFromABIHex( String str_hex ) throws Exception{
-    byte[] tmpBytes=Util.hexStringToBytes(str_hex);
+    byte[] tmpBytes=Util.hexStringToBytes(str_hex.substring(2) );
     List<Byte> dataArrayList =  Util.toByteArrayList(tmpBytes);
     
-    int content_len = tmpBytes[64] & 0xFF |  
-            (tmpBytes[63] & 0xFF) << 8 |  
-            (tmpBytes[62] & 0xFF) << 16 |  
-            (tmpBytes[61] & 0xFF) << 24;  
+    int content_len = tmpBytes[63] & 0xFF |  
+            (tmpBytes[62] & 0xFF) << 8 |  
+            (tmpBytes[61] & 0xFF) << 16 |  
+            (tmpBytes[60] & 0xFF) << 24;  
     System.out.println("content_len="+content_len);    
     
-    byte[] chunk = Util.toByteArray( new ArrayList<Byte>(dataArrayList.subList(65, 65+content_len) ) );
+    byte[] chunk = Util.toByteArray( new ArrayList<Byte>(dataArrayList.subList(64, 64+content_len) ) );
     
     return new String(chunk,Config.PPK_TEXT_CHARSET); 
   }

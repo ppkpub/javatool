@@ -24,14 +24,23 @@ import org.bitcoinj.core.Transaction;
 import com.google.common.primitives.Ints;
 
 public class Send {
-    static Logger logger = LoggerFactory.getLogger(Send.class);
+  static Logger logger = LoggerFactory.getLogger(Send.class);
   public static Integer length = 8+8;
   public static Integer id = 0;
   
-  public static Transaction create(String source, String destination, String asset, BigInteger amount_satoshi) throws Exception {
+  public static OdinTransctionData create(String source, String destination, String asset, BigInteger amount_satoshi) throws Exception {
     if (!source.equals("") && !destination.equals("") && asset.equals("BTC") && amount_satoshi.compareTo(BigInteger.ZERO)>0) {
-      Blocks blocks = Blocks.getInstance();
-      Transaction txBTC = blocks.transaction(source, destination, amount_satoshi, BigInteger.valueOf(Config.ppkStandardDataFee),null, "");
+        OdinTransctionData txBTC = new OdinTransctionData(
+          source, 
+          destination, 
+          amount_satoshi, 
+          BigInteger.valueOf(Config.ppkStandardDataFee),
+          "" ,
+          ""
+       );
+      //Blocks blocks = Blocks.getInstance();
+      //Transaction txBTC = blocks.transaction(source, destination, amount_satoshi, BigInteger.valueOf(Config.ppkStandardDataFee),null, "");
+      
       return txBTC;      
     } else {
       throw new Exception("Please specify a source address and destination address, and send more than 0 BTC.");

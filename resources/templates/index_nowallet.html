@@ -1,26 +1,8 @@
 <#import "template.html" as template>
 <@template.content>
-
-<div class="row section">
-    <a href="/community"><img src="/images/t-topic.jpg" style="height: 250px;" class="float_right" /></a>
-    <div class="page-header">
-      <h2>${LANG_PPKPUB} <small>${LANG_A_UNIQUE_GROUP}</small></h2>
-    </div>
-    <p>${LANG_MADE_FOR_A_LITTLE_JOY} ${LANG_SOFTWARE_INCLUDING}</p>
-    <p>${LANG_BUILT_ON_BITCOIN_BLOCKCHAIN}</p>
-    <p><a class="btn btn-primary" role="button" href="https://ppkpub.github.io/docs/">${LANG_LEARN_MORE}</a></p>
-</div>
-
-<#if news_url??>
-<div class="row section">
-<h3>${LANG_NEWS}</h3>
-<iframe width="100%" height="50" scrolling="auto" frameborder="no" name="news_content" id="news_content" src="${news_url}"></iframe>
-</div>
-</#if>
-
 <div class="row section">
   <div class="form-group">
-    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_RECENT_ODINS}</h3></label>
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_RECENT_ODINS}(Open Data Index Name)</h3></label>
     <div class="col-sm-7" id="top_buttons" align="right">
      <a class="btn btn-success" role="button" href="/odin">${LANG_MY_ODIN}...</a>
      <a class="btn btn-success" role="button" href="/odin-add">${LANG_REGISTE_A_NEW_ODIN}...</a>

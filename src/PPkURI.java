@@ -301,6 +301,7 @@ public class PPkURI {
       System.out.println("pttpStatusCode="+pttpStatusCode);
       obj_ap_resp = new JSONObject();
       obj_ap_resp.put(Config.JSON_KEY_ORIGINAL_RESP, str_ap_data_json );
+      obj_ap_resp.put(Config.JSON_KEY_STATUS_CODE, pttpStatusCode );
       if (pttpStatusCode == HttpURLConnection.HTTP_OK) {
         byte[]  chunk_content = null;
         if("base64".equals(chunk_content_encoding)){

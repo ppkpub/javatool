@@ -27,7 +27,8 @@ public class JsonRpcServiceImpl implements JsonRpcService {
     Blocks blocks = Blocks.getInstance();
     BigInteger quantity = new BigDecimal(amount*Config.btc_unit).toBigInteger();
     try {
-      Transaction tx = Send.create(source, destination, "BTC", quantity);
+      Transaction tx = blocks.transaction(source, destination, quantity, BigInteger.valueOf(Config.ppkStandardDataFee),null, null);
+      
       blocks.sendTransaction(source, tx);
       logger.info("Success! You sent "+amount+" BTC to "+destination+".");
       return tx.getHashAsString();

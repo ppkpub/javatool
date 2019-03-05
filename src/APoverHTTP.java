@@ -24,7 +24,7 @@ public class APoverHTTP {
     logger.info("APoverHTTP.fetchInterest("+ap_fetch_url+") ...");
     
     try{
-      str_ap_resp_json=new String(CommonHttpUtil.getSourceFromUrl(ap_fetch_url));
+      str_ap_resp_json=new String(CommonHttpUtil.getInstance().getContentFromUrl(ap_fetch_url));
     }catch(Exception e){
       logger.error("APoverHTTP.fetchInterest("+ap_fetch_url+") error: "+e.toString());
     }

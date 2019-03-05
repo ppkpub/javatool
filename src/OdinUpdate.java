@@ -292,12 +292,13 @@ public class OdinUpdate {
         Integer blockTime = rs.getInt("block_time");
         String txHash = rs.getString("tx_hash");
         Integer txIndex = rs.getInt("tx_index");
-        String dataString = rs.getString("data");
+        byte[] odin_data = Util.hexStringToBytes(rs.getString("data"));
+        
 
         ResultSet rsCheck = db.executeQuery("select * from odin_update_logs where tx_index='"+txIndex.toString()+"'");
         if (!rsCheck.next()) {
-          Byte messageType = blocks.getPPkMessageTypeFromTransaction(dataString);
-          List<Byte> message = blocks.getPPkMessageFromTransaction(dataString);
+          Byte messageType = blocks.getPPkMessageTypeFromTransaction(odin_data);
+          List<Byte> message = blocks.getPPkMessageFromTransaction(odin_data);
           
           logger.info("messageType="+messageType.toString()+"  message.size="+message.size());
 
@@ -492,11 +493,11 @@ public class OdinUpdate {
     }  
   }
   */
-  public static Transaction updateOdinBaseInfo(String fullOdin,String updater,String admin,JSONObject update_set) throws Exception {
+  public static OdinTransctionData updateOdinBaseInfo(String fullOdin,String updater,String admin,JSONObject update_set) throws Exception {
       return updateOdin(fullOdin,updater,null,admin,update_set);
   }
   
-  public static Transaction updateOdinApSet(String fullOdin,String updater,JSONObject update_ap_set) throws Exception {
+  public static OdinTransctionData updateOdinApSet(String fullOdin,String updater,JSONObject update_ap_set) throws Exception {
       Map mapNewOdinSet = new HashMap(); 
       mapNewOdinSet.put("ver", Config.ODIN_PROTOCOL_VER); 
       mapNewOdinSet.put("cmd", Config.ODIN_CMD_UPDATE_AP_SET); 
@@ -508,7 +509,7 @@ public class OdinUpdate {
       return updateOdin(fullOdin,updater,null,"",update_set);
   }
   
-  public static Transaction updateOdinVdSet(String fullOdin,String updater,JSONObject update_vd_set) throws Exception {
+  public static OdinTransctionData updateOdinVdSet(String fullOdin,String updater,JSONObject update_vd_set) throws Exception {
       Map mapNewOdinSet = new HashMap(); 
       mapNewOdinSet.put("ver", Config.ODIN_PROTOCOL_VER); 
       mapNewOdinSet.put("cmd", Config.ODIN_CMD_UPDATE_VD_SET); 
@@ -520,7 +521,7 @@ public class OdinUpdate {
       return updateOdin(fullOdin,updater,null,"",update_set);
   }
   
-  public static Transaction confirmUpdate(String fullOdin,String updater,JSONArray confirm_update_list) throws Exception {
+  public static OdinTransctionData confirmUpdate(String fullOdin,String updater,JSONArray confirm_update_list) throws Exception {
       Map mapNewOdinSet = new HashMap(); 
       mapNewOdinSet.put("ver", Config.ODIN_PROTOCOL_VER); 
       mapNewOdinSet.put("cmd", Config.ODIN_CMD_CONFIRM_UPDATE); 
@@ -532,7 +533,7 @@ public class OdinUpdate {
       return updateOdin(fullOdin,updater,null,"",update_set);
   }
 
-  public static Transaction transOdinRegister(String fullOdin,String updater,String new_register) throws Exception {
+  public static OdinTransctionData transOdinRegister(String fullOdin,String updater,String new_register) throws Exception {
       if (updater.equals(new_register)) throw new Exception("Please specify another register address which is not same to the updater.");
       
       Map mapNewOdinSet = new HashMap(); 
@@ -544,7 +545,7 @@ public class OdinUpdate {
       return updateOdin(fullOdin,updater,new_register,null,update_set);
   }
     
-  private static Transaction updateOdin(String fullOdin,String updater,String new_register,String new_admin,JSONObject update_set) throws Exception {
+  private static OdinTransctionData updateOdin(String fullOdin,String updater,String new_register,String new_admin,JSONObject update_set) throws Exception {
     if (updater.equals("")) throw new Exception("Please specify a updater address.");
         
     if(fullOdin.length()<UPDATE_ODIN_PREFIX_LENGTH){
@@ -563,19 +564,27 @@ public class OdinUpdate {
 
     Byte update_set_data_type=Config.DATA_TEXT_UTF8; 
     byte[] update_set_byte_array=update_set.toString().getBytes(Config.PPK_TEXT_CHARSET);
-    byte[] update_set_byte_array_compressed=Util.compress(update_set.toString().getBytes(Config.PPK_TEXT_CHARSET),Config.DATA_BIN_DEFLATE);
-    
-    logger.info("update_set_byte_array.length="+update_set_byte_array.length);
-    logger.info("update_set_byte_array_compressed.length="+update_set_byte_array_compressed.length);
-    if(update_set_byte_array.length>update_set_byte_array_compressed.length){ //need compress the long data
-       update_set_byte_array=update_set_byte_array_compressed;
-       update_set_data_type=Config.DATA_BIN_DEFLATE;
-    }    
-    
     int update_set_length=update_set_byte_array.length;
     byte[] len_bytes=BitcoinVarint.toBytes(update_set_length);
     int total_data_len=UPDATE_ODIN_PREFIX_LENGTH+1+1+len_bytes.length+update_set_length;
-    if (total_data_len>Config.MAX_ODIN_DATA_LENGTH) throw new Exception("Too big setting data size:"+total_data_len+" .(Should be less than "+Config.MAX_ODIN_DATA_LENGTH+" bytes)");
+
+    logger.info("update_set_byte_array.length="+update_set_byte_array.length);
+    if (total_data_len>Config.MAX_ODIN_DATA_LENGTH){ //当数据长度超出限制时尝试压缩
+        byte[] update_set_byte_array_compressed=Util.compress(update_set.toString().getBytes(Config.PPK_TEXT_CHARSET),Config.DATA_BIN_DEFLATE);
+        logger.info("update_set_byte_array_compressed.length="+update_set_byte_array_compressed.length);
+        
+        update_set_byte_array=update_set_byte_array_compressed;
+        update_set_data_type=Config.DATA_BIN_DEFLATE;
+    }
+
+    update_set_length=update_set_byte_array.length;
+    len_bytes=BitcoinVarint.toBytes(update_set_length);
+    total_data_len=UPDATE_ODIN_PREFIX_LENGTH+1+1+len_bytes.length+update_set_length;
+
+    logger.info("total_data_len="+total_data_len);
+    logger.info("MAX_ODIN_DATA_LENGTH="+Config.MAX_ODIN_DATA_LENGTH);
+    if (total_data_len>Config.MAX_ODIN_DATA_LENGTH) 
+        throw new Exception("Too big setting data size:"+total_data_len+" .(Should be less than "+Config.MAX_ODIN_DATA_LENGTH+" bytes)");
 
     byteBuffer = ByteBuffer.allocate(total_data_len);
     byteBuffer.put(id);
@@ -590,27 +599,21 @@ public class OdinUpdate {
       destination = new_admin ; 
 
     byte[] data = byteBuffer.array();
-            
-    String dataString = "";
-    try {
-      dataString = new String(data,Config.BINARY_DATA_CHARSET);
-    } catch (UnsupportedEncodingException e) {
-    }
 
-    Blocks blocks = Blocks.getInstance();
-    Transaction tx = blocks.transaction(
+    OdinTransctionData tx = new OdinTransctionData(
           updater, 
           destination, 
           BigInteger.valueOf(Config.dustSize), 
           BigInteger.valueOf(Config.ppkStandardDataFee),
           Config.PPK_ODIN_MARK_PUBKEY_HEX ,
-          dataString
+          Util.bytesToHexString(data)
        );
-    
+       
     /*
     //just for debug
-    logger.info("Test:updateOdin tx="+tx+",updater="+updater+", dataString.length="+dataString.length()+" dataString="+dataString);
-    blocks.importPPkTransaction(tx, null, null, null);
+    Blocks blocks=Blocks.getInstance();
+    logger.info("Test:updateOdin tx="+tx+",updater="+updater+", data.length="+data.length+" dataString="+(new String(data)));
+    blocks.importPPkTransaction(blocks.transaction(tx), null, null, null);
     System.exit(0);
     */
     return tx;

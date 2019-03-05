@@ -166,12 +166,12 @@ public class Odin {
         Integer blockTime = rs.getInt("block_time");
         String txHash = rs.getString("tx_hash");
         Integer txIndex = rs.getInt("tx_index");
-        String dataString = rs.getString("data");
+        byte[] odin_data = Util.hexStringToBytes(rs.getString("data"));
 
         ResultSet rsCheck = db.executeQuery("select * from odins where tx_index='"+txIndex.toString()+"'");
         if (!rsCheck.next()) {
-          Byte messageType = blocks.getPPkMessageTypeFromTransaction(dataString);
-          List<Byte> message = blocks.getPPkMessageFromTransaction(dataString);
+          Byte messageType = blocks.getPPkMessageTypeFromTransaction(odin_data);
+          List<Byte> message = blocks.getPPkMessageFromTransaction(odin_data);
           
           logger.info("messageType="+messageType.toString()+"  message.size="+message.size());
 
@@ -283,7 +283,7 @@ public class Odin {
     return -1;    
   }
     
-  public static Transaction createOdin(String register,String admin,JSONObject odin_set) throws Exception {
+  public static OdinTransctionData createOdin(String register,String admin,JSONObject odin_set) throws Exception {
     if (register.equals("")) throw new Exception("Please specify a register address.");
     if (odin_set==null) throw new Exception("Please specify valid odin_set.");
     
@@ -307,7 +307,6 @@ public class Odin {
     
     if (total_data_len>Config.MAX_ODIN_DATA_LENGTH) throw new Exception("Too big setting data.(Should be less than "+Config.MAX_ODIN_DATA_LENGTH+" bytes)");
 
-    Blocks blocks = Blocks.getInstance();
     ByteBuffer byteBuffer = ByteBuffer.allocate(total_data_len);
     byteBuffer.put(id);
     byteBuffer.put(odin_set_data_type);
@@ -316,28 +315,45 @@ public class Odin {
     
     byte[] data = byteBuffer.array();
 
-    String dataString = "";
-    try {
-      dataString = new String(data,Config.BINARY_DATA_CHARSET);
-    } catch (UnsupportedEncodingException e) {
-    }
-    Transaction tx = blocks.transaction(
+    OdinTransctionData tx = new OdinTransctionData(
           register, 
           admin, 
           BigInteger.valueOf(Config.dustSize), 
           BigInteger.valueOf(Config.ppkStandardDataFee),
           Config.PPK_ODIN_MARK_PUBKEY_HEX ,
-          dataString
+          Util.bytesToHexString(data)
        );
 
     /*
     //just for debug
-    logger.info("Test:createOdin register="+register+", MAKR_PUBKEY_HEX="+Config.PPK_ODIN_MARK_PUBKEY_HEX+", dataString.length="+dataString.length()+" dataString="+dataString);
-    blocks.importPPkTransaction(tx, null, null,null);
+    Blocks blocks = Blocks.getInstance();
+    logger.info("Test:createOdin register="+register+", MAKR_PUBKEY_HEX="+Config.PPK_ODIN_MARK_PUBKEY_HEX+" dataString="+(new String(data)));
+    blocks.importPPkTransaction(blocks.transaction(tx), null, null, null);
     System.exit(0);
     */
     
     return tx;
+  }
+  
+  public static HashMap<String,Object> parseOdinSet(OdinInfo odinInfo,String myaddress,String register,String admin)  {
+    HashMap<String,Object> map = new HashMap<String,Object>();
+    map.put("full_odin", odinInfo.fullOdin);
+    map.put("short_odin", odinInfo.shortOdin.toString());
+    map.put("register", register);
+    map.put("admin", admin);
+    map.put("tx_index",odinInfo.txIndex.toString());
+    map.put("tx_hash", odinInfo.txHash);
+    map.put("block_index", odinInfo.blockIndex.toString());
+    map.put("block_time", Util.timeFormat(odinInfo.blockTime));
+    map.put("validity",odinInfo.validity);
+    
+    try{
+        JSONObject odin_set = odinInfo.odinSet; 
+        map=parseOdinSet(map,odin_set,myaddress,register,admin);
+    }catch(Exception e){
+        e.printStackTrace();
+    }
+    return map;
   }
 
   public static HashMap<String,Object> parseOdinSet(HashMap<String,Object> map,JSONObject odin_set,String myaddress,String register,String admin) throws Exception {

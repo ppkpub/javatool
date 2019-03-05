@@ -9,7 +9,7 @@ public class Language {
   //uses https://bitbucket.org/xerial/sqlite-jdbc
   static Logger logger = LoggerFactory.getLogger(Language.class);
   private static JSONObject objLang = null;
-    private static String currentLang = "";
+  private static String currentLang = "";
 
 
   public static void setLang(String lang) {

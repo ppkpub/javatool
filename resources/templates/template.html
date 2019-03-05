@@ -2,116 +2,107 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"/>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-	<title>${LANG_PPKPUB}<#if title??> - ${title}</#if></title>
-	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
-	<link rel="stylesheet" href="/css/style.css">
-	<link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
-  <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
-	<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
-	<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
-	<script type="text/javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <title>${LANG_PPKPUB}<#if title??> - ${title}</#if></title>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
 <body>
-	<nav class="navbar navbar-default" role="navigation">
-	  <div class="container-fluid">
-	    <!-- Brand and toggle get grouped for better mobile display -->
-	    <div class="navbar-header">
-	      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-navbar-collapse-1">
-	        <span class="sr-only">Toggle navigation</span>
-	        <span class="icon-bar"></span>
-	        <span class="icon-bar"></span>
-	        <span class="icon-bar"></span>
-	      </button>
-	      <a class="navbar-brand logo" href="/">${LANG_PPKPUB}</a>
-	    </div>
+  <nav class="navbar navbar-default" role="navigation">
+    <div class="container-fluid">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-navbar-collapse-1">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand logo" href="/">${LANG_PPKPUB}</a>
+      </div>
 
-	    <!-- Collect the nav links, forms, and other content for toggling -->
-	    <div class="collapse navbar-collapse" id="bs-navbar-collapse-1">
-	      <ul class="nav navbar-nav">
-			<#if is_my_wallet?? && is_my_wallet != "My">
-					<li>${LANG_VIEWING_OTHER_ADDRESS} ${address}<br>${LANG_VIEWING_OTHER_ADDRESS_NOTICE}</li>
-			<#else>
-          <li <#if title?? && title=="Odin">class="active"</#if>><a href="/odin">${LANG_ODIN}</a></li>
-					<li <#if title?? && title=="Wallet">class="active"</#if>><a href="/wallet">${LANG_WALLET}</a></li>
-					<li <#if title?? && title=="Community">class="active"</#if>><a href="/community">${LANG_COMMUNITY}</a></li>
-			</#if>
-	      </ul>
-	      <ul class="nav navbar-nav navbar-right">
-					<#if addresses??>
-	        <li class="dropdown">
-	          <a href="#" class="dropdown-toggle" data-toggle="dropdown">${address?substring(0,6)}... <b class="caret"></b></a>
-	          <ul class="dropdown-menu">
-								<#list addresses as addr>
-									<li><a href="/odin?address=${addr["address"]}"><#if addr["address"]==address><strong>${addr["address"]}</strong><#else>${addr["address"]}</#if></a></li>
-								</#list>
-	          </ul>
-	        </li>
-					</#if>
-					<#if blocksBTC?? && blocksPPK?? && version??>
-					<li class="dropdown">
-						<#if parsing??>
-						<a href="#" class="dropdown-toggle" data-toggle="dropdown">${parsing} / ${blocksBTC} <b class="caret"></b></a>
-						<#else>
-						<a href="#" class="dropdown-toggle" data-toggle="dropdown">${blocksPPK} / ${blocksBTC} <b class="caret"></b></a>
-						</#if>
-						<ul class="dropdown-menu">
-							<#if parsing??>
-							<li><a href="#">PPK ${LANG_BLOCKS} <span class="badge">${parsing}</span></a></li>
-							<#else>
-							<li><a href="#">PPK ${LANG_BLOCKS} <span class="badge">${blocksPPK}</span></a></li>
-							</#if>
-							<li><a href="#">BTC ${LANG_BLOCKS} <span class="badge">${blocksBTC}</span></a></li>
-							<li><a href="#">${LANG_VERSION} <span class="badge">${version}</span></a></li>
-							<#if !parsing??>
-							<!--<li><a href="/?reparse">${LANG_REPARSE_TRANSACTIONS}</a></li>-->
-							</#if>
-						</ul>
-					</li>
-					</#if>
-	      </ul>
-	    </div>
-	  </div>
-	</nav>
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="bs-navbar-collapse-1">
+        <ul class="nav navbar-nav">
+        <#if is_my_wallet?? && is_my_wallet != "My">
+            <li>${LANG_VIEWING_OTHER_ADDRESS} ${address}<br>${LANG_VIEWING_OTHER_ADDRESS_NOTICE}</li>
+        <#else>
+            <li <#if title?? && title=="Odin">class="active"</#if>><a href="/odin">${LANG_MY_ODIN}</a></li>
+            <li <#if title?? && title=="Wallet">class="active"</#if>><a href="/wallet">${LANG_WALLET}</a></li>
+            <li <#if title?? && title=="Community">class="active"</#if>><a href="https://ppkpub.github.io/docs/">${LANG_COMMUNITY}</a></li>
+        </#if>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <#if addresses??>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">${address?substring(0,6)}... <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+                <#list addresses as addr>
+                    <li><a href="/odin?address=${addr["address"]}"><#if addr["address"]==address><strong>${addr["address"]}</strong><#else>${addr["address"]}</#if></a></li>
+                </#list>
+            </ul>
+          </li>
+          </#if>
+          <#if blocksBTC?? && blocksPPK?? && version??>
+          <li class="dropdown">
+            <#if parsing??>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">${parsing} / ${blocksBTC} <b class="caret"></b></a>
+            <#else>
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">${blocksPPK} / ${blocksBTC} <b class="caret"></b></a>
+            </#if>
+            <ul class="dropdown-menu">
+              <#if parsing??>
+              <li><a href="#">PPK ${LANG_BLOCKS} <span class="badge">${parsing}</span></a></li>
+              <#else>
+              <li><a href="#">PPK ${LANG_BLOCKS} <span class="badge">${blocksPPK}</span></a></li>
+              </#if>
+              <li><a href="#">BTC ${LANG_BLOCKS} <span class="badge">${blocksBTC}</span></a></li>
+              <li><a href="#">${LANG_VERSION} <span class="badge">${version}</span></a></li>
+              <#if !parsing??>
+              <!--<li><a href="/?reparse">${LANG_REPARSE_TRANSACTIONS}</a></li>-->
+              </#if>
+            </ul>
+          </li>
+          </#if>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
-	<div class="container-fluid content">
-		<#if info?? || error?? || success?? || warning?? || (parsing?? || blocksPPK!=blocksBTC || blocksBTC=0 || blocksPPK=0) >
-		<div class="row section messages">
-			<#if info??>
-			<div class="alert alert-info">${info}</div>
-			</#if>
-			<#if error??>
-			<div class="alert alert-danger">${LANG_ERROR}:${error}</div>
-			</#if>
-			<#if success??>
-			<div class="alert alert-success">${success}</div>
-			</#if>
-			<#if warning??>
-			<div class="alert alert-warning">${warning}</div>
-			</#if>
-			<#if (parsing?? || blocksPPK!=blocksBTC || blocksBTC=0 || blocksPPK=0)>
-			<div class="alert alert-warning">${LANG_PARSING_TRANSACTIONS}</div>
-			</#if>
-		</div>
-		</#if>
+  <div class="container-fluid content">
+    <#if info?? || error?? || success?? || warning?? || (parsing?? || blocksPPK!=blocksBTC || blocksBTC=0 || blocksPPK=0) >
+    <div class="row section messages">
+      <#if info??>
+      <div class="alert alert-info">${info}</div>
+      </#if>
+      <#if error??>
+      <div class="alert alert-danger">${LANG_ERROR}:${error}</div>
+      </#if>
+      <#if success??>
+      <div class="alert alert-success">${success}</div>
+      </#if>
+      <#if warning??>
+      <div class="alert alert-warning">${warning}</div>
+      </#if>
+      <#if (parsing?? || blocksPPK!=blocksBTC || blocksBTC=0 || blocksPPK=0)>
+      <div class="alert alert-warning">${LANG_PARSING_TRANSACTIONS}</div>
+      </#if>
+    </div>
+    </#if>
   </div>
   
   <#nested/>
   
-	<div class="container-fluid footer">
-	PPkPub ODIN Toolkit ${version} &copy; 2015-2018. Released under the <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>.<br><#if system_charset??>[${system_charset}]</#if> <#if ipfs_status??>[${ipfs_status}]</#if>
-	</div>
+  <div class="container-fluid footer">
+  PPkPub ODIN Toolkit ${version} &copy; 2015-2019. Released under the <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>.<br><#if system_charset??>[${system_charset}]</#if> <#if ipfs_status??>[${ipfs_status}]</#if>
+  </div>
 
-	<script src="http://yui.yahooapis.com/3.12.0/build/yui/yui.js"></script>
-	<script>
-	YUI().use('node-base', 'node-event-delegate', function (Y) {
-	Y.one('body').delegate('click', function (e) {
-	e.preventDefault();
-	}, 'a[href="#"]');
-	});
-	</script>
 
 </body>
 </html>
