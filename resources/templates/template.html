@@ -30,13 +30,9 @@
       <!-- Collect the nav links, forms, and other content for toggling -->
       <div class="collapse navbar-collapse" id="bs-navbar-collapse-1">
         <ul class="nav navbar-nav">
-        <#if is_my_wallet?? && is_my_wallet != "My">
-            <li>${LANG_VIEWING_OTHER_ADDRESS} ${address}<br>${LANG_VIEWING_OTHER_ADDRESS_NOTICE}</li>
-        <#else>
             <li <#if title?? && title=="Odin">class="active"</#if>><a href="/odin">${LANG_MY_ODIN}</a></li>
             <li <#if title?? && title=="Wallet">class="active"</#if>><a href="/wallet">${LANG_WALLET}</a></li>
             <li <#if title?? && title=="Community">class="active"</#if>><a href="https://ppkpub.github.io/docs/">${LANG_COMMUNITY}</a></li>
-        </#if>
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <#if addresses??>
@@ -44,7 +40,7 @@
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">${address?substring(0,6)}... <b class="caret"></b></a>
             <ul class="dropdown-menu">
                 <#list addresses as addr>
-                    <li><a href="/odin?address=${addr["address"]}"><#if addr["address"]==address><strong>${addr["address"]}</strong><#else>${addr["address"]}</#if></a></li>
+                    <li><a href="/odin?address=${addr["address"]}"><#if addr["address"]==address><strong>${addr["address_label"]}</strong><#else>${addr["address_label"]}</#if></a></li>
                 </#list>
             </ul>
           </li>
@@ -100,7 +96,7 @@
   <#nested/>
   
   <div class="container-fluid footer">
-  PPkPub ODIN Toolkit ${version} &copy; 2015-2019. Released under the <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>.<br><#if system_charset??>[${system_charset}]</#if> <#if ipfs_status??>[${ipfs_status}]</#if>
+  PPkPub ODIN Toolkit ${version} &copy; 2015-2019. Released under the <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>.<br><#if system_charset??>[${system_charset}]</#if> <#if ipfs_status??>[${ipfs_status}]</#if> <#if dat_status??>[${dat_status}]</#if>
   </div>
 
 

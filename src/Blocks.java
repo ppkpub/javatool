@@ -67,8 +67,7 @@ import org.bitcoinj.wallet.WalletTransaction;
 public class Blocks implements Runnable {
   public static NetworkParameters params;
   public Logger logger = LoggerFactory.getLogger(Blocks.class);
-  private static Blocks instance = null;
-  private static boolean bRemoteWalletMode = false;
+  public static boolean bRemoteWalletMode = false;
   
   public Wallet wallet=null;
   public String walletFile = "resources/db/wallet";
@@ -85,6 +84,7 @@ public class Blocks implements Runnable {
   public Integer ppkBlock = 0;
   public String  statusMessage = "";
  
+  private static Blocks instance = null;
   private static HashMap<String,List<UnspentOutput>> cachedLastUnspentList=new HashMap<String,List<UnspentOutput>>();
 
   public static Blocks getInstanceSkipVersionCheck() {
@@ -570,6 +570,7 @@ public class Blocks implements Runnable {
                                new ArrayList<Byte>() : Util.toByteArrayList(data);
 
     int odin_data_length = dataArrayList.size();
+    boolean isOdinTransaction = odin_data_length>0;
 
     BigInteger totalOutput = fee;
     BigInteger totalInput = BigInteger.ZERO;
@@ -602,7 +603,7 @@ public class Blocks implements Runnable {
        return null;
 
     //组织多重交易来嵌入所需存放的数据
-    if(odin_data_length>0){
+    if(isOdinTransaction){
       int  max_tx_num = Config.MAX_MULTISIG_TX_NUM;
       int  max_multisig_n = Config.MAX_N;
 
@@ -649,10 +650,12 @@ public class Blocks implements Runnable {
         tx.addOutput(Coin.valueOf(BigInteger.valueOf(0).longValue()), script);
       }
     }
-    List<UnspentOutput> unspents = Util.getUnspents(source);
+    
+    List<UnspentOutput> unspents=Util.getUnspents(source,isOdinTransaction);   
+       
     List<Script> inputScripts = new ArrayList<Script>();      
 
-    Boolean atLeastOneRegularInput = false;
+    Boolean hadOneRegularInput = false;
     Integer usedUnspents=0;
     for (UnspentOutput unspent : unspents) {
       String txHash = unspent.txid;
@@ -664,16 +667,19 @@ public class Blocks implements Runnable {
       //in other words, we sweep up any unused multisig inputs with every transaction
 
       try {
-        if ((script.isSentToAddress() && (totalOutput.compareTo(totalInput)>0 || !atLeastOneRegularInput)) 
-          || (script.isSentToMultiSig() && ((usedUnspents<2 && !atLeastOneRegularInput)||(usedUnspents<3 && atLeastOneRegularInput ) || fee.compareTo(BigInteger.valueOf(Config.maxFee))==0 ) )) {
-          if(
-            bRemoteWalletMode
-            ||( !bRemoteWalletMode 
-               && wallet.getTransaction(new Sha256Hash(txHash))==null || wallet.getTransaction(new Sha256Hash(txHash)).getOutput(unspent.vout).isAvailableForSpending() 
-               )
-            ) {
+        //if ((script.isSentToAddress() && (totalOutput.compareTo(totalInput)>0 || !hadOneRegularInput)) 
+        //  || (script.isSentToMultiSig() && ((usedUnspents<2 && !hadOneRegularInput)||(usedUnspents<3 && hadOneRegularInput ) || fee.compareTo(BigInteger.valueOf(Config.maxFee))==0 ) )) {
+        if ((script.isSentToAddress() && (totalOutput.compareTo(totalInput)>0 || !hadOneRegularInput))  
+          ||(script.isSentToMultiSig() && (
+                      (!isOdinTransaction && totalOutput.compareTo(totalInput)>0 )
+                      ||(isOdinTransaction && usedUnspents<2 && !hadOneRegularInput)
+                      ||(isOdinTransaction && usedUnspents<3 && hadOneRegularInput )  
+                   )
+              )
+           ) {        
+
             if (script.isSentToAddress()) {
-              atLeastOneRegularInput = true;
+              hadOneRegularInput = true;
             }
             /*
             //严格检查输入是否符合比特币协议标准要求 ,待生效
@@ -708,25 +714,25 @@ public class Blocks implements Runnable {
             TransactionInput input = new TransactionInput(params, tx, new byte[]{}, txOutPt);
             tx.addInput(input);
             inputScripts.add(script);
-          }
         }
-                  
-        if( usedUnspents>=3 && totalInput.compareTo(totalOutput)>=0 )
-          //use max 3 unspents  to lower transaction size if possible
-          break;
+        
+        if( isOdinTransaction && usedUnspents>=3 && totalInput.compareTo(totalOutput)>=0 ){
+            //use max 3 unspents  to lower odin transaction size if possible
+            break;
+        }
       } catch (Exception e) {
         logger.error("Error during transaction creation: "+e.toString());
         e.printStackTrace();
       }
     }
 
-    if (!atLeastOneRegularInput) {
-      throw new Exception("Not enough standard unspent outputs to cover transaction.");
+    if (!hadOneRegularInput && odin_data_length>0) {
+      throw new Exception("Not enough standard unspent outputs to cover odin transaction.");
     }
 
     if (totalInput.compareTo(totalOutput)<0) {
       logger.info("Not enough inputs. Output: "+totalOutput.toString()+", input: "+totalInput.toString());
-      throw new Exception("Not enough BTC to cover transaction of "+String.format("%.8f",totalOutput.doubleValue()/Config.btc_unit)+" BTC.");
+      throw new Exception("Not enough BTC to cover transaction of "+String.format("%.8f",totalOutput.doubleValue()/Config.btc_unit)+" BTC. Usable amount is  "+String.format("%.8f",totalInput.doubleValue()/Config.btc_unit));
     }
     BigInteger totalChange = totalInput.subtract(totalOutput);
 

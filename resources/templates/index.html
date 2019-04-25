@@ -8,7 +8,7 @@
     </div>
     <p>${LANG_MADE_FOR_A_LITTLE_JOY} ${LANG_SOFTWARE_INCLUDING}</p>
     <p>${LANG_BUILT_ON_BITCOIN_BLOCKCHAIN}</p>
-    <p><a class="btn btn-primary" role="button" href="https://ppkpub.github.io/docs/">${LANG_LEARN_MORE}</a></p>
+    <p><a class="btn btn-primary" role="button" href="https://ppkpub.github.io/docs/">${LANG_LEARN_MORE}</a>  <a class="btn btn-success" role="button" href="/odin">${LANG_MY_ODIN}...</a> <a class="btn btn-success" role="button" href="/odin-add">${LANG_REGISTE_A_NEW_ODIN}...</a></p>
 </div>
 
 <#if news_url??>
@@ -18,51 +18,116 @@
 </div>
 </#if>
 
-<div class="row section">
-  <div class="form-group">
-    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_RECENT_ODINS}</h3></label>
-    <div class="col-sm-7" id="top_buttons" align="right">
-     <a class="btn btn-success" role="button" href="/odin">${LANG_MY_ODIN}...</a>
-     <a class="btn btn-success" role="button" href="/odin-add">${LANG_REGISTE_A_NEW_ODIN}...</a>
+<div class="row section padding-top">
+<ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+    <li class="active"><a href="#recent_odins" data-toggle="tab">${LANG_RECENT_ODINS}</a></li>
+    <li><a href="#top100_registers" data-toggle="tab">${LANG_TOP100_REGISTERS}</a></li>
+    <li><a href="#query_odin" data-toggle="tab">${LANG_QUERY_ODIN}</a></li>
+</ul>
+
+<div id="my-tab-content" class="tab-content">
+    <div class="tab-pane active" id="recent_odins">
+        <div class="table-responsive">
+
+        <#if recent_odins??>
+        <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>${LANG_FULL_ODIN}</th>
+                <th>${LANG_SHORT_ODIN}</th>
+                <th>${LANG_TIME}</th>
+                <th>${LANG_ODIN_REGISTER_ADDRESS}</th>
+                <th>${LANG_STATUS}</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        <#list recent_odins as odin>
+            <tr>
+                <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+                <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+                <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+                <td>${odin["register_label"]}</td>
+                <td>${odin["validity"]}</td>
+            </tr>
+        </#list>
+        </tbody>
+        </table>
+        </#if>
+        </div>
     </div>
-  </div>
+    
+    <div class="tab-pane" id="top100_registers">
+    <#if top100_registers??>
+        <#if my_rank??>
+        <div align="center">
+        <p><strong><a href="/odin">我的地址[${address_label} ]已注册了 ${my_registed_num} 个奥丁号<br>排名第 ${my_rank} 位，超过了 ${my_rank_percent}% 的朋友。</a></strong></p>
+        </div>
+        </#if>
+        <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>${LANG_RANK}</th>
+                <th>${LANG_ODIN_REGISTER_ADDRESS}</th>
+                <th>${LANG_REGISTED_NUM}</th>
+                <th>${LANG_FIRST_ODIN}</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        <#list top100_registers as register>
+            <tr>
+                <td>${register["rank"]}</td>
+                <td>${register["register_label"]}</td>
+                <td>${register["odin_num"]}</td>
+                <td><a href='/odin-detail?odin=${register["first_short_odin"]}'>${register["first_short_odin"]}</a></td>
+            </tr>
+        </#list>
+        </tbody>
+        </table>
+        </#if>
+    </div>
+    
+    <div class="tab-pane" id="query_odin">
+      <div class="row section">
+      <center>
+      <br>
+      <form action="/odin-detail" class="form-horizontal" method="get">
+          <div class="form-group">
+            <label for="odin" class="col-sm-2 control-label">${LANG_INPUT_ODIN}</label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control" placeholder="${LANG_INPUT_ODIN_DESC}" name="odin" id="odin" value="">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+              <button class="btn btn-success" type="submit" >${LANG_QUERY_ODIN}</button>
+            </div>
+          </div>
+      </form>
+      
+      <br>
+      <br>
+      <form action="/odin-match" class="form-horizontal" method="get">
+          <div class="form-group">
+            <label for="word" class="col-sm-2 control-label">${LANG_INPUT_WORD}</label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control" placeholder="${LANG_INPUT_WORD_DESC}" name="word" id="word" value="">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+              <button class="btn btn-success" type="submit" >${LANG_MATCH_WORD}</button>
+            </div>
+          </div>
+      </form>
+      
+      </center>
+      </div>
+    </div>
 </div>
-
-<div class="table-responsive">
-
-<#if recent_odins??>
-<table class="table table-striped">
-<thead>
-    <tr>
-        <th>${LANG_FULL_ODIN}</th>
-        <th>${LANG_SHORT_ODIN}</th>
-        <th>${LANG_TIME}</th>
-        <th>${LANG_ADMIN_REGISTER}</th>
-        <th>${LANG_STATUS}</th>
-    </tr>
-</thead>
-
-<tbody>
-<#list recent_odins as odin>
-    <tr>
-        <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
-        <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-        <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
-        <td>
-        ${LANG_ADMIN_BY} ${odin["admin"]}<br>
-        ${LANG_REGISTED_BY} ${odin["register"]}
-        </td>
-        <td>
-            ${odin["validity"]}<br>
-            <#if odin["me_updatable"]??>
-            <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
-            </#if>
-        </td>
-    </tr>
-</#list>
-</tbody>
-</table>
-</#if>
 </div>
 
 </@template.content>

@@ -30,6 +30,7 @@
     </div>
     
     <#if isLocalWalletAddress??>
+    </#if>
     <div class="row section">
         <h3>${LANG_IMPORT_PRIVATE_KEY}</h3>
         <form action="/wallet" method="post">
@@ -60,13 +61,21 @@
             <input type="hidden" name="source" value="${address}">
 
             <div class="input-group">
-                <span class="input-group-addon">@</span>
+                <span class="input-group-addon">目标地址</span>
                 <input type="text" placeholder="${LANG_DESTINATION_ADDRESS}" name="destination">
             </div>
 
             <div class="input-group">
-              <span class="input-group-addon">#</span>
-              <input type="text" placeholder="${LANG_QUANTITY_BTC}" name="quantity">
+              <span class="input-group-addon">转账金额</span>
+              <input type="text" placeholder="${LANG_QUANTITY_BTC}" name="quantity" id="quantity">
+              <#if maxValidBTC?? >
+              <button type="text"  class="btn" onclick='document.getElementById("quantity").value="${maxValidBTC}";document.getElementById("fee").value="${maxFeeBTC}";return false;'>${LANG_MAX_VALID_AMOUNT}</button>
+              </#if>
+            </div>
+            
+            <div class="input-group">
+              <span class="input-group-addon">矿工费用</span>
+              <input type="text" placeholder="${LANG_QUANTITY_BTC}" name="fee" id="fee" value="${ppkStandardFeeBtc?string(",##0.00000000")}">
             </div>
 
             <div class="input-group">
@@ -75,10 +84,79 @@
             </span>
             </div>
         </form>
+        <p>注：点击“${LANG_MAX_VALID_AMOUNT}”出来的金额可能小于上面显示的余额，因为BTC交易组织形式的特点，为了控制交易数据块的大小，一次允许使用的UTXO输入条目数量有所限制。如果要将余额全部转出，分多笔转账即可。</p>
     </div>
+
+    <p>未花费交易(UTXO)记录数量：  <#if unspentCount?? >${unspentCount} </#if></p>
+    <p>注：当这里显示的"未花费交易(UTXO)记录数量"不是大于0的有效数字时，可能是网络原因导致无法获取完整的UTXO交易记录，此时转账和注册ODIN标识可能会报错，请稍后刷新再试。</p>
+    <!--
+    <div class="row section">
+        <h3>${LANG_MERGE_UTXO}</h3>
+
+        <form action="/merge_utxo" method="post">
+            <input type="hidden" name="source" value="${address}">
+
+            <div class="input-group">
+                <span class="input-group-addon">合并输出地址</span>
+                <input type="text" value="${address}" name="destination">
+            </div>
+            
+            <div class="input-group">
+              <span class="input-group-addon">数量</span>
+              <input type="text"  name="merge_num" value="50">
+            </div>
+
+            <div class="input-group">
+            <span class="input-group-btn">
+            <button class="btn btn-default" type="submit" onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();">${LANG_MERGE_UTXO}</button>
+            </span>
+            </div>
+        </form>
+        
+    </div>
+    -->
+     <#if isLocalWalletAddress??>
     </#if>
 </div>
+<#if isLocalWalletAddress??>
+<div class="row section">
+<h3>钱包所有地址列表</h3>
 
+<#if local_address_list??>
+<div class="table-responsive">
+
+<table class="table table-striped">
+<thead>
+    <tr>
+        <th>比特币地址/Bitcoin Address</th>
+        <th>余额<br>Balance</th>
+        <th>交易总数<br>Total TXs</th>
+        <th>待确认交易数<br>Unconfirmed TXs</th>
+        <th>未花费交易数<br>Unspent TXs</th>
+    </tr>
+</thead>
+
+<tbody>
+
+<#list local_address_list as address_record>
+    <tr>
+        <td><a href="/odin?address=${address_record["address"]}"><#if address_record["address"]==address><strong>${address_record["address"]}</strong><#else>${address_record["address"]}</#if></a></td>
+        <td>${address_record["balance"]}</td>
+        <td>${address_record["tx_count"]}</td>
+        <td>${address_record["unconfirmed_tx_count"]}</td>
+        <td>${address_record["unspent_tx_count"]}</td>
+    </tr>    
+</#list>
+
+</tbody>
+</table>
+</div>
+<#else>
+<P><font color="#f00">网络查询有误，暂时无法获取钱包所有地址的交易统计数据，请稍候再试！<br>Failed to query the state data of all addresses in local wallet.Please retry later.</font></P>
+</#if>
+
+</div>
+</#if>
 <!-- Just for debug-->
 <#if testShowKey??>${testShowKey}</#if>
 

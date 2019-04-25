@@ -42,8 +42,8 @@
                 <td>${LANG_PENDING}</td>
                 <td>${odin["title"]}</td>
                 <td>
-                ${LANG_ADMIN_BY} ${odin["admin"]}<br>
-                ${LANG_REGISTED_BY} ${odin["register"]}
+                ${LANG_ADMIN_BY} ${odin["admin_label"]}<br>
+                ${LANG_REGISTED_BY} ${odin["register_label"]}
                 </td>
                 <td>${LANG_PENDING}
                 </td>
@@ -60,8 +60,8 @@
                 <td><a  href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
                 <td>${odin["title"]}</td>
                 <td>
-                ${LANG_ADMIN_BY} ${odin["admin"]}<br>
-                ${LANG_REGISTED_BY} ${odin["register"]}
+                ${LANG_ADMIN_BY} ${odin["admin_label"]}<br>
+                ${LANG_REGISTED_BY} ${odin["register_label"]}
                 </td>
                 <td>
                   ${odin["validity"]}
@@ -103,8 +103,8 @@
                   <td><a  href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
                   <td>${odin["title"]}</td>
                   <td>
-                  ${LANG_ADMIN_BY} ${odin["admin"]}<br>
-                  ${LANG_REGISTED_BY} ${odin["register"]}
+                  ${LANG_ADMIN_BY} ${odin["admin_label"]}<br>
+                  ${LANG_REGISTED_BY} ${odin["register_label"]}
                   </td>
                   <td>
                     ${odin["validity"]}<br>
@@ -220,7 +220,7 @@
               
               <div class="form-group">
                 <div class="col-sm-offset-2 col-sm-10">
-                  <button class="btn btn-success btn-lg" type="submit" >${LANG_QUERY_ODIN}</button>
+                  <button class="btn btn-success" type="submit" >${LANG_QUERY_ODIN}</button>
                 </div>
               </div>
           </form>
@@ -237,7 +237,7 @@
               
               <div class="form-group">
                 <div class="col-sm-offset-2 col-sm-10">
-                  <button class="btn btn-success btn-lg" type="submit" >${LANG_MATCH_WORD}</button>
+                  <button class="btn btn-success" type="submit" >${LANG_MATCH_WORD}</button>
                 </div>
               </div>
           </form>

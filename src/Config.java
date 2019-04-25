@@ -29,7 +29,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 807;
+  public static Integer minorVersion = 808;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   
@@ -40,7 +40,9 @@ public class Config {
   public static Integer dustSize = 1000;
   //public static Integer minOrderMatchBTC = 100000;
   //public static Integer minFee = 10000;
+  public static Integer maxUseUTXO = 20;  //输入最多使用的UTXO条目数
   public static Integer maxFee = 99999;  //Avoid sending too much btc than normal fee
+  
   public static Integer dataValue = 0;
   public static Integer btc_unit = 100000000;
 
@@ -48,7 +50,7 @@ public class Config {
   public static long ppkToolCreationTime = 1400561240-1;  //UTC 2014-5-20 04:47:20
   public static Integer firstBlock = 0;  
   
-  public static Integer ppkStandardDataFee = 10000;
+  public static Integer ppkStandardDataFee = 1000;
   
   public static int ODIN_PROTOCOL_VER=1; 
   
@@ -195,6 +197,7 @@ public class Config {
       dustSize = Integer.parseInt(prop.getProperty("DustSize")) ;
       System.out.println("DustSize:"+dustSize);
       
+      
       strTemp = prop.getProperty("UseDustTX");
       System.out.println("UseDustTX:"+strTemp);
       if(strTemp!=null && strTemp.equals("1") ){
@@ -202,6 +205,12 @@ public class Config {
       }else{
         useDustTX=false;
       }
+      
+      strTemp = prop.getProperty("MaxUseUTXO");
+      if(strTemp!=null && strTemp.length()>0 ){
+        maxUseUTXO = Integer.parseInt( strTemp );
+      }
+      System.out.println("MaxUseUTXO:"+maxUseUTXO);
       
       strTemp = prop.getProperty("DEBUG_KEY");
       System.out.println("DEBUG_KEY:"+strTemp);

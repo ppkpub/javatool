@@ -28,13 +28,13 @@ public class Send {
   public static Integer length = 8+8;
   public static Integer id = 0;
   
-  public static OdinTransctionData create(String source, String destination, String asset, BigInteger amount_satoshi) throws Exception {
+  public static OdinTransctionData create(String source, String destination, String asset, BigInteger amount_satoshi, BigInteger fee_satoshi) throws Exception {
     if (!source.equals("") && !destination.equals("") && asset.equals("BTC") && amount_satoshi.compareTo(BigInteger.ZERO)>0) {
         OdinTransctionData txBTC = new OdinTransctionData(
           source, 
           destination, 
           amount_satoshi, 
-          BigInteger.valueOf(Config.ppkStandardDataFee),
+          fee_satoshi,
           "" ,
           ""
        );

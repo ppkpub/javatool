@@ -37,7 +37,7 @@
   </div></#if>
   </#list>
   <#if odin["me_updatable"]?? && !odin["ap0_url"]??>
-  <ul><a href='/odin-create-first-ap?odin=${odin["short_odin"]}' >${LANG_SUBMIT_TO_CREATE_FIRST_AP}</a></ul>
+  <ul><a href='/odin-ap-edit?odin=${odin["short_odin"]}' >${LANG_SUBMIT_TO_CREATE_FIRST_AP}</a></ul>
   </#if>
 </ul>
 
@@ -81,7 +81,7 @@ ${update_info["log_sn"]+1}.
 </#if>
 
 <#if odin["me_updatable"]??>
-<p align=center><a class="btn btn-warning" role="button" href='javascript:setAsDefaultODIN();'>使用该ODIN标识作为用户身份</a></p>
+<p align=center><a class="btn btn-warning" role="button" href='javascript:setAsDefaultODIN();'>使用该ODIN标识作为开放身份</a></p>
 
 <script type="text/javascript">
     function setAsDefaultODIN(){

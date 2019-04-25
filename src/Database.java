@@ -104,7 +104,7 @@ public class Database {
     try {
       statement = connection.createStatement();
       statement.executeUpdate(query);
-      logger.info("Update/Insert query: "+query);
+      //logger.info("Update/Insert query: "+query);
       success=true;
     } catch (Exception e) {
       logger.error(e.toString());

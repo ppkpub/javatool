@@ -94,6 +94,7 @@ ${LANG_GENERATE_PUBLIC_AND_PRIVATE_KEYS_HERE}
     </div>
   </div>
   </#if>
+  
   <div class="form-group">
     <label for="ap_type" class="col-sm-2 control-label">${LANG_SELECT_STORAGE_SERVICE}</label>
     <div class="col-sm-10">
@@ -135,6 +136,50 @@ haoGbK7FNxlUfB4TSQIDAQAB<br>
 将私钥文件pkcs8_rsa_private_key保存好，并配置到AP上对数据内容进行签名使用。<br>
     </p>
     -->
+<script type="text/javascript">
+var mUserOdinURI='ppk:${odin["short_odin"]}#';
+window.onload=function(){
+    init();
+}
+
+function init(){
+    console.log("init...");
+    
+    if(typeof(PeerWeb) !== 'undefined'){ //检查PPk开放协议相关PeerWeb JS接口可用性
+        console.log("PeerWeb enabled");
+
+        //读取PPk浏览器内置钱包中对应标识的密钥设置
+        PeerWeb.getPPkResourcePubkey(
+            mUserOdinURI,
+            'callback_getPPkResourcePubkey'  //回调方法名称
+        );
+    }else{
+        console.log("PeerWeb not valid");
+        //alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.2.6 above.");
+    }
+}
+
+function callback_getPPkResourcePubkey(status,obj_data){
+    document.getElementById("new_vd_set_pubkey").value="";
+    if(document.getElementById("new_vd_set_prvkey")!=null){
+        document.getElementById("new_vd_set_prvkey").value="本机私钥受保护";
+    }
+    
+    if('OK'==status){
+        try{
+            var pub_key=obj_data.local_pubkey;
+            
+            document.getElementById("new_vd_set_pubkey").value=pub_key;
+
+            //alert("res_uri="+obj_data.res_uri+" \pub_key="+pub_key);
+        }catch(e){
+            alert("获得的开放身份标识公钥信息有误!\n"+e);
+        }
+    }else{
+        alert("无法获取到开放身份标识对应密钥！\n请检查确认");
+    }
+}
+</script>
 </#if>
 
 </@template.content>

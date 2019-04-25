@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Calendar;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.nio.ByteBuffer;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -192,22 +193,22 @@ public class GenOdinDataByRequest {
     String new_vd_set_pubkey=request.queryParams("new_vd_set_pubkey");
 
     if(new_vd_set_cert_uri!=null){
-     new_vd_set_cert_uri=new_vd_set_cert_uri.trim();
-     attributes.put("new_vd_set_cert_uri", new_vd_set_cert_uri);
-     if( new_vd_set_cert_uri.length()==0 ){
-          attributes.put("error", Language.getLangLabel("Please input valid URI of certificate."));
-     }
+         new_vd_set_cert_uri=new_vd_set_cert_uri.trim();
+         attributes.put("new_vd_set_cert_uri", new_vd_set_cert_uri);
+         if( new_vd_set_cert_uri.length()==0 ){
+              attributes.put("error", Language.getLangLabel("Please input valid URI of certificate."));
+         }
     }else if(new_vd_set_pubkey!=null && new_vd_set_pubkey.trim().length()>0 ){
-    String tmp_ap_type = request.queryParams("ap_type");
-    new_vd_set_cert_uri=Util.uploadToAP(tmp_ap_type,new_vd_set_pubkey.getBytes(),odinInfo.shortOdin.toString()+"K");
-    if( new_vd_set_cert_uri==null){
-      attributes.put("error", "["+tmp_ap_type+"]"+Language.getLangLabel(" is invalid. Please retry the other storage service."));
-      //new_vd_set_cert_uri="data:,"+new_vd_set_pubkey;
-    }
+        String tmp_ap_type = request.queryParams("ap_type");
+        new_vd_set_cert_uri=Util.uploadToAP(tmp_ap_type,new_vd_set_pubkey.getBytes(),odinInfo.shortOdin.toString()+"K");
+        if( new_vd_set_cert_uri==null){
+              attributes.put("error", "["+tmp_ap_type+"]"+Language.getLangLabel(" is invalid. Please retry the other storage service."));
+              //new_vd_set_cert_uri="data:,"+new_vd_set_pubkey;
+        }
 
-    attributes.put("new_vd_set_algo", new_vd_set_algo);
-    //attributes.put("new_vd_set_format", new_vd_set_format);
-    attributes.put("new_vd_set_pubkey", new_vd_set_pubkey);
+        attributes.put("new_vd_set_algo", new_vd_set_algo);
+        //attributes.put("new_vd_set_format", new_vd_set_format);
+        attributes.put("new_vd_set_pubkey", new_vd_set_pubkey);
     }
 
     if(!map.containsKey("me_updatable")){
@@ -255,8 +256,8 @@ public class GenOdinDataByRequest {
     return odin_data;
   }
   
-  public static OdinTransctionData genOdinDataOfCreateFirstAP(Request request,Map<String, Object> attributes) throws Exception{
-    System.out.println("************* do genOdinDataOfCreateFirstAP **************");
+  public static OdinTransctionData genOdinDataOfSignAP(Request request,Map<String, Object> attributes) throws Exception{
+    System.out.println("************* do genOdinDataOfSignAP **************");
     OdinTransctionData odin_data = null;  
     
     OdinInfo odinInfo=getExistedOdinInfo(request);
@@ -272,68 +273,84 @@ public class GenOdinDataByRequest {
         throw new Exception(Language.getLangLabel("No permission."));
     }
     
-    //Generate PTTP data package of the sample page 
-    //String tmp_page_title = request.queryParams("ap_page_title");
-    String tmp_page_content_encoded = request.queryParams("ap_page_content_encoded");
     String tmp_ap_type = request.queryParams("ap_type");
-
-    String tmp_private_key=request.queryParams("sign_prvkey");
-    String tmp_sign_algo=request.queryParams("sign_algo");
-
-    tmp_page_content_encoded=new String(Util.hexStringToBytes(tmp_page_content_encoded),Config.PPK_TEXT_CHARSET);
-    String chunk_content=java.net.URLDecoder.decode(tmp_page_content_encoded, "UTF-8");
-    String content_type="text/html";
-    int status_code=200;
-    String status_info="OK";
     
-    if(chunk_content.startsWith("302 ")){
-        status_code=302;
-        content_type="x-ppk/link";
-        chunk_content=chunk_content.substring(4);
-        status_info="Moved Temporarily";
+    //Generate PTTP data package of the sample page 
+    String tmp_ap_data_signed = request.queryParams("ap_data_signed");
+    String tmp_ap_chunk_encoded = request.queryParams("ap_chunk_encoded");
+    if(tmp_ap_data_signed.length()>0){
+        //tmp_ap_data_signed=new String(Util.hexStringToBytes(tmp_ap_data_signed),Config.PPK_TEXT_CHARSET);
+    }else if(tmp_ap_chunk_encoded.length()>0){
+        
+
+        String tmp_private_key=request.queryParams("sign_prvkey");
+        String tmp_sign_algo=request.queryParams("sign_algo");
+
+        tmp_ap_chunk_encoded=new String(Util.hexStringToBytes(tmp_ap_chunk_encoded),Config.PPK_TEXT_CHARSET);
+        String obj_newest_ap_chunk_str=java.net.URLDecoder.decode(tmp_ap_chunk_encoded, "UTF-8");
+        
+        String tmp_sign="";
+
+        if( tmp_private_key!=null && tmp_private_key.length()>30   //输入了有效私钥
+            && tmp_sign_algo!=null && tmp_sign_algo.length()>0
+         ){
+          tmp_sign=tmp_sign_algo+":"+RSACoder.sign(
+                obj_newest_ap_chunk_str.getBytes() , tmp_private_key,tmp_sign_algo
+             );
+        }
+
+        JSONObject obj_newest_ap_data=new JSONObject();
+        obj_newest_ap_data.put("ver",1);
+        obj_newest_ap_data.put("data",obj_newest_ap_chunk_str);
+        obj_newest_ap_data.put("sign", tmp_sign );
+        
+        tmp_ap_data_signed=obj_newest_ap_data.toString();
     }
-    /*
-    if( tmp_page_content.contains("<head>") || tmp_page_content.contains("<HEAD>") )
-        chunk_content=tmp_page_content;
-    else //自动补上HTML头部
-        chunk_content="<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>AP["+tmp_apid+"] sample</title><meta content=\"IE=edge\" http-equiv=\"X-UA-Compatible\"><meta content=\"width=device-width, initial-scale=1\" name=\"viewport\"></head><body>"+tmp_page_content+"</body></html>";
-    */
     
-    String sample_ppk_uri =  Config.PPK_URI_PREFIX + odinInfo.fullOdin +"/#" + Util.getNowTimestamp();
-    System.out.println("sample_ppk_uri="+sample_ppk_uri);
-
-    JSONObject obj_chunk_metainfo=new JSONObject();
-    obj_chunk_metainfo.put("chunk_index", 0 );
-    obj_chunk_metainfo.put("chunk_count", 1 );
-    obj_chunk_metainfo.put("content_type", content_type  );
-    obj_chunk_metainfo.put("content_length", chunk_content.length()  );
-
-    JSONObject obj_newest_ap_chunk=new JSONObject();
-    obj_newest_ap_chunk.put("uri",sample_ppk_uri);
-    obj_newest_ap_chunk.put("status_code",status_code);
-    obj_newest_ap_chunk.put("status_info","OK");
-
-    obj_newest_ap_chunk.put("metainfo",obj_chunk_metainfo);
-    obj_newest_ap_chunk.put("content",chunk_content);
-
-    String obj_newest_ap_chunk_str=obj_newest_ap_chunk.toString();
-    String tmp_sign="";
-
-    if( tmp_private_key!=null && tmp_private_key.length()>0
-        && tmp_sign_algo!=null && tmp_sign_algo.length()>0
-     ){
-      tmp_sign=tmp_sign_algo+":"+RSACoder.sign(
-            obj_newest_ap_chunk_str.getBytes() , tmp_private_key,tmp_sign_algo
-         );
+    System.out.println("tmp_ap_data_signed="+tmp_ap_data_signed);
+    //if(tmp_ap_data_signed.length()==0){
+    //    throw new Exception(Language.getLangLabel("invalid"));
+    //}
+    
+    String sign_pubkey = request.queryParams("sign_pubkey");
+    System.out.println("sign_pubkey="+sign_pubkey);
+    
+    JSONObject exist_vd_set=odinInfo.odinSet.optJSONObject("vd_set");
+    if(exist_vd_set!=null){
+        String vd_set_pubkey=exist_vd_set.optString(Config.JSON_KEY_PPK_PUBKEY,"");
+        System.out.println("vd_set_pubkey="+vd_set_pubkey);
+        if(!sign_pubkey.equals(vd_set_pubkey)){
+            throw new Exception(Language.getLangLabel("Mismatched pubkey"));
+        }
     }
+    
+    try{
+        JSONObject obj_ap_data=new JSONObject(tmp_ap_data_signed);
 
-    JSONObject obj_newest_ap_data=new JSONObject();
-    obj_newest_ap_data.put("ver",1);
-    obj_newest_ap_data.put("data",obj_newest_ap_chunk_str);
-    obj_newest_ap_data.put("sign", tmp_sign );
-
+        //检查内容签名
+        String str_original_data_json = obj_ap_data.getString("data");
+        byte[] original_data = str_original_data_json.getBytes();
+        //ByteBuffer byteBuffer = ByteBuffer.allocate(original_data.length);
+        //byteBuffer.put(original_data,0,original_data.length);
+        
+        String str_ppk_sign=obj_ap_data.getString(Config.JSON_KEY_PPK_SIGN);
+        String[] sign_pieces = str_ppk_sign.split("\\:");
+        String ap_resp_sign_algo=sign_pieces[0].trim();
+        String ap_resp_sign_base64=sign_pieces[1].trim();
+        //String ap_resp_sign_pubkey=sign_pieces[2].trim(); //just for test
+        System.out.println("ap_resp_sign_algo="+ap_resp_sign_algo+",ap_resp_sign_base64="+ap_resp_sign_base64);
+        
+        if(!RSACoder.verify(original_data, sign_pubkey,ap_resp_sign_base64,ap_resp_sign_algo )){
+           System.out.println("Found invalid sign");
+           throw new Exception(Language.getLangLabel("invalid sign"));
+        }
+    }catch(Exception e){
+        e.printStackTrace();
+        throw new Exception(Language.getLangLabel("invalid")+" "+e.toString());
+    }
+    
     //Upload to th AP
-    String tmp_ap_url_str=Util.uploadToAP(tmp_ap_type,obj_newest_ap_data.toString().getBytes(Config.PPK_TEXT_CHARSET),odinInfo.shortOdin.toString()+"P");
+    String tmp_ap_url_str=Util.uploadToAP(tmp_ap_type,tmp_ap_data_signed.getBytes(Config.PPK_TEXT_CHARSET),odinInfo.shortOdin.toString()+"P");
     if(tmp_ap_url_str==null || tmp_ap_url_str.length()==0 ){
         throw new Exception(Language.getLangLabel("Invalid Inputs"));
     }
@@ -393,6 +410,7 @@ public class GenOdinDataByRequest {
     String source = request.queryParams("source");
     String destination = request.queryParams("destination");
     String quantityStr=request.queryParams("quantity");
+    String feeStr=request.queryParams("fee");
 
     try{
         Address.getParametersFromAddress(destination);
@@ -404,13 +422,19 @@ public class GenOdinDataByRequest {
         throw new Exception(Language.getLangLabel("Please input a valid destination address that you want to send."));
     }else if(quantityStr.length()==0){
         throw new Exception(Language.getLangLabel("Please input the BTC amount that you want to send."));
-    } 
+    }else if(feeStr.length()==0){
+        throw new Exception(Language.getLangLabel("Please input the fee amount that you want to pay miner."));
+    }  
     
     try {
-      Double rawQuantity = Double.parseDouble(quantityStr);
-      BigInteger quantity = new BigDecimal(rawQuantity*Config.btc_unit).toBigInteger();
+      BigDecimal btc_unit=new BigDecimal(Config.btc_unit);
+      
+      BigDecimal rawQuantity = new BigDecimal(quantityStr);
+      BigInteger quantity = rawQuantity.multiply( btc_unit ).toBigInteger();
+      BigDecimal rawFee = new BigDecimal(feeStr);
+      BigInteger fee = rawFee.multiply(btc_unit).toBigInteger();
 
-      odin_data = Send.create(source, destination, "BTC", quantity);
+      odin_data = Send.create(source, destination, "BTC", quantity,fee);
     } catch (Exception e) {
       throw new Exception("genNormalSendTX:"+e.getMessage());
     }

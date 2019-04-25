@@ -27,7 +27,7 @@ import org.json.JSONObject;
 public class Odin {
   static Logger logger = LoggerFactory.getLogger(Odin.class);
   public static Byte id = Config.FUNC_ID_ODIN_REGIST; //for registing new ODIN 
-  static String[] LetterEscapeNumSet={"O","ILA","BCZ","DEF","GH","JKS","MN","PQR","TUV","WXY"};
+  static String[] LetterEscapeNumSet={"O","AIL","BCZ","DEF","GH","JKS","MN","PQR","TUV","WXY"};
   
   //public static HashMap<String , String> teamMap = null;
   
