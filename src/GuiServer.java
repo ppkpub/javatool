@@ -741,54 +741,57 @@ public class GuiServer implements Runnable {
       }
     }
     
-    //Just for debug to show private&public keys
-    String str_all_address="";
-    for (ECKey key : blocks.wallet.getImportedKeys()) {
-      String tmp_address=key.toAddress(blocks.params).toString();
-      if(str_all_address.length()>0)
-          str_all_address += ",";
-      str_all_address += tmp_address;
-      
-      if (Config.debugKey && tmp_address.equals(address)) {
-        attributes.put("testShowKey", "PrivateKey HEX:"+key.getPrivateKeyAsHex() + " WIF:"+  key.getPrivateKeyAsWiF(MainNetParams.get())+"  PubKey:"+key.getPublicKeyAsHex());
-      }
+    BigInteger default_btc_balance=null;
+    
+    if(!Blocks.bRemoteWalletMode){ //本地钱包模式下，查询内部所有地址的信息
+        //Just for debug to show private&public keys
+        String str_all_address="";
+        for (ECKey key : blocks.wallet.getImportedKeys()) {
+          String tmp_address=key.toAddress(blocks.params).toString();
+          if(str_all_address.length()>0)
+              str_all_address += ",";
+          str_all_address += tmp_address;
+          
+          if (Config.debugKey && tmp_address.equals(address)) {
+            attributes.put("testShowKey", "PrivateKey HEX:"+key.getPrivateKeyAsHex() + " WIF:"+  key.getPrivateKeyAsWiF(MainNetParams.get())+"  PubKey:"+key.getPublicKeyAsHex());
+          }
+        }
+
+        JSONObject obj_all_address=Util.getMultiBTCBalances(str_all_address);
+        if(obj_all_address!=null){
+            JSONObject obj_default_address=obj_all_address.optJSONObject(address);
+            if(obj_default_address!=null){
+                default_btc_balance=BigInteger.valueOf(obj_default_address.optInt("balance",0));
+            }
+            
+            ArrayList<HashMap<String, Object>> local_address_list=new ArrayList<HashMap<String, Object>>(); ;
+            
+            Iterator iterator = obj_all_address.keys();
+            while(iterator.hasNext()){
+                String tmp_address = (String) iterator.next();
+                JSONObject tmp_address_info = obj_all_address.optJSONObject(tmp_address);
+                
+                HashMap<String,Object> map = new HashMap<String,Object>();
+                map.put("address", tmp_address);
+                map.put("address_label", Util.getFriendlyAddressLabel(tmp_address));  
+                
+                BigDecimal balance_in_btc = Util.getBalanceInBtc(tmp_address_info.optInt("balance",0));
+
+                map.put("balance", balance_in_btc.toPlainString() );
+                map.put("tx_count", tmp_address_info.optInt("tx_count",0) );
+                map.put("unconfirmed_tx_count", tmp_address_info.optInt("unconfirmed_tx_count",0) );
+                map.put("unspent_tx_count", tmp_address_info.optInt("unspent_tx_count",0) );
+                //map.put("register_odin_num", Util.getRegisterOdinNum(tmp_address) );
+
+                local_address_list.add(map);
+            }
+            if(local_address_list!=null)
+                attributes.put("local_address_list", local_address_list);
+        }  
     }
     
-    BigInteger default_btc_balance=null;
-    JSONObject obj_all_address=Util.getMultiBTCBalances(str_all_address);
-    if(obj_all_address!=null){
-        JSONObject obj_default_address=obj_all_address.optJSONObject(address);
-        if(obj_default_address!=null){
-            default_btc_balance=BigInteger.valueOf(obj_default_address.optInt("balance",0));
-        }
-        
-        ArrayList<HashMap<String, Object>> local_address_list=new ArrayList<HashMap<String, Object>>(); ;
-        
-        Iterator iterator = obj_all_address.keys();
-        while(iterator.hasNext()){
-            String tmp_address = (String) iterator.next();
-            JSONObject tmp_address_info = obj_all_address.optJSONObject(tmp_address);
-            
-            HashMap<String,Object> map = new HashMap<String,Object>();
-            map.put("address", tmp_address);
-            map.put("address_label", Util.getFriendlyAddressLabel(tmp_address));  
-            
-            BigDecimal balance_in_btc = Util.getBalanceInBtc(tmp_address_info.optInt("balance",0));
-
-            map.put("balance", balance_in_btc.toPlainString() );
-            map.put("tx_count", tmp_address_info.optInt("tx_count",0) );
-            map.put("unconfirmed_tx_count", tmp_address_info.optInt("unconfirmed_tx_count",0) );
-            map.put("unspent_tx_count", tmp_address_info.optInt("unspent_tx_count",0) );
-            //map.put("register_odin_num", Util.getRegisterOdinNum(tmp_address) );
-
-            local_address_list.add(map);
-        }
-        if(local_address_list!=null)
-            attributes.put("local_address_list", local_address_list);
-    }  
-    
     if(default_btc_balance==null){
-        //default_btc_balance=Util.getBalance(address, "BTC");
+        default_btc_balance=Util.getBalance(address, "BTC");
     }
     
     if(default_btc_balance!=null){
