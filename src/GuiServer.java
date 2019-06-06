@@ -542,6 +542,8 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_WALLET", Language.getLangLabel("Wallet"));
     attributes.put("LANG_TECHNICAL", Language.getLangLabel("Technical"));
     attributes.put("LANG_COMMUNITY", Language.getLangLabel("Community"));
+    
+    attributes.put("LANG_PEERWEB_NOT_VALID", Language.getLangLabel("PeerWeb not valid. Please visit by the newst version PPk Browser."));
 
     attributes.put("LANG_BLOCKS", Language.getLangLabel("blocks"));
     attributes.put("LANG_VERSION", Language.getLangLabel("Version"));
@@ -635,6 +637,8 @@ public class GuiServer implements Runnable {
     attributes.put("SIGNED_BTC_TX", Language.getLangLabel("Signed BTC TX"));
     attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
     attributes.put("LANG_CONFIRM", Language.getLangLabel("Confirm"));  
+    attributes.put("LANG_FAILED_SIGN_TX", Language.getLangLabel("Failed to generate signed transaction!"));
+    attributes.put("LANG_ENSURE_BALANCE_IS_ENOUGH", Language.getLangLabel("Please ensure your BTC balance is enough."));
     
     return attributes;
   }
@@ -692,15 +696,13 @@ public class GuiServer implements Runnable {
         blocks.wallet.removeKey(deleteKey);
         attributes.put("success", Language.getLangLabel("Your private key has been deleted. You can no longer transact from this address."));              
         if (blocks.wallet.getImportedKeys().size()<=0) {
-          ECKey newKey = new ECKey();
-          blocks.wallet.addKey(newKey);
+          try {
+              ECKey newKey = new ECKey();
+              blocks.importPrivateKey(newKey);
+          } catch (Exception e) {
+              attributes.put("error", Language.getLangLabel("Error when create new default address: ")+e.getMessage());
+          }
         }
-      }
-      
-      //save wallet file
-      try {
-          blocks.wallet.saveToFile(new File(blocks.walletFile));
-      } catch (IOException e) {
       }
     }
     if (request.queryParams().contains("form") && request.queryParams("form").equals("reimport")) {
@@ -725,7 +727,7 @@ public class GuiServer implements Runnable {
     if (request.queryParams().contains("form") && request.queryParams("form").equals("import")) {
       String privateKey = request.queryParams("privatekey");
       try {
-        address = Blocks.getInstance().importPrivateKey(privateKey);
+        address = blocks.importPrivateKey(privateKey);
         request.session().attribute("address", address);
         attributes.put("address", address);    
         attributes.put("address_label", Util.getFriendlyAddressLabel(address));          
@@ -733,12 +735,7 @@ public class GuiServer implements Runnable {
       } catch (Exception e) {
         attributes.put("error", Language.getLangLabel("Error when importing private key: ")+e.getMessage());
       }
-      
-      //save wallet file
-      try {
-          blocks.wallet.saveToFile(new File(blocks.walletFile));
-      } catch (IOException e) {
-      }
+
     }
     
     BigInteger default_btc_balance=null;
@@ -824,7 +821,7 @@ public class GuiServer implements Runnable {
     
     attributes.put("LANG_MY", Language.getLangLabel("My "));
     attributes.put("LANG_HIS", Language.getLangLabel("His "));
-    attributes.put("LANG_BALANCE", Language.getLangLabel("balance"));
+    attributes.put("LANG_CURRENT_ADDRESS", Language.getLangLabel("Current Address"));
     attributes.put("LANG_BTC", Language.getLangLabel("BTC"));
     attributes.put("LANG_IMPORT_PRIVATE_KEY", Language.getLangLabel("Import private key"));
     attributes.put("LANG_PRIVATE_KEY", Language.getLangLabel("private key"));
@@ -1480,7 +1477,7 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_PUBLIC_KEY", Language.getLangLabel("Public key"));
     attributes.put("LANG_PRIVATE_KEY", Language.getLangLabel("Private key"));
     attributes.put("LANG_YOU_CAN_GENERATE_THE_PUBLIC_KEY_BY_YOURSELF", Language.getLangLabel("You can generate the public key by yourself and save it to a trusted storage service on the network, then fill its resource URI here."));
-    attributes.put("LANG_GENERATE_PUBLIC_AND_PRIVATE_KEYS_HERE", Language.getLangLabel("Or generate public and private keys automatically here and save the public key to the selected distributed storage service for public verification use."));
+    attributes.put("LANG_GENERATE_PUBLIC_AND_PRIVATE_KEYS_HERE", Language.getLangLabel("Generate public and private keys automatically here and save the public key to the selected distributed storage service for public verification use."));
     attributes.put("LANG_UPDATE_VALIDTION_SETTING", Language.getLangLabel("Update Validtion Setting"));
     attributes.put("LANG_PLEASE_BACKUP_THE_PRIVATE_KEY", Language.getLangLabel("Please backup the private key."));  
     attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
@@ -1649,6 +1646,8 @@ public class GuiServer implements Runnable {
 
     attributes.put("LANG_ODIN_ADMIN_ADDRESS", Language.getLangLabel("Admin BTC address"));
     attributes.put("LANG_ODIN_REGISTER_ADDRESS", Language.getLangLabel("Register BTC address"));
+    attributes.put("LANG_USE_AS_MY_ID", Language.getLangLabel("Use it as my Peer ID"));
+    attributes.put("LANG_ERROR", Language.getLangLabel("Error"));
     
     attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
     attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));

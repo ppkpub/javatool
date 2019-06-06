@@ -70,7 +70,6 @@ public class Blocks implements Runnable {
   public static boolean bRemoteWalletMode = false;
   
   public Wallet wallet=null;
-  public String walletFile = "resources/db/wallet";
   public PeerGroup peerGroup;
   public BlockChain blockChain;
   public BlockStore blockStore;
@@ -169,17 +168,21 @@ public class Blocks implements Runnable {
         
       try {
         if(!bRemoteWalletMode){  //本地钱包模式
-            if ((new File(walletFile)).exists()) {
+            File localWalletFile=new File(Config.walletFile);
+            if (localWalletFile.exists()) {
               statusMessage = Language.getLangLabel("Found wallet file"); 
               logger.info(statusMessage);
-              wallet = Wallet.loadFromFile(new File(walletFile));
+              wallet = Wallet.loadFromFile(localWalletFile);
             } else {
               statusMessage = Language.getLangLabel("Creating new wallet file"); 
               logger.info(statusMessage);
               wallet = new Wallet(params);
               ECKey newKey = new ECKey();
-              newKey.setCreationTimeSeconds(Config.ppkToolCreationTime);
-              wallet.addKey(newKey);
+              
+              importPrivateKey(newKey);
+              //newKey.setCreationTimeSeconds(Config.ppkToolCreationTime);
+              //wallet.addKey(newKey);
+              //wallet.saveToFile(localWalletFile);
             }
         }
         String fileBTCdb = Config.dbPath+Config.appName.toLowerCase()+".h2.db";
@@ -201,7 +204,7 @@ public class Blocks implements Runnable {
             peerGroup = new PeerGroup(params, blockChain);
             peerGroup.setFastCatchupTimeSecs(Config.ppkToolCreationTime);
             //peerGroup.addWallet(wallet); //不需要同步保存历史交易到wallet文件中，减少损坏可能
-            //wallet.autosaveToFile(new File(walletFile), 1, TimeUnit.MINUTES, null);
+            //wallet.autosaveToFile(new File(Config.walletFile), 1, TimeUnit.MINUTES, null);
         }
         peerGroup.addPeerDiscovery(new DnsDiscovery(params));
         peerGroup.start();//peerGroup.startAndWait(); //for bitcoinj0.14
@@ -486,6 +489,7 @@ public class Blocks implements Runnable {
       wallet.removeKey(key);
     }
     wallet.addKey(key);
+    wallet.saveToFile(new File(Config.walletFile));
     /*
     try {
       importTransactionsFromAddress(address);
@@ -727,7 +731,7 @@ public class Blocks implements Runnable {
     }
 
     if (!hadOneRegularInput && odin_data_length>0) {
-      throw new Exception("Not enough standard unspent outputs to cover odin transaction.");
+      throw new Exception(Language.getLangLabel("Not enough standard unspent outputs to cover odin transaction."));
     }
 
     if (totalInput.compareTo(totalOutput)<0) {

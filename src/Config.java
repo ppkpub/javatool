@@ -21,7 +21,8 @@ public class Config {
   public static Integer GuiServerPort = 11087;
   public static String RPCUsername = "";
   public static String RPCPassword = "";
-  public static String ConfigFile = "./resources/ppk.conf";
+  public static String configFile = "resources/ppk.conf";
+  public static String walletFile = "resources/db/wallet";
   
   public static boolean debugKey = false;
   
@@ -29,7 +30,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 808;
+  public static Integer minorVersion = 809;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   
@@ -145,7 +146,7 @@ public class Config {
     FileInputStream input;
     String strTemp;
     try {
-      input = new FileInputStream(ConfigFile);
+      input = new FileInputStream(configFile);
       Properties prop = new Properties();
       prop.load(input);
       RPCUsername = prop.getProperty("RPCUsername");
@@ -190,6 +191,12 @@ public class Config {
         PPK_ODIN_MARK_PUBKEY_HEX=PPK_ODIN_MARK_PUBKEY_HEX_MAINNET;
         firstBlock=MAINNET_FIRST_BLOCK;
       }
+      
+      strTemp = prop.getProperty("WalletFile");
+      if(strTemp!=null && strTemp.length()>0 ){
+        walletFile = strTemp;
+      }
+      System.out.println("WalletFile:"+walletFile);
 
       ppkStandardDataFee = Integer.parseInt(prop.getProperty("StandardFeeSatoshi")) ;
       System.out.println("StandardFeeSatoshi:"+ppkStandardDataFee);
@@ -284,7 +291,6 @@ public class Config {
         defaultTimeZone = strTemp;
       }
       System.out.println("TimeZone:"+defaultTimeZone);
-      
       
     } catch (IOException e) {
     }    
