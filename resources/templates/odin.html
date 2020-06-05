@@ -2,7 +2,7 @@
 <@template.content>
     <div class="row section">
       <div class="form-group">
-        <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_ODIN}</h3></label>
+        <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_MY_ODIN}</h3></label>
         <div class="col-sm-7" id="top_buttons" align="right">
          <a class="btn btn-primary" role="button" href="/">${LANG_RECENT_ODINS}</a> 
          <a class="btn btn-success" role="button" href="/odin-add">${LANG_REGIST_NEW_ODIN}...</a>
@@ -13,7 +13,7 @@
       <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
         <li class="active"><a href="#my_registed_odins" data-toggle="tab">${LANG_MY_REGISTED_ODINS}(${my_registed_odin_num})</a></li>
         <li><a href="#my_admin_odins" data-toggle="tab">${LANG_MY_ADMIN_ODINS}(${my_admin_odin_num})</a></li>
-        <li><a href="#my_update_logs" data-toggle="tab">${LANG_MY_UPDATE_LOGS}</a></li>
+        <li><a href="#my_update_logs" data-toggle="tab">${LANG_MY_UPDATE_LOGS}<#if new_awaiting_num??>(<font color=#F00>${new_awaiting_num} NEW!</font>)</#if></a></li>
         <li><a href="#query_odin" data-toggle="tab">${LANG_QUERY_ODIN}</a></li>
       </ul>
 
@@ -57,14 +57,14 @@
               <tr>
                 <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                 <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-                <td><a  href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+                <td><a  href="https://btc.com/${odin["tx_hash"]}/">${odin["block_time"]}</a></td>
                 <td>${odin["title"]}</td>
                 <td>
                 ${LANG_ADMIN_BY} ${odin["admin_label"]}<br>
                 ${LANG_REGISTED_BY} ${odin["register_label"]}
                 </td>
                 <td>
-                  ${odin["validity"]}
+                  ${odin["validity_label"]}
                   <br>
                   <#if odin["me_updatable"]??>
                   <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
@@ -77,6 +77,8 @@
           </tbody>
           </table>
           </div>
+          
+          <center><a class='btn btn-success' role='button'  href='odin-more-list?query=myregistered&start=0&size=50'>${LANG_MORE_LIST}...</a></center>
         </div>
         
         <div class="tab-pane" id="my_admin_odins">
@@ -100,14 +102,14 @@
                 <tr>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-                  <td><a  href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+                  <td><a  href="https://btc.com/${odin["tx_hash"]}/">${odin["block_time"]}</a></td>
                   <td>${odin["title"]}</td>
                   <td>
                   ${LANG_ADMIN_BY} ${odin["admin_label"]}<br>
                   ${LANG_REGISTED_BY} ${odin["register_label"]}
                   </td>
                   <td>
-                    ${odin["validity"]}<br>
+                    ${odin["validity_label"]}<br>
                     <#if odin["me_updatable"]??>
                     <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
                     </#if>
@@ -119,6 +121,7 @@
             </tbody>
           </table>
           </div>
+          <center><a class='btn btn-success' role='button'  href='odin-more-list?query=myadmin&start=0&size=50'>${LANG_MORE_LIST}...</a></center>
         </div>
                 
         <div class="tab-pane" id="my_update_logs">
@@ -143,7 +146,7 @@
                   <td>${LANG_PENDING}</td>
                   <td>${odin["update_desc"]}
                   <hr>
-                    <p align="right">Submit time:  ${odin["block_time"]}</p>
+                    <p align="right">${LANG_SUBMIT_TIME}:  ${odin["block_time"]}</p>
                   </td>
                   <td>${LANG_PENDING}</td>
                 </tr>
@@ -155,12 +158,17 @@
                 <tr>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-                  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
-                  <td>${odin["update_desc"]}</td>
+                  <td><a href="https://btc.com/${odin["tx_hash"]}/">${odin["block_time"]}</a></td>
+                  <td>${odin["update_desc"]}
+                    <hr>
+                    <p align="right">${LANG_SUBMIT_TIME}:  ${odin["block_time"]}</p>
+                    <p align="right">${LANG_UPDATER}:  ${odin["updater"]}</p>
+                  </td>
                   <td>
-                    ${odin["validity"]}<br>
+                    ${odin["validity_label"]}<br>
                     <#if odin["awaiting_my_receipting"]??>
-                    <a class="btn btn-danger" role="button" href='/odin-detail?odin=${odin["short_odin"]}&awaiting_update_log_id=${odin["log_id"]}'>${LANG_AWAIT_YOUR_RECEIPT}...</a>
+                    <a class="btn btn-danger" role="button" href='javascript:confirmSubmitUpdate("${odin["short_odin"]}","${odin["log_id"]}");' 
+                    >${LANG_AWAIT_YOUR_RECEIPT}...</a>
                     </#if>
                   </td>
                 </tr>
@@ -172,12 +180,16 @@
                 <tr>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-                  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
-                  <td>${odin["update_desc"]}</td>
+                  <td><a href="https://btc.com/${odin["tx_hash"]}/">${odin["block_time"]}</a></td>
+                  <td>${odin["update_desc"]}
+                    <hr>
+                    <p align="right">${LANG_SUBMIT_TIME}:  ${odin["block_time"]}</p>
+                    <p align="right">${LANG_UPDATER}:  ${odin["updater"]}</p>
+                  </td>
                   <td>
-                    ${odin["validity"]}<br>
+                    ${odin["validity_label"]}<br>
                     <#if odin["awaiting_my_confirm"]??>
-                    <a class="btn btn-danger" role="button" href='/odin-detail?odin=${odin["short_odin"]}&awaiting_update_log_id=${odin["log_id"]}'>${LANG_AWAIT_YOUR_CONFIRM}...</a>
+                    <a class="btn btn-danger" role="button" href='javascript:confirmSubmitUpdate("${odin["short_odin"]}","${odin["log_id"]}" );'>${LANG_AWAIT_YOUR_CONFIRM}...</a>
                     </#if>
                   </td>
                 </tr>
@@ -189,14 +201,14 @@
                 <tr>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                   <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-                  <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+                  <td><a href="https://btc.com/${odin["tx_hash"]}/">${odin["block_time"]}</a></td>
                   <td>
                     ${odin["update_desc"]}
                     <hr>
-                    <p align="right">Updated by  ${odin["updater"]}</p>
+                    <p align="right">${LANG_UPDATER}:  ${odin["updater"]}</p>
                   </td>
                   <td>
-                    ${odin["validity"]}
+                    ${odin["validity_label"]}
                   </td>
                 </tr>
               </#list>
@@ -204,6 +216,7 @@
             </tbody>
           </table>
           </div>
+          <center><a class='btn btn-success' role='button'  href='odin-update-list?start=0&size=50'>${LANG_MORE_LIST}...</a></center>
         </div>
         
         <div class="tab-pane" id="query_odin">
@@ -247,4 +260,19 @@
         </div>
     </div>
 
+<script type="text/javascript">
+    function confirmSubmitUpdate( short_odin,update_log_id ){
+        location.href="/confirmtx?form=confirm-update-log&odin="+short_odin+"&awaiting_update_log_num=1&update_log_id0="+update_log_id;
+        return true;
+        /*
+        //JAVA客户端不支持弹出对话框
+        if(window.confirm("${LANG_ASK_TO_CONFIRM_THIS_UPDATE}")) { 
+            location.href="/confirmtx?form=confirm-update-log&odin="+short_odin+"&awaiting_update_log_num=1&update_log_id0="+update_log_id;
+            return true;
+        }else{
+            return false;
+        }
+        */
+    }
+</script>
 </@template.content>

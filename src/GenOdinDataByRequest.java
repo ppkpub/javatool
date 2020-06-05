@@ -30,7 +30,7 @@ public class GenOdinDataByRequest {
         throw new Exception("no odin.");
     } 
     
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    OdinInfo odinInfo=ODIN.getOdinInfo(odin);
     if(odinInfo==null){
         throw new Exception("Invalid odin.");
     } 
@@ -40,24 +40,31 @@ public class GenOdinDataByRequest {
   
   public static OdinTransctionData genOdinDataOfAdd(Request request,Map<String, Object> attributes) throws Exception{
       System.out.println("************* do genOdinDataOfAdd **************");
-    
-      OdinTransctionData odin_data = null;
       
       String register = request.queryParams("register");
       String admin = request.queryParams("admin_address");
       String titleStr=request.queryParams("title");
       String emailStr=request.queryParams("email");
+      String pnsUrlStr=request.queryParams("pns_url");
       String authSet=request.queryParams("auth");
 
-      if(admin.length()==0 || authSet.length()==0 ){
-        throw new Exception("invalid admin or authority");
+      
+      
+      return genOdinDataOfAdd(register,admin,titleStr,emailStr,pnsUrlStr,authSet);
+  }
+  
+  public static OdinTransctionData genOdinDataOfAdd(String register,String admin,String titleStr,String emailStr,String pnsUrlStr,String authSet) throws Exception{
+      if(register.length()==0 || admin.length()==0 || authSet.length()==0 ){
+        throw new Exception("invalid register, admin or authority");
       }
+      
+      OdinTransctionData odin_data = null;
       
       Map mapOdinSet = new HashMap(); 
                 
       mapOdinSet.put("ver", Config.ODIN_PROTOCOL_VER); 
       //mapOdinSet.put("x-tool", Config.appName+Config.version); //加上自定义的扩展信息：客户端和版本信息，用于临时调试,20181222
-      mapOdinSet.put("auth", authSet); 
+      mapOdinSet.put(Config.ODIN_BASE_SET_AUTH, authSet); 
 
       if(register.equals(admin))
          admin="";
@@ -67,14 +74,16 @@ public class GenOdinDataByRequest {
      
       if(emailStr.length()>0)
          mapOdinSet.put("email", emailStr); 
+     
+      if(pnsUrlStr.length()>0)
+         mapOdinSet.put(Config.ODIN_BASE_SET_PNS_URL, pnsUrlStr); 
        
       JSONObject odin_set = new JSONObject(mapOdinSet); 
       
-      odin_data = Odin.createOdin(register, admin,odin_set);
+      odin_data = ODIN.createOdin(register, admin,odin_set);
 
-      
       return odin_data;
-  }
+ }
     
   public static OdinTransctionData genOdinDataOfUpdateBaseInfo(Request request,Map<String, Object> attributes) throws Exception{
     System.out.println("************* do genOdinDataOfUpdateBaseInfo **************");
@@ -86,13 +95,14 @@ public class GenOdinDataByRequest {
     String admin = request.queryParams("admin");
     String titleStr=request.queryParams("title");
     String emailStr=request.queryParams("email");
+    String pnsUrlStr=request.queryParams("pns_url");
     String authSet=request.queryParams("auth");
 
     if(admin.length()==0 || authSet.length()==0 ){
         throw new Exception("invalid admin or authority");
     }
 
-    HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
+    HashMap<String,Object> map = ODIN.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
 
     if(!map.containsKey("me_updatable")){
         throw new Exception(Language.getLangLabel("No permission."));
@@ -120,8 +130,13 @@ public class GenOdinDataByRequest {
       needBroadcast=true;
     }
     
-    if(!authSet.equals(map.get("auth").toString()) ) {
-      mapNewOdinSet.put("auth", authSet); 
+    if(!pnsUrlStr.equals(map.get(Config.ODIN_BASE_SET_PNS_URL).toString()) ) {
+      mapNewOdinSet.put(Config.ODIN_BASE_SET_PNS_URL, pnsUrlStr); 
+      needBroadcast=true;
+    }
+    
+    if(!authSet.equals(map.get(Config.ODIN_BASE_SET_AUTH).toString()) ) {
+      mapNewOdinSet.put(Config.ODIN_BASE_SET_AUTH, authSet); 
       needBroadcast=true;
     }
     
@@ -142,7 +157,7 @@ public class GenOdinDataByRequest {
     OdinInfo odinInfo=getExistedOdinInfo(request);
     String address=(String)attributes.get("address");
     
-    HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
+    HashMap<String,Object> map = ODIN.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
 
     JSONObject apUpdate = new JSONObject(); 
     for(int tt=0;tt<5;tt++){
@@ -185,39 +200,59 @@ public class GenOdinDataByRequest {
     OdinInfo odinInfo=getExistedOdinInfo(request);
     String address=(String)attributes.get("address");
     
-    HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
+    HashMap<String,Object> map = ODIN.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
 
     String new_vd_set_cert_uri=request.queryParams("new_vd_set_cert_uri");
-    String new_vd_set_algo=request.queryParams("new_vd_set_algo");
-    //String new_vd_set_format=request.queryParams("new_vd_set_format");
+    String new_vd_set_type=request.queryParams("new_vd_set_type");
     String new_vd_set_pubkey=request.queryParams("new_vd_set_pubkey");
 
-    if(new_vd_set_cert_uri!=null){
+    if(new_vd_set_cert_uri!=null){ //提供URI形式
          new_vd_set_cert_uri=new_vd_set_cert_uri.trim();
+         
          attributes.put("new_vd_set_cert_uri", new_vd_set_cert_uri);
-         if( new_vd_set_cert_uri.length()==0 ){
-              attributes.put("error", Language.getLangLabel("Please input valid URI of certificate."));
-         }
-    }else if(new_vd_set_pubkey!=null && new_vd_set_pubkey.trim().length()>0 ){
-        String tmp_ap_type = request.queryParams("ap_type");
-        new_vd_set_cert_uri=Util.uploadToAP(tmp_ap_type,new_vd_set_pubkey.getBytes(),odinInfo.shortOdin.toString()+"K");
-        if( new_vd_set_cert_uri==null){
-              attributes.put("error", "["+tmp_ap_type+"]"+Language.getLangLabel(" is invalid. Please retry the other storage service."));
-              //new_vd_set_cert_uri="data:,"+new_vd_set_pubkey;
-        }
+         attributes.put("new_vd_set_type", new_vd_set_type);
 
-        attributes.put("new_vd_set_algo", new_vd_set_algo);
-        //attributes.put("new_vd_set_format", new_vd_set_format);
-        attributes.put("new_vd_set_pubkey", new_vd_set_pubkey);
+         /*
+         if( Util.isURI(new_vd_set_cert_uri) ){
+            //尝试按URI取值来获取实际的公钥
+            //如果出错则忽略，保存原值
+            new_vd_set_pubkey=Util.fetchUriContent(new_vd_set_cert_uri);
+            
+            if( new_vd_set_pubkey==null || new_vd_set_pubkey.trim().length()==0 ){
+              attributes.put("error", Language.getLangLabel("Please input valid URI of certificate."));
+            }
+         }
+         */
+        
+        new_vd_set_pubkey = new_vd_set_cert_uri;  //将URI直接存到链上
+         
+    }else if(new_vd_set_pubkey!=null  ){ 
+        if(new_vd_set_pubkey.trim().length()>64)
+        {
+            //对于超长公钥需先存到分布式存储
+            String tmp_ap_type = request.queryParams("ap_type"); 
+            new_vd_set_cert_uri=Util.uploadToAP(tmp_ap_type,new_vd_set_pubkey.getBytes(),odinInfo.shortOdin.toString()+"K");
+            if( new_vd_set_cert_uri==null || new_vd_set_cert_uri.length()==0 ){
+                  throw new Exception("["+tmp_ap_type+"]"+Language.getLangLabel(" is invalid. Please retry the other storage service."));    
+            }
+
+            attributes.put("new_vd_set_type", new_vd_set_type);
+            attributes.put("new_vd_set_pubkey", new_vd_set_pubkey);
+            
+            new_vd_set_pubkey = new_vd_set_cert_uri;  //将URI直接存到链上
+        }
+    }else{
+        throw new Exception(Language.getLangLabel("Invalid request."));        
     }
 
     if(!map.containsKey("me_updatable")){
         throw new Exception(Language.getLangLabel("No permission."));
     }
-    if( new_vd_set_cert_uri!=null && new_vd_set_cert_uri.length()>0 ){
+    
+    if( new_vd_set_pubkey!=null ){
       JSONObject new_vd_set=new JSONObject();
-      new_vd_set.put(Config.JSON_KEY_PPK_ALGO,new_vd_set_algo);
-      new_vd_set.put(Config.JSON_KEY_PPK_CERT_URI,new_vd_set_cert_uri);
+      new_vd_set.put(Config.ODIN_SET_VD_TYPE,new_vd_set_type);
+      new_vd_set.put(Config.ODIN_SET_VD_PUBKEY,new_vd_set_pubkey);
       odin_data = OdinUpdate.updateOdinVdSet(odinInfo.fullOdin,address,new_vd_set);
     }
 
@@ -240,11 +275,11 @@ public class GenOdinDataByRequest {
     HashMap<String,Object> map = new HashMap<String,Object>();
     map.put("full_odin", odinInfo.fullOdin);
     map.put("short_odin", odinInfo.shortOdin.toString());
-    map.put("register", odinInfo.register);
+    map.put(Config.ODIN_BASE_SET_REGISTER, odinInfo.register);
     map.put("validity",odinInfo.validity);
 
     JSONObject odin_set = odinInfo.odinSet; 
-    map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
+    map=ODIN.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
 
     if(!map.containsKey("me_updatable")){
         throw new Exception(Language.getLangLabel("No permission."));
@@ -267,7 +302,7 @@ public class GenOdinDataByRequest {
         tmp_apid="0";
     } 
     
-    HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
+    HashMap<String,Object> map = ODIN.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
 
     if(!map.containsKey("me_updatable")){
         throw new Exception(Language.getLangLabel("No permission."));
@@ -275,49 +310,63 @@ public class GenOdinDataByRequest {
     
     String tmp_ap_type = request.queryParams("ap_type");
     
-    //Generate PTTP data package of the sample page 
-    String tmp_ap_data_signed = request.queryParams("ap_data_signed");
-    String tmp_ap_chunk_encoded = request.queryParams("ap_chunk_encoded");
-    if(tmp_ap_data_signed.length()>0){
-        //tmp_ap_data_signed=new String(Util.hexStringToBytes(tmp_ap_data_signed),Config.PPK_TEXT_CHARSET);
-    }else if(tmp_ap_chunk_encoded.length()>0){
+    String tmp_sign_spec = request.queryParams("sign_spec");
+    String tmp_signature = request.queryParams("signature");
+    String tmp_ap_data_no_sign_encoded = request.queryParams("ap_data_no_sign_encoded");
+    String tmp_ap_data_signed=null;
+    
+    if(tmp_sign_spec==null || tmp_sign_spec.trim().length()==0)
+        tmp_sign_spec = Config.PTTP_KEY_SPEC_NONE;
+    
+    try{
+        tmp_ap_data_no_sign_encoded=new String(Util.hexStringToBytes(tmp_ap_data_no_sign_encoded),Config.PPK_TEXT_CHARSET);
+        String tmp_ap_data_no_sign=java.net.URLDecoder.decode(tmp_ap_data_no_sign_encoded, "UTF-8");
         
+        JSONObject obj_ap_data_no_sign=new JSONObject(tmp_ap_data_no_sign);
+    
+        System.out.println("tmp_signature="+tmp_signature);
+        if( tmp_signature.length()==0 && !tmp_sign_spec.equals(Config.PTTP_KEY_SPEC_NONE)  ){
+            //需要本地生成签名
+            String tmp_private_key=request.queryParams("sign_prvkey");
+            if( tmp_private_key==null || tmp_private_key.length()==0 )
+                throw new Exception(Language.getLangLabel("Please input private key"));
+            
+            //采用PAST规范v1.public生成带签名的数据报文
+            //if( str_spec.equals(Config.PTTP_KEY_SPEC_PAST+Config.PTTP_KEY_SPEC_PAST_HEADER_V1_PUBLIC) ){
+            byte[] key_bytes =  RSACoder.decryptBASE64( RSACoder.parseValidPubKey(tmp_private_key) )  ;
 
-        String tmp_private_key=request.queryParams("sign_prvkey");
-        String tmp_sign_algo=request.queryParams("sign_algo");
+            String payload = Config.PTTP_SIGN_MARK_DATA
+                          + obj_ap_data_no_sign.getString(Config.PTTP_KEY_URI)
+                          + obj_ap_data_no_sign.getString(Config.PTTP_KEY_METAINFO)
+                          + obj_ap_data_no_sign.getString(Config.PTTP_KEY_CONTENT);
 
-        tmp_ap_chunk_encoded=new String(Util.hexStringToBytes(tmp_ap_chunk_encoded),Config.PPK_TEXT_CHARSET);
-        String obj_newest_ap_chunk_str=java.net.URLDecoder.decode(tmp_ap_chunk_encoded, "UTF-8");
-        
-        String tmp_sign="";
+            tmp_signature = PasetoPublic.sign(key_bytes, payload, "",true);
 
-        if( tmp_private_key!=null && tmp_private_key.length()>30   //输入了有效私钥
-            && tmp_sign_algo!=null && tmp_sign_algo.length()>0
-         ){
-          tmp_sign=tmp_sign_algo+":"+RSACoder.sign(
-                obj_newest_ap_chunk_str.getBytes() , tmp_private_key,tmp_sign_algo
-             );
+
         }
-
-        JSONObject obj_newest_ap_data=new JSONObject();
-        obj_newest_ap_data.put("ver",1);
-        obj_newest_ap_data.put("data",obj_newest_ap_chunk_str);
-        obj_newest_ap_data.put("sign", tmp_sign );
         
-        tmp_ap_data_signed=obj_newest_ap_data.toString();
+        obj_ap_data_no_sign.put(Config.PTTP_KEY_SPEC, tmp_sign_spec );
+        obj_ap_data_no_sign.put(Config.PTTP_KEY_SIGNATURE, tmp_signature );
+        
+        tmp_ap_data_signed=obj_ap_data_no_sign.toString();
+
+        System.out.println("tmp_ap_data_signed="+tmp_ap_data_signed);
+    }catch(Exception e){
+        System.out.println("genOdinDataOfSignAP() error: "+e.toString());
+        e.printStackTrace();
     }
     
-    System.out.println("tmp_ap_data_signed="+tmp_ap_data_signed);
-    //if(tmp_ap_data_signed.length()==0){
-    //    throw new Exception(Language.getLangLabel("invalid"));
-    //}
+
+    if( tmp_ap_data_signed == null || tmp_ap_data_signed.length()==0){
+        throw new Exception(Language.getLangLabel(Config.ODIN_STATUS_INVALID));
+    }
     
+    /*
     String sign_pubkey = request.queryParams("sign_pubkey");
-    System.out.println("sign_pubkey="+sign_pubkey);
-    
+
     JSONObject exist_vd_set=odinInfo.odinSet.optJSONObject("vd_set");
     if(exist_vd_set!=null){
-        String vd_set_pubkey=exist_vd_set.optString(Config.JSON_KEY_PPK_PUBKEY,"");
+        String vd_set_pubkey=exist_vd_set.optString(Config.ODIN_SET_VD_PUBKEY,"");
         System.out.println("vd_set_pubkey="+vd_set_pubkey);
         if(!sign_pubkey.equals(vd_set_pubkey)){
             throw new Exception(Language.getLangLabel("Mismatched pubkey"));
@@ -333,7 +382,7 @@ public class GenOdinDataByRequest {
         //ByteBuffer byteBuffer = ByteBuffer.allocate(original_data.length);
         //byteBuffer.put(original_data,0,original_data.length);
         
-        String str_ppk_sign=obj_ap_data.getString(Config.JSON_KEY_PPK_SIGN);
+        String str_ppk_sign=obj_ap_data.getString(Config.PTTP_KEY_SIGNATURE);
         String[] sign_pieces = str_ppk_sign.split("\\:");
         String ap_resp_sign_algo=sign_pieces[0].trim();
         String ap_resp_sign_base64=sign_pieces[1].trim();
@@ -346,8 +395,9 @@ public class GenOdinDataByRequest {
         }
     }catch(Exception e){
         e.printStackTrace();
-        throw new Exception(Language.getLangLabel("invalid")+" "+e.toString());
+        throw new Exception(Language.getLangLabel(Config.ODIN_STATUS_INVALID)+" "+e.toString());
     }
+    */
     
     //Upload to th AP
     String tmp_ap_url_str=Util.uploadToAP(tmp_ap_type,tmp_ap_data_signed.getBytes(Config.PPK_TEXT_CHARSET),odinInfo.shortOdin.toString()+"P");

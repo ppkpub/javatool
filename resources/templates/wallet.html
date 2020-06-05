@@ -2,13 +2,13 @@
 <@template.content>
 <div class="row section">
     <div class="row section">
-        <h3>${LANG_BALANCE}</h3>
+        <h3>${LANG_CURRENT_ADDRESS}</h3>
         <ul class="list-group">
         <p>${address}</p>
         <#if balanceBTC?? >
         <li class="list-group-item">
         <span class="badge">${LANG_BTC}</span>
-        <a href="https://blockchain.info/address/${address}">${balanceBTC?string(",##0.00000000")}</a>
+        <a href="https://btc.com/${address}">${balanceBTC?string(",##0.00000000")}</a> ${balanceWarningInfo}
         </li>
         </#if>
         </ul>
@@ -30,7 +30,6 @@
     </div>
     
     <#if isLocalWalletAddress??>
-    </#if>
     <div class="row section">
         <h3>${LANG_IMPORT_PRIVATE_KEY}</h3>
         <form action="/wallet" method="post">
@@ -54,6 +53,7 @@
             </div>
         </form>
     </div>
+    </#if>
     <div class="row section">
         <h3>${LANG_SEND}</h3>
         <form action="/confirmtx" method="post">
@@ -88,7 +88,7 @@
     </div>
 
     <p>未花费交易(UTXO)记录数量：  <#if unspentCount?? >${unspentCount} </#if></p>
-    <p>注：当这里显示的"未花费交易(UTXO)记录数量"不是大于0的有效数字时，可能是网络原因导致无法获取完整的UTXO交易记录，此时转账和注册ODIN标识可能会报错，请稍后刷新再试。</p>
+    <p>注：当这里显示的"未花费交易(UTXO)记录数量"不是大于0的有效数字时，可能是网络原因导致无法获取完整的UTXO交易记录，此时转账和注册奥丁号可能会报错，请稍后刷新再试。</p>
     <!--
     <div class="row section">
         <h3>${LANG_MERGE_UTXO}</h3>

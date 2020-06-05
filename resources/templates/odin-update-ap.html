@@ -3,11 +3,10 @@
 <#if !success??  && !error??>
 <div class="row section">
   <div class="form-group">
-    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_UPDATE_AP_SET} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_UPDATE_AP_SET} ${LANG_ODIN}[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
     <div class="col-sm-7" id="top_buttons" align="right">
      <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
      <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
-     <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
     </div>
   </div>
 </div>

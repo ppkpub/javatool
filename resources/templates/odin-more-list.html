@@ -1,0 +1,59 @@
+<#import "template.html" as template>
+<@template.content>
+<#if !error??>
+  <div class="row section">
+      <div class="form-group">
+        <label for="top_buttons" class="col-sm-5 control-label"><h3>${more_list_title}(${my_odin_num})</h3></label>
+        <div class="col-sm-7" id="top_buttons" align="right">
+
+        </div>
+      </div>
+  </div>
+  <#if my_odins??>
+  <div class="table-responsive">
+  <table class="table table-striped">
+  <thead>
+    <tr>
+      <th>${LANG_FULL_ODIN}</th>
+      <th>${LANG_SHORT_ODIN}</th>
+      <th>${LANG_TIME}</th>
+      <th>${LANG_ODIN_TITLE}</th>
+      <th>${LANG_ADMIN_REGISTER}</th>
+      <th>${LANG_STATUS}</th>
+      <th>${LANG_AP_LIST}</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+    <#list my_odins as odin>
+      <tr>
+        <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+        <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+        <td><a  href="https://btc.com/${odin["tx_hash"]}/">${odin["block_time"]}</a></td>
+        <td>${odin["title"]}</td>
+        <td>
+        ${LANG_ADMIN_BY} ${odin["admin_label"]}<br>
+        ${LANG_REGISTED_BY} ${odin["register_label"]}
+        </td>
+        <td>
+          ${odin["validity_label"]}
+          <br>
+          <#if odin["me_updatable"]??>
+          <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a><br>
+          </#if>
+        </td>
+        <td>${odin["ap_set_debug"]}</td>
+      </tr>
+    </#list>
+    
+  </tbody>
+  </table>
+  </div>
+  
+  <center>${list_navi_html}</center>
+  </#if>
+  
+</#if>
+
+</@template.content>

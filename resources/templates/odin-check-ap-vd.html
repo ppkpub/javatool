@@ -3,13 +3,20 @@
 <#if !success??  && !error??>
 <div class="row section">
   <div class="form-group">
-    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_VALIDATE_AN_AP} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_VALIDATE_AN_AP} ${LANG_ODIN}[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
     <div class="col-sm-7" id="top_buttons" align="right">
       <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
       <a class="btn btn-warning" role="button" href='/odin-update-ap?odin=${odin["short_odin"]}'>${LANG_UPDATE_AP_SET}...</a>
       <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
     </div>
   </div>
+</div>
+
+<div class="form-group">
+    <label for="req-uri" class="col-sm-2 control-label">${LANG_REQUEST_URI}</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" id="req-uri" value='<#if req_uri??>${req_uri}</#if>' readonly >
+    </div>
 </div>
 
 <div class="form-group">
@@ -25,14 +32,14 @@
      <input class="form-control" type="text" id="ppk-uri" value='<#if ap_resp_ppk_uri??>${ap_resp_ppk_uri}</#if>' readonly >
     </div>
 </div>
-
+<!--
 <div class="form-group">
     <label for="ap_resp_url" class="col-sm-2 control-label">${LANG_RESPONSE_URL}</label>
     <div class="col-sm-10">
      <input class="form-control" type="text" id="ap_resp_url" value='${ap_resp_url}' readonly >
     </div>
 </div>
-  
+-->
 <div class="form-group">
     <label for="ap_resp_content" class="col-sm-2 control-label">${LANG_RESPONSE_CONTENT}</label>
     <div class="col-sm-10">
@@ -58,11 +65,17 @@
 <div class="form-group">
     <label for="ap_resp_validate_result" class="col-sm-2 control-label">${LANG_VALIDATE_RESULT}</label>
     <div class="col-sm-10">
-     <div id="ap_resp_validate_result">${ap_resp_validate_result}</div>
+     <span id="ap_resp_validate_result">${ap_resp_validate_result}</span>
     </div>
 </div>
 
-<hr>
+<div class="form-group">
+    <label for="more_info" class="col-sm-2 control-label">${LANG_MORE_INFO}</label>
+    <div class="col-sm-10">
+     <textarea class="form-control" id="more_info" rows=2 readonly ><#if more_info??>${more_info}</#if></textarea>
+    </div>
+</div>
+
 
 </#if>
 

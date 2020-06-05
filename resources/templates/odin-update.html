@@ -3,11 +3,13 @@
 <#if !success??  && !error??>
 <div class="row section">
   <div class="form-group">
-    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_UPDATE_THE_ADMIN_SET_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_UPDATE_THE_ADMIN_SET_OF} ${LANG_ODIN}[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
     <div class="col-sm-7" id="top_buttons" align="right">
      <a class="btn btn-warning" role="button" href='/odin-update-ap?odin=${odin["short_odin"]}'>${LANG_UPDATE_AP_SET}...</a>
      <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
+     <#if odin["register"]?? && odin["register"]==address>
      <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
+     </#if>
     </div>
   </div>
 </div>
@@ -37,6 +39,18 @@
      <input class="form-control" type="text" placeholder="${LANG_THE_PUBLIC_EMAIL_FOR}" name="email" id="email" value='${odin["email"]}'>
     </div>
   </div>
+  
+  <div class="form-group">
+    <label for="pns_url" class="col-sm-2 control-label">${LANG_PNS}(${LANG_OPTIONAL})</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" placeholder="${LANG_THE_PNS_URL_FOR}" name="pns_url" id="pns_url" value='${odin["pns_url"]}' list="pns_list" >
+    </div>
+  </div>
+  
+  <datalist id="pns_list">
+    <option value="http://tool.ppkpub.org/ap2/" label="http://tool.ppkpub.org/ap2/">
+    <option value="" label="none">
+  </datalist>
   
   <div class="form-group">
     <label for="auth" class="col-sm-2 control-label">${LANG_ODIN_AUTHORITY}</label>

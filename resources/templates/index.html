@@ -2,13 +2,21 @@
 <@template.content>
 
 <div class="row section">
-    <a href="/community"><img src="/images/t-topic.jpg" style="height: 250px;" class="float_right" /></a>
+    <a href="https://ppkpub.github.io/docs/"><img src="/images/t-topic.jpg" style="height: 250px;" class="float_right" /></a>
     <div class="page-header">
       <h2>${LANG_PPKPUB} <small>${LANG_A_UNIQUE_GROUP}</small></h2>
     </div>
     <p>${LANG_MADE_FOR_A_LITTLE_JOY} ${LANG_SOFTWARE_INCLUDING}</p>
     <p>${LANG_BUILT_ON_BITCOIN_BLOCKCHAIN}</p>
-    <p><a class="btn btn-primary" role="button" href="https://ppkpub.github.io/docs/">${LANG_LEARN_MORE}</a>  <a class="btn btn-success" role="button" href="/odin">${LANG_MY_ODIN}...</a> <a class="btn btn-success" role="button" href="/odin-add">${LANG_REGISTE_A_NEW_ODIN}...</a></p>
+    <p><a class="btn btn-primary" role="button" href="https://ppkpub.github.io/docs/">${LANG_LEARN_MORE}</a>  <a class="btn btn-success" role="button" href="/odin">${LANG_MY_ODIN}...</a> <a class="btn btn-success" role="button" href="/odin-add">${LANG_REGISTE_A_NEW_ODIN}...</a> <a class="btn btn-primary" role="button" href="${ppk_auction_tool_uri}">${LANG_GOTO_AUCTION}</a></p>
+    
+    <form class="form-inline" role="form" action="" method="get">
+        <div class="form-group">
+        <label for="go"  class="control-label">${LANG_BROWSE_PPK_NET}: </label>
+        <input type="text"  class="form-control" placeholder="${LANG_INPUT_PPK_URI_HERE}" name="go" id="go" value="<#if go_uri??>${go_uri}</#if>">
+        </div>
+        <button class="btn btn-success" type="submit" > ${LANG_GO} </button>
+    </form>
 </div>
 
 <#if news_url??>
@@ -46,9 +54,9 @@
             <tr>
                 <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
                 <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
-                <td><a href="https://btc.com/${odin["block_index"]}/">${odin["block_time"]}</a></td>
+                <td><a href="https://btc.com/${odin["tx_hash"]}/">${odin["block_time"]}</a></td>
                 <td>${odin["register_label"]}</td>
-                <td>${odin["validity"]}</td>
+                <td>${odin["validity_label"]}</td>
             </tr>
         </#list>
         </tbody>

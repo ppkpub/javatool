@@ -23,11 +23,13 @@ import javax.crypto.Cipher;
  */  
 public abstract class RSACoder extends Coder {  
     public static final String KEY_ALGORITHM = "RSA";  
-    public static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA256withRSA";  
-    public static final String DEFAULT_FORMAT="BASE64";
+    private static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA256withRSA"; 
+    //public static final String DEFAULT_FORMAT="BASE64";    
   
-    private static final String PUBLIC_KEY = "RSAPublicKey";  
-    private static final String PRIVATE_KEY = "RSAPrivateKey";  
+    private static final String PUBLIC_KEY = "pubkey";  
+    private static final String PRIVATE_KEY = "prvkey";  
+    
+    private static final int KEY_SIZE = 2048; //BIT
   
     /** 
      * 用私钥对信息生成数字签名 
@@ -47,7 +49,7 @@ public abstract class RSACoder extends Coder {
     }
     public static String sign(byte[] data, String privateKey,String sign_algo) throws Exception {  
         // 解密由base64编码的私钥  
-        byte[] keyBytes = decryptBASE64(privateKey);  
+        byte[] keyBytes = decryptBASE64(parseValidPrvKey(privateKey));  
   
         // 构造PKCS8EncodedKeySpec对象  
         PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);  
@@ -89,7 +91,7 @@ public abstract class RSACoder extends Coder {
             throws Exception {  
   
         // 解密由base64编码的公钥  
-        byte[] keyBytes = decryptBASE64(publicKey);  
+        byte[] keyBytes = decryptBASE64( parseValidPubKey(publicKey) );  
   
         // 构造X509EncodedKeySpec对象  
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);  
@@ -120,7 +122,7 @@ public abstract class RSACoder extends Coder {
     public static byte[] decryptByPrivateKey(byte[] data, String key)  
             throws Exception {  
         // 对密钥解密  
-        byte[] keyBytes = decryptBASE64(key);  
+        byte[] keyBytes = decryptBASE64( parseValidPrvKey(key) );  
   
         // 取得私钥  
         PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);  
@@ -146,7 +148,7 @@ public abstract class RSACoder extends Coder {
     public static byte[] decryptByPublicKey(byte[] data, String key)  
             throws Exception {  
         // 对密钥解密  
-        byte[] keyBytes = decryptBASE64(key);  
+        byte[] keyBytes = decryptBASE64(parseValidPubKey(key));  
   
         // 取得公钥  
         X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(keyBytes);  
@@ -172,7 +174,7 @@ public abstract class RSACoder extends Coder {
     public static byte[] encryptByPublicKey(byte[] data, String key)  
             throws Exception {  
         // 对公钥解密  
-        byte[] keyBytes = decryptBASE64(key);  
+        byte[] keyBytes = decryptBASE64( parseValidPubKey(key) );  
   
         // 取得公钥  
         X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(keyBytes);  
@@ -198,7 +200,7 @@ public abstract class RSACoder extends Coder {
     public static byte[] encryptByPrivateKey(byte[] data, String key)  
             throws Exception {  
         // 对密钥解密  
-        byte[] keyBytes = decryptBASE64(key);  
+        byte[] keyBytes = decryptBASE64(parseValidPrvKey(key));  
   
         // 取得私钥  
         PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);  
@@ -245,7 +247,7 @@ public abstract class RSACoder extends Coder {
     public static JSONObject initKey() throws Exception {  
         KeyPairGenerator keyPairGen = KeyPairGenerator  
                 .getInstance(KEY_ALGORITHM);  
-        keyPairGen.initialize(1024);  
+        keyPairGen.initialize(KEY_SIZE);  
   
         KeyPair keyPair = keyPairGen.generateKeyPair();  
   
@@ -256,8 +258,10 @@ public abstract class RSACoder extends Coder {
         RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();  
   
         JSONObject  keyMap=new JSONObject();
-        keyMap.put(PUBLIC_KEY, encryptBASE64(publicKey.getEncoded()));  
-        keyMap.put(PRIVATE_KEY, encryptBASE64(privateKey.getEncoded()));  
+        keyMap.put(PUBLIC_KEY, "-----BEGIN PUBLIC KEY-----\r\n"+encryptBASE64(publicKey.getEncoded())+"-----END PUBLIC KEY-----\r\n");  
+        keyMap.put(PRIVATE_KEY, "-----BEGIN PRIVATE KEY-----\r\n"+encryptBASE64(privateKey.getEncoded())+"-----END PRIVATE KEY-----\r\n");  
+        keyMap.put("keysize",KEY_SIZE );
+        
         return keyMap;  
     }  
     
@@ -267,7 +271,7 @@ public abstract class RSACoder extends Coder {
      *  
      * @return 
      */  
-    public static String parseValidPubKey(String algo,String source){  
+    public static String parseValidPubKey(String source){  
       String pubkey=null;
       
       try{
@@ -290,4 +294,38 @@ public abstract class RSACoder extends Coder {
       return pubkey;
     }
     
+    /** 
+     * 提取有效的私钥数据 
+     *  
+     * @return 
+     */  
+    public static String parseValidPrvKey(String source){  
+      String pubkey=null;
+      
+      try{
+        if(source.indexOf("-----BEGIN PRIVATE KEY-----")>=0){
+          int from=source.indexOf("-----BEGIN PRIVATE KEY-----")+"-----BEGIN PRIVATE KEY-----".length();
+          int end=source.indexOf("-----END PRIVATE KEY-----")-1;
+          if(end<0)
+            end=source.length();
+        
+          pubkey=source.substring(from,end);
+        }else if(source.indexOf("-----BEGIN RSA PRIVATE KEY-----")>=0){
+          int from=source.indexOf("-----BEGIN RSA PRIVATE KEY-----")+"-----BEGIN RSA PRIVATE KEY-----".length();
+          int end=source.indexOf("-----END RSA PRIVATE KEY-----")-1;
+          if(end<0)
+            end=source.length();
+        
+          pubkey=source.substring(from,end);
+        }else{
+          pubkey=source;
+        }
+        
+        //去掉换行符
+      }catch(Exception e){
+        System.out.println("RSACoder.parseValidPubKey() failed:"+e);
+      }
+      
+      return pubkey;
+    }
 }  

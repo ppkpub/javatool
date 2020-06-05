@@ -4,18 +4,19 @@
 <h3>${LANG_REGISTE_A_NEW_ODIN}</h3>
 <form class="form-horizontal" action="/confirmtx" method="post">
   <input type="hidden" name="form" value="add-odin">
-  <input type="hidden" name="register" value="${address}">
+  <input type="hidden" id="address" name="address" value="${address}">
+  <input type="hidden" id="register" name="register" value="${address}">
 
   <div class="form-group">
     <label for="admin_address" class="col-sm-2 control-label">${LANG_ODIN_ADMIN_ADDRESS}</label>
     <div class="col-sm-10">
-      <input type="text" class="form-control" placeholder="${LANG_ODIN_ADMIN_ADDRESS}" name="admin_address" id="admin_address" value=""><button type="text"  class="btn btn-success" onclick='document.getElementById("admin_address").value="${address}";return false;'>${LANG_ADMIN_SAME_AS_REGISTER}</button>
+      <input type="text" class="form-control" placeholder="${LANG_ODIN_ADMIN_ADDRESS}" name="admin_address" id="admin_address" value="${address}"><button type="text"  class="btn btn-success" onclick='document.getElementById("admin_address").value=document.getElementById("register").value;return false;'>${LANG_ADMIN_SAME_AS_REGISTER}</button>
     </div>
   </div>
   <div class="form-group">
     <label for="title" class="col-sm-2 control-label">${LANG_ODIN_TITLE}(${LANG_OPTIONAL})</label>
     <div class="col-sm-10">
-      <input type="text" class="form-control" placeholder="${LANG_ODIN_TITLE}" name="title" id="title" value="">
+      <input type="text" class="form-control" placeholder="${LANG_ODIN_TITLE}" name="title" id="title" value="<#if from_title??>${from_title}</#if>">
     </div>
   </div>      
   <div class="form-group">
@@ -24,6 +25,18 @@
       <input type="email" class="form-control" placeholder="${LANG_THE_PUBLIC_EMAIL_FOR}" name="email" id="email" value="" >
     </div>
   </div>
+  
+  <div class="form-group">
+    <label for="pns_url" class="col-sm-2 control-label">${LANG_PNS}(${LANG_OPTIONAL})</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" placeholder="${LANG_THE_PNS_URL_FOR}" name="pns_url" id="pns_url" value="${ppk_default_pns_uri}" list="pns_list" >
+    </div>
+  </div>
+  
+  <datalist id="pns_list">
+    <option value="http://tool.ppkpub.org/ap2/" label="http://tool.ppkpub.org/ap2/">
+    <option value="" label="none">
+  </datalist>
   
   <div class="form-group">
     <label for="auth" class="col-sm-2 control-label">${LANG_ODIN_AUTHORITY}</label>
@@ -45,4 +58,41 @@
 </form>
 
 </div>
+
+<script type="text/javascript">
+
+window.onload=function(){
+    init();
+}
+
+function init(){
+    console.log("init...");
+    
+    if(typeof(PeerWeb) !== 'undefined'){ //检查PPk开放协议相关PeerWeb JS接口可用性
+        console.log("PeerWeb enabled");
+
+        var register=document.getElementById("register").value;
+        if(register.length==0 || register.substr(0,1)!='1'){ 
+            //如果未指定有效注册者，则读取PPk浏览器内置钱包中缺省比特币地址
+            PeerWeb.getDefaultAddress(
+                'BITCOIN',  
+                'callback_setBtcNewAddress'  //回调方法名称
+            );
+        }
+    }else{
+        console.log("PeerWeb not valid");
+        //alert("${LANG_PEERWEB_NOT_VALID}");
+    }
+}
+
+function callback_setBtcNewAddress(status,obj_data){
+    if('OK'==status){
+        if(obj_data.address!=null || obj_data.address.trim().length>0){
+            document.getElementById("address").value=obj_data.address.trim();
+            document.getElementById("register").value=document.getElementById("address").value;
+            document.getElementById("admin_address").value=document.getElementById("address").value;
+        }
+    }
+}
+</script>
 </@template.content>

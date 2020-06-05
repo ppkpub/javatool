@@ -67,6 +67,7 @@ public class GuiServer implements Runnable {
     }
     
     setPort( Config.GuiServerPort ); 
+    Config.ppkDefaultHrefApUrl = "http://"+Config.ppkPttpServiceIP+":"+Config.GuiServerPort+"/";
     
     final Configuration configuration = new Configuration();
     try {
@@ -79,142 +80,37 @@ public class GuiServer implements Runnable {
       }
     } catch (Exception e) {
     }
+    
+    /* DEBUG START */
+    /* DEBUG END */
 
     get(new FreeMarkerRoute("/") {
       @Override
       public ModelAndView handle(Request request, Response response) {
         setConfiguration(configuration);
-
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        request.session(true);
-        attributes = updateCommonStatus(request, attributes);
-      
-        attributes.put("title", "Open tools focusing on decentralized applications");
-
-        Database db = Database.getInstance();
-        String address=(String)attributes.get("address");
-        //get last 10 odins
-        ArrayList<HashMap<String, Object>> odins = new ArrayList<HashMap<String, Object>>();
         
-        ResultSet rs = db.executeQuery("select cp.full_odin,cp.short_odin,cp.register,cp.admin ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odin_set, cp.validity from odins cp,transactions where cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 10;");
-        odins = new ArrayList<HashMap<String, Object>>();
-        try {
-            while ( rs.next()) {
-                HashMap<String,Object> map = new HashMap<String,Object>();
-                map.put("full_odin", rs.getString("full_odin"));
-                map.put("short_odin", rs.getString("short_odin"));
-                map.put("register", rs.getString("register"));
-                map.put("register_label", Util.getFriendlyAddressLabel(rs.getString("register")));
-                map.put("admin", rs.getString("admin"));
-                map.put("admin_label", Util.getFriendlyAddressLabel(rs.getString("admin")));
-                map.put("tx_index", rs.getString("tx_index"));
-                map.put("tx_hash", rs.getString("tx_hash"));
-                map.put("validity", Language.getLangLabel(rs.getString("validity")));
-                map.put("block_index", rs.getString("block_index"));
-                map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-                
-                try{
-                    JSONObject odin_set = new JSONObject(rs.getString("odin_set")); 
-                    map=Odin.parseOdinSet(map,odin_set,address,rs.getString("register"),rs.getString("admin"));
-                    
-                    odins.add(map);
-                }catch (Exception e) {
-                    logger.error(e.toString());
-                }
-            }
-        } catch (SQLException e) {
+        String pttp_interest=request.queryParams("pttp");
+        String ppk_uri=request.queryParams("go");
+        
+        if( pttp_interest != null ){
+          //For get PTTP data
+          Map<String, Object> attributes = PttpServer.handlePttpProxyRequest(request,pttp_interest);
+          return modelAndView(attributes, "pttp-data.html");
+        }else if( ppk_uri != null ){
+          //For browse content
+          
+          if(ppk_uri.trim().length( ) == 0)
+            ppk_uri = Config.ppkDefaultHomepage;
+   
+          Map<String, Object> attributes = PttpServer.handlePttpBrowserRequest(request,ppk_uri);
+          return modelAndView(attributes, "pttp-browser.html");
+        }else{
+          Map<String, Object> attributes = handleHomeRequest(request);
+          return modelAndView(attributes, "index.html");
         }
-        
-        if( !odins.isEmpty() ){
-            attributes.put("recent_odins", odins);
-        }
-        
-        //get TOP 100 registers
-        ArrayList<HashMap<String, Object>> top100_registers = new ArrayList<HashMap<String, Object>>();
-        
-        rs = db.executeQuery("select register,count(*) as odin_num,min(short_odin) as first_short_odin from odins group by register order by odin_num desc;");
-        try {
-            int rank=1;
-            int my_rank=0;
-            int my_registed_num=0;
-            while ( rs.next()) {
-                if(rank<100){
-                    HashMap<String,Object> map = new HashMap<String,Object>();
-                    map.put("rank", rank);
-                    map.put("register", rs.getString("register"));
-                    map.put("register_label", Util.getFriendlyAddressLabel(rs.getString("register")));
-                    
-                    map.put("odin_num", rs.getInt("odin_num"));
-                    map.put("first_short_odin", rs.getString("first_short_odin"));
-                    
-                    top100_registers.add(map);
-                }
-                if(rs.getString("register").equals(address)){
-                    my_rank=rank;
-                    my_registed_num=rs.getInt("odin_num");
-                }
-                rank++;
-            }
-
-            if(!"No address".equals(address)){
-                attributes.put("my_registed_num", my_registed_num);
-                attributes.put("my_rank", my_rank);
-                attributes.put("my_rank_percent", my_rank==0 ? 0:Math.round((rank-my_rank)*100)/rank);
-            }
-        } catch (SQLException e) {
-        }
-        
-        if( !top100_registers.isEmpty() ){
-            attributes.put("top100_registers", top100_registers);
-        }
-        
-        attributes.put("LANG_A_UNIQUE_GROUP", Language.getLangLabel("a public group that focus on open decentralized protocols and tools."));
-        attributes.put("LANG_MADE_FOR_A_LITTLE_JOY", Language.getLangLabel("ODIN(Open Data Index Name) is a decentralized DNS based on blockchains (BTC,ETH,BYTOM,Fabric,etc) . It's made for a little joy."));
-        attributes.put("LANG_DOWNLOAD", Language.getLangLabel("Download"));
-        attributes.put("LANG_SOFTWARE_INCLUDING", Language.getLangLabel("this opensource software -- including a tool for registing and managing ODIN , a simple bitcoin wallet . Start playing today!"));
-        attributes.put("LANG_BUILT_ON_BITCOIN_BLOCKCHAIN", Language.getLangLabel("Built on top of the blockchain technology, PPkPub will research and develope a few fully open decentralized protocols & tools. There is no central control and central point of failure. It's owned by the people."));
-        attributes.put("LANG_LEARN_MORE", Language.getLangLabel("Learn more"));
-        attributes.put("LANG_NEWS", Language.getLangLabel("News"));
-
-        attributes.put("LANG_RECENT_ODINS", Language.getLangLabel("Recent ODINs"));
-        attributes.put("LANG_REGISTE_A_NEW_ODIN", Language.getLangLabel("Registe a new ODIN"));
-        attributes.put("LANG_FULL_ODIN", Language.getLangLabel("Full ODIN"));
-        attributes.put("LANG_SHORT_ODIN", Language.getLangLabel("SN"));
-        attributes.put("LANG_TIME", Language.getLangLabel("Time"));
-        attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
-        attributes.put("LANG_ADMIN_REGISTER", Language.getLangLabel("Admin/Register"));
-        attributes.put("LANG_ADMIN_BY", Language.getLangLabel("Admin by"));
-        attributes.put("LANG_ODIN_REGISTER_ADDRESS", Language.getLangLabel("Register BTC address"));
-        attributes.put("LANG_AP_LIST", Language.getLangLabel("Access Point"));
-        attributes.put("LANG_STATUS", Language.getLangLabel("Status"));
-        attributes.put("LANG_UPDATE_DESC", Language.getLangLabel("Update description"));
-        attributes.put("LANG_TOP100_REGISTERS", Language.getLangLabel("TOP100 registers"));
-        attributes.put("LANG_RANK", Language.getLangLabel("Rank"));
-        attributes.put("LANG_REGISTED_NUM", Language.getLangLabel("Total registed"));
-        attributes.put("LANG_FIRST_ODIN", Language.getLangLabel("First registed"));
-        attributes.put("LANG_QUERY_ODIN", Language.getLangLabel("Query ODIN"));
-        attributes.put("LANG_INPUT_ODIN", Language.getLangLabel("Input the ODIN"));
-        attributes.put("LANG_INPUT_ODIN_DESC", Language.getLangLabel("Input the ODIN number that you want to query"));
-        attributes.put("LANG_MATCH_WORD", Language.getLangLabel("Match word"));
-        attributes.put("LANG_INPUT_WORD", Language.getLangLabel("Input the word"));
-        attributes.put("LANG_INPUT_WORD_DESC", Language.getLangLabel("Input the word string that you want to match"));
-        
-        attributes.put("LANG_PENDING", Language.getLangLabel("Pending"));
-        attributes.put("LANG_VALID", Language.getLangLabel("valid"));    
-        attributes.put("LANG_UPDATE", Language.getLangLabel("Update"));      
-        attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
-        
-        if(!Blocks.isRemoteWalletMode()){
-            if(Language.getCurrentLang().equals("CN"))
-                attributes.put("news_url", Config.newsUrlCN);
-            else
-                attributes.put("news_url", Config.newsUrl);
-        }
-        
-        //return modelAndView(attributes, "index_nowallet.html");
-        return modelAndView(attributes, "index.html");
       }
     });
+    
     get(new FreeMarkerRoute("/community") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -257,6 +153,16 @@ public class GuiServer implements Runnable {
       }
     });  
     
+    get(new FreeMarkerRoute("/confirmtx") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        Map<String, Object> attributes = handleConfirmTxRequest(request);
+        
+        return modelAndView(attributes, "confirm-tx.html");
+      }
+    });
+    
     post(new FreeMarkerRoute("/confirmtx") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -267,6 +173,16 @@ public class GuiServer implements Runnable {
       }
     });
 
+    get(new FreeMarkerRoute("/checksign") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        Map<String, Object> attributes = handleCheckSignRequest(request);
+        
+        return modelAndView(attributes, "check-sign.html");
+      }
+    });  
+
     get(new FreeMarkerRoute("/broadcasttx") {
       @Override
       public ModelAndView handle(Request request, Response response) {
@@ -275,7 +191,7 @@ public class GuiServer implements Runnable {
         
         return modelAndView(attributes, "broadcast-tx.html");
       }
-    });    
+    });  
     
     post(new FreeMarkerRoute("/broadcasttx") {
       @Override
@@ -296,32 +212,29 @@ public class GuiServer implements Runnable {
       }
     });
     
+    get(new FreeMarkerRoute("/odin-more-list") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        Map<String, Object> attributes = handleOdinMoreListRequest(request);
+        return modelAndView(attributes, "odin-more-list.html");
+      }
+    });
+    
+    get(new FreeMarkerRoute("/odin-update-list") {
+      @Override
+      public ModelAndView handle(Request request, Response response) {
+        setConfiguration(configuration);
+        Map<String, Object> attributes = handleOdinUpdateLogListRequest(request);
+        return modelAndView(attributes, "odin-update-list.html");
+      }
+    });
+    
     get(new FreeMarkerRoute("/odin-add") {
       @Override
       public ModelAndView handle(Request request, Response response) {
         setConfiguration(configuration);
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        request.session(true);
-        attributes = updateCommonStatus(request, attributes);
-        attributes.put("title", "Register a new odin");
-
-        attributes.put("LANG_REGISTE_A_NEW_ODIN", Language.getLangLabel("Registe a new ODIN"));
-        attributes.put("LANG_ODIN_ADMIN_ADDRESS", Language.getLangLabel("Admin BTC address"));
-        attributes.put("LANG_ADMIN_SAME_AS_REGISTER", Language.getLangLabel("Same as register"));  
-        attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
-        attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
-        attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
-        attributes.put("LANG_ODIN_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
-        attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
-        attributes.put("LANG_ODIN_AUTHORITY", Language.getLangLabel("Authority"));  
-        attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
-        attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
-        attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
-        
-        attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
-        attributes.put("LANG_REGIST_IT", Language.getLangLabel("Regist it"));  
-        attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
-                  
+        Map<String, Object> attributes = handleOdinAddRequest(request);
         return modelAndView(attributes, "odin-add.html");
       }
     });
@@ -426,6 +339,181 @@ public class GuiServer implements Runnable {
     });
   }
   
+  public Map<String, Object> handleHomeRequest(Request request) {
+    Map<String, Object> attributes = new HashMap<String, Object>();
+    request.session(true);
+    attributes = updateCommonStatus(request, attributes);
+  
+    attributes.put("title", "Open tools focusing on decentralized applications");
+
+    Database db = Database.getInstance();
+    String address=(String)attributes.get("address");
+    //get last 10 odins
+    ArrayList<HashMap<String, Object>> odins = new ArrayList<HashMap<String, Object>>();
+    
+    ResultSet rs = db.executeQuery("select cp.full_odin,cp.short_odin,cp.register,cp.admin ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odin_set, cp.validity from odins cp,transactions where cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 10;");
+    odins = new ArrayList<HashMap<String, Object>>();
+    try {
+        while ( rs.next()) {
+            HashMap<String,Object> map = new HashMap<String,Object>();
+            map.put("full_odin", rs.getString("full_odin"));
+            map.put("short_odin", rs.getString("short_odin"));
+            map.put("register", rs.getString("register"));
+            map.put("register_label", Util.getFriendlyAddressLabel(rs.getString("register")));
+            map.put("admin", rs.getString("admin"));
+            map.put("admin_label", Util.getFriendlyAddressLabel(rs.getString("admin")));
+            map.put("tx_index", rs.getString("tx_index"));
+            map.put("tx_hash", rs.getString("tx_hash"));
+            map.put("validity", rs.getString("validity") );
+            map.put("validity_label", Language.getLangLabel( rs.getString("validity") ));
+            map.put("block_index", rs.getString("block_index"));
+            map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+            
+            try{
+                JSONObject odin_set = new JSONObject(rs.getString("odin_set")); 
+                map=ODIN.parseOdinSet(map,odin_set,address,rs.getString("register"),rs.getString("admin"));
+                
+                odins.add(map);
+            }catch (Exception e) {
+                logger.error(e.toString());
+            }
+        }
+    } catch (SQLException e) {
+    }
+    
+    if( !odins.isEmpty() ){
+        attributes.put("recent_odins", odins);
+    }
+    
+    //get TOP 100 registers
+    ArrayList<HashMap<String, Object>> top100_registers = new ArrayList<HashMap<String, Object>>();
+    
+    rs = db.executeQuery("select register,count(*) as odin_num,min(short_odin) as first_short_odin from odins group by register order by odin_num desc;");
+    try {
+        int rank=1;
+        int my_rank=0;
+        int my_registed_num=0;
+        while ( rs.next()) {
+            if(rank<100){
+                HashMap<String,Object> map = new HashMap<String,Object>();
+                map.put("rank", rank);
+                map.put("register", rs.getString("register"));
+                map.put("register_label", Util.getFriendlyAddressLabel(rs.getString("register")));
+                
+                map.put("odin_num", rs.getInt("odin_num"));
+                map.put("first_short_odin", rs.getString("first_short_odin"));
+                
+                top100_registers.add(map);
+            }
+            if(rs.getString("register").equals(address)){
+                my_rank=rank;
+                my_registed_num=rs.getInt("odin_num");
+            }
+            rank++;
+        }
+
+        if(!"No address".equals(address)){
+            attributes.put("my_registed_num", my_registed_num);
+            attributes.put("my_rank", my_rank);
+            attributes.put("my_rank_percent", my_rank==0 ? 0:Math.round((rank-my_rank)*100)/rank);
+        }
+    } catch (SQLException e) {
+    }
+    
+    if( !top100_registers.isEmpty() ){
+        attributes.put("top100_registers", top100_registers);
+    }
+    
+    attributes.put("go_uri", Config.ppkDefaultHomepage);
+    
+    attributes.put("LANG_A_UNIQUE_GROUP", Language.getLangLabel("a public group that focus on open decentralized protocols and tools."));
+    attributes.put("LANG_MADE_FOR_A_LITTLE_JOY", Language.getLangLabel("ODIN(Open Data Index Name) is a decentralized DNS based on blockchains (BTC,ETH,BYTOM,Fabric,etc) . It's made for a little joy."));
+    attributes.put("LANG_DOWNLOAD", Language.getLangLabel("Download"));
+    attributes.put("LANG_SOFTWARE_INCLUDING", Language.getLangLabel("this opensource software -- including a tool for registing and managing ODIN , a simple bitcoin wallet . Start playing today!"));
+    attributes.put("LANG_BUILT_ON_BITCOIN_BLOCKCHAIN", Language.getLangLabel("Built on top of the blockchain technology, PPkPub will research and develope a few fully open decentralized protocols & tools. There is no central control and central point of failure. It's owned by the people."));
+    attributes.put("LANG_LEARN_MORE", Language.getLangLabel("Learn more"));
+    attributes.put("LANG_NEWS", Language.getLangLabel("News"));
+    attributes.put("LANG_GOTO_AUCTION", Language.getLangLabel("Goto auction"));
+    
+    attributes.put("LANG_BROWSE_PPK_NET", Language.getLangLabel("Browse PPk network"));
+    attributes.put("LANG_INPUT_PPK_URI_HERE", Language.getLangLabel("Input ppk: uri here"));
+    attributes.put("LANG_GO", Language.getLangLabel("Go"));
+
+    attributes.put("LANG_RECENT_ODINS", Language.getLangLabel("Recent ODINs"));
+    attributes.put("LANG_REGISTE_A_NEW_ODIN", Language.getLangLabel("Registe a new ODIN"));
+    attributes.put("LANG_FULL_ODIN", Language.getLangLabel("Full ODIN"));
+    attributes.put("LANG_SHORT_ODIN", Language.getLangLabel("SN"));
+    attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+    attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
+    attributes.put("LANG_ADMIN_REGISTER", Language.getLangLabel("Admin/Register"));
+    attributes.put("LANG_ADMIN_BY", Language.getLangLabel("Admin by"));
+    attributes.put("LANG_ODIN_REGISTER_ADDRESS", Language.getLangLabel("Register BTC address"));
+    attributes.put("LANG_AP_LIST", Language.getLangLabel("Access Point"));
+    attributes.put("LANG_STATUS", Language.getLangLabel("Status"));
+    attributes.put("LANG_UPDATE_DESC", Language.getLangLabel("Update description"));
+    attributes.put("LANG_TOP100_REGISTERS", Language.getLangLabel("TOP100 registers"));
+    attributes.put("LANG_RANK", Language.getLangLabel("Rank"));
+    attributes.put("LANG_REGISTED_NUM", Language.getLangLabel("Total registed"));
+    attributes.put("LANG_FIRST_ODIN", Language.getLangLabel("First registed"));
+    attributes.put("LANG_QUERY_ODIN", Language.getLangLabel("Query ODIN"));
+    attributes.put("LANG_INPUT_ODIN", Language.getLangLabel("Input the ODIN"));
+    attributes.put("LANG_INPUT_ODIN_DESC", Language.getLangLabel("Input the ODIN number that you want to query"));
+    attributes.put("LANG_MATCH_WORD", Language.getLangLabel("Match word"));
+    attributes.put("LANG_INPUT_WORD", Language.getLangLabel("Input the word"));
+    attributes.put("LANG_INPUT_WORD_DESC", Language.getLangLabel("Input the word string that you want to match"));
+    
+    attributes.put("LANG_PENDING", Language.getLangLabel(Config.ODIN_STATUS_PENDING));
+    attributes.put("LANG_VALID", Language.getLangLabel(Config.ODIN_STATUS_VALID));    
+    attributes.put("LANG_UPDATE", Language.getLangLabel("Update"));      
+    attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
+    
+    if(!Blocks.isRemoteWalletMode()){
+        if(Language.getCurrentLang().equals("CN"))
+            attributes.put("news_url", Config.newsUrlCN);
+        else
+            attributes.put("news_url", Config.newsUrl);
+    }
+    
+    attributes.put("ppk_auction_tool_uri", Config.ppkSwapToolURI);
+    
+    return attributes;
+  }
+  
+  public Map<String, Object> handleOdinAddRequest(Request request) {
+    Map<String, Object> attributes = new HashMap<String, Object>();
+    request.session(true);
+    attributes = updateCommonStatus(request, attributes);
+    attributes.put("title", "Register a new odin");
+    
+    String from_title="";
+    if (request.queryParams().contains("from")) { //自动添加推荐人作为缺省标题
+        from_title = request.queryParams("from"); 
+    }
+    attributes.put("from_title", from_title);
+    
+    attributes.put("LANG_REGISTE_A_NEW_ODIN", Language.getLangLabel("Registe a new ODIN"));
+    attributes.put("LANG_ODIN_ADMIN_ADDRESS", Language.getLangLabel("Admin BTC address"));
+    attributes.put("LANG_ADMIN_SAME_AS_REGISTER", Language.getLangLabel("Same as register"));  
+    attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
+    attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
+    attributes.put("LANG_THE_PNS_URL_FOR", Language.getLangLabel("The URL of custom Peer Naming Service"));
+    attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
+    attributes.put("LANG_ODIN_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
+    attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+    attributes.put("LANG_PNS", Language.getLangLabel("Peer Naming Service"));  
+    attributes.put("LANG_ODIN_AUTHORITY", Language.getLangLabel("Authority"));  
+    attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
+    attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
+    attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
+    
+    attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
+    attributes.put("LANG_REGIST_IT", Language.getLangLabel("Regist it"));  
+    attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+    
+    attributes.put("ppk_default_pns_uri", Config.ppkDefaultPnsURI);
+    
+    return attributes;
+  }
   
   public Map<String, Object> handleUploadRequest(Request request) {
     Map<String, Object> attributes = new HashMap<String, Object>();
@@ -447,7 +535,7 @@ public class GuiServer implements Runnable {
     } 
     byte[] file_data=Base64.getDecoder().decode(file_base64);
 
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    OdinInfo odinInfo=ODIN.getOdinInfo(odin);
     if(odinInfo==null){
       attributes.put("error", "handleUploadRequest Invalid odin.");
     } else {  
@@ -585,10 +673,11 @@ public class GuiServer implements Runnable {
             if(odin_data==null){
                 attributes.put("success", Language.getLangLabel("The content had been updated while the AP url remain as "));
             }
-          }else if(form_type.equals("confirm-update-log"))
+          }else if(form_type.equals("confirm-update-log")){
             odin_data=GenOdinDataByRequest.genOdinDataOfConfirmUpdateLog(request,attributes);
-          else if(form_type.equals("send"))
+          }else if(form_type.equals("send")){
             odin_data=GenOdinDataByRequest.genNormalSendTX(request,attributes);
+          }
         } 
     }catch (Exception e) {
       e.printStackTrace();
@@ -621,6 +710,7 @@ public class GuiServer implements Runnable {
                 attributes.put("odin_data_desc", odin_data.toString());
                 attributes.put("signed_tx_hex", odin_data.strSignedTxHex);
                 attributes.put("odin_tx_json_hex",odin_tx_json_hex );
+                attributes.put("has_odin_mark", odin_data.mark_hex.length()==0 ? "false":"true");
             }else{
                 attributes.put("error", "Invalid ODIN/Transaction setting!");
             }
@@ -636,13 +726,39 @@ public class GuiServer implements Runnable {
     attributes.put("ODIN_DATA", Language.getLangLabel("ODIN Data"));
     attributes.put("SIGNED_BTC_TX", Language.getLangLabel("Signed BTC TX"));
     attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
-    attributes.put("LANG_CONFIRM", Language.getLangLabel("Confirm"));  
+    attributes.put("LANG_CONFIRM_SEND_TX", Language.getLangLabel("Confirm to send out"));  
     attributes.put("LANG_FAILED_SIGN_TX", Language.getLangLabel("Failed to generate signed transaction!"));
     attributes.put("LANG_ENSURE_BALANCE_IS_ENOUGH", Language.getLangLabel("Please ensure your BTC balance is enough."));
+    
     
     return attributes;
   }
   
+  
+  public Map<String, Object> handleCheckSignRequest(Request request) {
+      Map<String, Object> attributes = new HashMap<String, Object>();
+      
+      String str_pubkey_hex = request.queryParams("pubkey");
+      String sign_base64 = request.queryParams("sign");
+      String str_original = request.queryParams("original");
+      
+      String result="ERROR";
+      if( str_pubkey_hex!=null && str_pubkey_hex.length()>0
+       && sign_base64!=null && sign_base64.length()>0
+       && str_original!=null && str_original.length()>0
+       ){
+          try {
+              ECKey tmp_key=ECKey.fromPublicOnly(Util.hexStringToBytes(str_pubkey_hex) );
+              tmp_key.verifyMessage(str_original, sign_base64);
+              result="OK";
+          }catch(Exception e) {
+              System.out.println("GUIServer.handleCheckSignRequest("+str_pubkey_hex+","+sign_base64+","+str_original+") exception:"+e.toString());
+          }
+      }
+
+      attributes.put("check_result", result);    
+      return attributes;
+  }
   
   public Map<String, Object> handleBroadcastTxRequest(Request request) {
       Map<String, Object> attributes = new HashMap<String, Object>();
@@ -674,7 +790,7 @@ public class GuiServer implements Runnable {
     return attributes;
   }
 
-  
+    
   public Map<String, Object> handleWalletRequest(Request request) {
     Map<String, Object> attributes = new HashMap<String, Object>();
     request.session(true);
@@ -739,52 +855,62 @@ public class GuiServer implements Runnable {
     }
     
     BigInteger default_btc_balance=null;
+    String balance_warning_info="";
     
     if(!Blocks.bRemoteWalletMode){ //本地钱包模式下，查询内部所有地址的信息
         //Just for debug to show private&public keys
         String str_all_address="";
+
+        ArrayList<HashMap<String, Object>> local_address_list=new ArrayList<HashMap<String, Object>>();
         for (ECKey key : blocks.wallet.getImportedKeys()) {
           String tmp_address=key.toAddress(blocks.params).toString();
           if(str_all_address.length()>0)
               str_all_address += ",";
           str_all_address += tmp_address;
+
+          HashMap<String,Object> map = new HashMap<String,Object>();
+            
+          map.put("address", tmp_address);
+          map.put("address_label", Util.getFriendlyAddressLabel(tmp_address)); 
+          map.put("balance", "0" );
+          map.put("tx_count", 0 );
+          map.put("unconfirmed_tx_count", 0 );
+          map.put("unspent_tx_count", 0 );
+
+          local_address_list.add(map);
           
           if (Config.debugKey && tmp_address.equals(address)) {
             attributes.put("testShowKey", "PrivateKey HEX:"+key.getPrivateKeyAsHex() + " WIF:"+  key.getPrivateKeyAsWiF(MainNetParams.get())+"  PubKey:"+key.getPublicKeyAsHex());
           }
         }
 
-        JSONObject obj_all_address=Util.getMultiBTCBalances(str_all_address);
-        if(obj_all_address!=null){
-            JSONObject obj_default_address=obj_all_address.optJSONObject(address);
+        JSONObject obj_all_addresses=Util.getMultiBTCBalances(str_all_address);
+        if(obj_all_addresses!=null){
+            JSONObject obj_default_address=obj_all_addresses.optJSONObject(address);
             if(obj_default_address!=null){
                 default_btc_balance=BigInteger.valueOf(obj_default_address.optInt("balance",0));
             }
             
-            ArrayList<HashMap<String, Object>> local_address_list=new ArrayList<HashMap<String, Object>>(); ;
-            
-            Iterator iterator = obj_all_address.keys();
-            while(iterator.hasNext()){
-                String tmp_address = (String) iterator.next();
-                JSONObject tmp_address_info = obj_all_address.optJSONObject(tmp_address);
-                
-                HashMap<String,Object> map = new HashMap<String,Object>();
-                map.put("address", tmp_address);
-                map.put("address_label", Util.getFriendlyAddressLabel(tmp_address));  
-                
-                BigDecimal balance_in_btc = Util.getBalanceInBtc(tmp_address_info.optInt("balance",0));
+            for(int kk=0;kk<local_address_list.size();kk++){
+                HashMap<String,Object> map= (HashMap<String,Object>)local_address_list.get(kk);
+                String tmp_address=(String)map.get("address");
+                JSONObject tmp_address_info = obj_all_addresses.optJSONObject(tmp_address);
+                if(tmp_address_info!=null){
+                    BigDecimal balance_in_btc = Util.getBalanceInBtc(tmp_address_info.optInt("balance",0));
 
-                map.put("balance", balance_in_btc.toPlainString() );
-                map.put("tx_count", tmp_address_info.optInt("tx_count",0) );
-                map.put("unconfirmed_tx_count", tmp_address_info.optInt("unconfirmed_tx_count",0) );
-                map.put("unspent_tx_count", tmp_address_info.optInt("unspent_tx_count",0) );
-                //map.put("register_odin_num", Util.getRegisterOdinNum(tmp_address) );
-
-                local_address_list.add(map);
+                    map.put("balance", balance_in_btc.toPlainString() );
+                    map.put("tx_count", tmp_address_info.optInt("tx_count",0) );
+                    map.put("unconfirmed_tx_count", tmp_address_info.optInt("unconfirmed_tx_count",0) );
+                    map.put("unspent_tx_count", tmp_address_info.optInt("unspent_tx_count",0) );
+                    //map.put("register_odin_num", Util.getRegisterOdinNum(tmp_address) );
+                
+                    local_address_list.set(kk,map);
+                }
             }
-            if(local_address_list!=null)
-                attributes.put("local_address_list", local_address_list);
-        }  
+        }
+
+        if(local_address_list.size()>0)
+            attributes.put("local_address_list", local_address_list);
     }
     
     if(default_btc_balance==null){
@@ -792,14 +918,21 @@ public class GuiServer implements Runnable {
     }
     
     if(default_btc_balance!=null){
-        attributes.put("balanceBTC", default_btc_balance.doubleValue() / Config.btc_unit.doubleValue());
+        double double_btc_balance = default_btc_balance.doubleValue() / Config.btc_unit.doubleValue();
+        attributes.put("balanceBTC", double_btc_balance );
         
-        UnspentList ul=Util.getValidUnspents(address,Config.maxUseUTXO,false);
+        if(double_btc_balance<0.00003)
+            balance_warning_info="Insufficient balance!Charge 0.0001 BTC for using.";
+        else if(double_btc_balance>0.0002)
+            balance_warning_info="The balance too much! Reduce to 0.0001 BTC or change another new address.";
+            
+        
+        UnspentList ul=Util.getValidUnspents(address,false,false);
         
         int maxDataFee=Config.ppkStandardDataFee;
 
         if(ul!=null && ul.tx_total_num>0){
-            //System.out.println("\n ul.tx_num = "+ul.tx_num+"  ul.tx_total_num = "+ul.tx_total_num+"\n");
+            System.out.println("\n ul.tx_num = "+ul.tx_num+"  ul.tx_total_num = "+ul.tx_total_num+"\n");
             int unspentCount = ul.tx_total_num;
             attributes.put("unspentCount", unspentCount);
         
@@ -817,6 +950,7 @@ public class GuiServer implements Runnable {
         }
     }
     
+    attributes.put("balanceWarningInfo", Language.getLangLabel(balance_warning_info) );
     attributes.put("ppkStandardFeeBtc", BigInteger.valueOf(Config.ppkStandardDataFee).doubleValue() / Config.btc_unit.doubleValue());
     
     attributes.put("LANG_MY", Language.getLangLabel("My "));
@@ -856,7 +990,7 @@ public class GuiServer implements Runnable {
     ArrayList<HashMap<String, Object>> odins ;
     ArrayList<HashMap<String, Object>> my_pending_odins ;
     
-    List<OdinInfo> allPendingOdins = Odin.getPending();
+    List<OdinInfo> allPendingOdins = ODIN.getPending();
     logger.info( "\n=============================\n allPendingOdins.size="+allPendingOdins.size()+"\n=====================\n");
     
     odins = new ArrayList<HashMap<String, Object>>();
@@ -874,9 +1008,10 @@ public class GuiServer implements Runnable {
       map.put("block_index", odinInfo.blockIndex.toString());
       map.put("block_time", Util.timeFormat(odinInfo.blockTime));
       map.put("validity",odinInfo.validity);
+      map.put("validity_label", Language.getLangLabel( odinInfo.validity ));
 
       try{
-        map=Odin.parseOdinSet(map,odinInfo.odinSet,address,odinInfo.register,odinInfo.admin);
+        map=ODIN.parseOdinSet(map,odinInfo.odinSet,address,odinInfo.register,odinInfo.admin);
         odins.add(map);
         
         if(address.equals(odinInfo.register))
@@ -890,70 +1025,22 @@ public class GuiServer implements Runnable {
     attributes.put("my_pending_odins", my_pending_odins);
     
     //get my registed odins
-    rs = db.executeQuery("select cp.full_odin,cp.short_odin,cp.register,cp.admin ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odin_set,cp.validity from odins cp,transactions where cp.register='"+address+"' and cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc;");
-    odins = new ArrayList<HashMap<String, Object>>();
-    try {
-      while ( rs.next()) {
-        HashMap<String,Object> map = new HashMap<String,Object>();
-        map.put("full_odin", rs.getString("full_odin"));
-        map.put("short_odin", rs.getString("short_odin"));
-        map.put("register", rs.getString("register"));
-        map.put("register_label", Util.getFriendlyAddressLabel(rs.getString("register")));
-        map.put("admin", rs.getString("admin"));
-        map.put("admin_label", Util.getFriendlyAddressLabel(rs.getString("admin")));
-        map.put("tx_index", rs.getString("tx_index"));
-        map.put("tx_hash", rs.getString("tx_hash"));
-        map.put("validity", rs.getString("validity"));
-        map.put("block_index", rs.getString("block_index"));
-        map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-                
-        try{
-          JSONObject odin_set = new JSONObject(rs.getString("odin_set")); 
-          map=Odin.parseOdinSet(map,odin_set,address,rs.getString("register"),rs.getString("admin"));
-
-          odins.add(map);
-        }catch (Exception e) {
-          logger.error(e.toString());
-        }
-      }
-    } catch (SQLException e) {
+    int my_registed_odin_num = ODIN.getUserRegisteredNum(address);
+    attributes.put("my_registed_odin_num", my_registed_odin_num );
+    
+    if(my_registed_odin_num>0){
+        odins = ODIN.getUserRelatedODINs( address , true , 0 , 20 );
+        attributes.put("my_registed_odins", odins);
     }
-        
-    attributes.put("my_registed_odins", odins);
-    attributes.put("my_registed_odin_num", odins.size() );
     
     //get my admin odins
-    rs = db.executeQuery("select cp.full_odin,cp.short_odin,cp.register,cp.admin ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odin_set,cp.validity from odins cp,transactions where cp.admin='"+address+"' and cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc;");
-    odins = new ArrayList<HashMap<String, Object>>();
-    try {
-      while ( rs.next()) {
-        HashMap<String,Object> map = new HashMap<String,Object>();
-        map.put("full_odin", rs.getString("full_odin"));
-        map.put("short_odin", rs.getString("short_odin"));
-        map.put("register", rs.getString("register"));
-        map.put("register_label", Util.getFriendlyAddressLabel(rs.getString("register")));
-        map.put("admin", rs.getString("admin"));
-        map.put("admin_label", Util.getFriendlyAddressLabel(rs.getString("admin")));
-        map.put("tx_index", rs.getString("tx_index"));
-        map.put("tx_hash", rs.getString("tx_hash"));
-        map.put("validity", rs.getString("validity"));
-        map.put("block_index", rs.getString("block_index"));
-        map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-        
-        try{
-          JSONObject odin_set = new JSONObject(rs.getString("odin_set")); 
-          map=Odin.parseOdinSet(map,odin_set,address,rs.getString("register"),rs.getString("admin"));
-          
-          odins.add(map);
-        }catch (Exception e) {
-          logger.error(e.toString());
-        }
-      }
-    } catch (SQLException e) {
-    }
+    int my_admin_odin_num = ODIN.getUserAdminNum(address);
+    attributes.put("my_admin_odin_num", my_admin_odin_num );
     
-    attributes.put("my_admin_odins", odins);
-    attributes.put("my_admin_odin_num", odins.size() );
+    if(my_admin_odin_num>0){
+        odins = ODIN.getUserRelatedODINs( address , false , 0 , 20 );
+        attributes.put("my_admin_odins", odins);
+    }
     
     //get my pending update
     List<OdinUpdateInfo> updatePending = OdinUpdate.getPending(address);
@@ -970,6 +1057,7 @@ public class GuiServer implements Runnable {
       map.put("block_index", updateOdinInfo.blockIndex.toString());
       map.put("block_time", Util.timeFormat(updateOdinInfo.blockTime));
       map.put("validity",updateOdinInfo.validity);
+      map.put("validity_label", Language.getLangLabel( updateOdinInfo.validity ));
 
       try{
         map=OdinUpdate.parseOdinUpdateSet(map,updateOdinInfo.updater,updateOdinInfo.destination,updateOdinInfo.updateSet);
@@ -980,95 +1068,23 @@ public class GuiServer implements Runnable {
     }
     attributes.put("my_pending_update_logs", odins);       
 
+    int new_awaiting_num=0;
     //get valid updates that awaiting my receipt or i'm awaiting another receipt
-    rs = db.executeQuery("select l.log_id,l.tx_index, l.block_index,l.updater,l.destination, l.update_set,l.validity,cp.full_odin,cp.short_odin,cp.register,cp.admin,transactions.block_time,transactions.tx_hash from odins cp,odin_update_logs l,transactions where l.validity='receipting' and l.full_odin=cp.full_odin and ( cp.register='"+address+"' or cp.admin='"+address+"' or l.destination='"+address+"') and l.tx_index=transactions.tx_index order by l.block_index desc, cp.tx_index desc limit 100;");
-    odins = new ArrayList<HashMap<String, Object>>();
-    try {
-      while ( rs.next()) {
-        HashMap<String,Object> map = new HashMap<String,Object>();
-        map.put("full_odin", rs.getString("full_odin"));
-        map.put("short_odin", rs.getString("short_odin"));
-        map.put("updater", rs.getString("updater"));
-        map.put("log_id", rs.getString("log_id"));
-        map.put("tx_index", rs.getString("tx_index"));
-        map.put("tx_hash", rs.getString("tx_hash"));
-        map.put("validity", rs.getString("validity"));
-        map.put("block_index", rs.getString("block_index"));
-        map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-        
-        try{
-          JSONObject update_set = new JSONObject(rs.getString("update_set")); 
-          map=OdinUpdate.parseOdinUpdateSet(map,rs.getString("updater"),rs.getString("destination"),update_set);
-
-          if(address.equals(rs.getString("destination")))
-              map.put("awaiting_my_receipting", true);
-
-          odins.add(map);
-        }catch (Exception e) {
-          logger.error(e.toString());
-        }
-      }
-    } catch (SQLException e) {
-    }
+    odins = ODIN.getUserUpdateLogs(address,Config.ODIN_UPDATE_STATUS_RECEIPTING,0,10);
     attributes.put("my_receipting_updates", odins);
+    new_awaiting_num += odins.size();
     
     //get valid updates that awaiting my confirm or i'm awaiting another confirm
-    rs = db.executeQuery("select l.log_id,l.tx_index, l.block_index,l.updater,l.destination, l.update_set,l.validity,cp.full_odin,cp.short_odin,cp.register,cp.admin,transactions.block_time,transactions.tx_hash from odins cp,odin_update_logs l,transactions where l.validity='awaiting' and l.full_odin=cp.full_odin and (l.updater='"+address+"' or l.required_confirmer='"+address+"') and ( cp.register='"+address+"' or cp.admin='"+address+"') and l.tx_index=transactions.tx_index order by l.block_index desc, cp.tx_index desc limit 100;");
-    odins = new ArrayList<HashMap<String, Object>>();
-    try {
-      while ( rs.next()) {
-        HashMap<String,Object> map = new HashMap<String,Object>();
-        map.put("full_odin", rs.getString("full_odin"));
-        map.put("short_odin", rs.getString("short_odin"));
-        map.put("updater", rs.getString("updater"));
-        map.put("log_id", rs.getString("log_id"));
-        map.put("tx_index", rs.getString("tx_index"));
-        map.put("tx_hash", rs.getString("tx_hash"));
-        map.put("validity", rs.getString("validity"));
-        map.put("block_index", rs.getString("block_index"));
-        map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-        
-        try{
-          JSONObject update_set = new JSONObject(rs.getString("update_set")); 
-          map=OdinUpdate.parseOdinUpdateSet(map,rs.getString("updater"),rs.getString("destination"),update_set);
-
-          if(!address.equals(rs.getString("updater")))
-              map.put("awaiting_my_confirm", true);
-
-          odins.add(map);
-        }catch (Exception e) {
-          logger.error(e.toString());
-        }
-      }
-    } catch (SQLException e) {
-    }
+    odins = ODIN.getUserUpdateLogs(address,Config.ODIN_UPDATE_STATUS_AWAITING,0,10);
     attributes.put("my_awaiting_updates", odins);
+    new_awaiting_num += odins.size();
+    
+    if(new_awaiting_num>0)
+        attributes.put("new_awaiting_num", new_awaiting_num);
+    
         
     //get my end update logs
-    rs = db.executeQuery("select l.tx_index, l.block_index,l.updater,l.destination, l.update_set,l.validity,cp.full_odin,cp.short_odin,cp.register,cp.admin,transactions.block_time,transactions.tx_hash from odins cp,odin_update_logs l,transactions where l.updater='"+address+"' and l.full_odin=cp.full_odin and (l.validity='valid' or l.validity='invalid') and l.tx_index=transactions.tx_index order by l.block_index desc, cp.tx_index desc limit 100;");
-    odins = new ArrayList<HashMap<String, Object>>();
-    try {
-      while ( rs.next()) {
-        HashMap<String,Object> map = new HashMap<String,Object>();
-        map.put("full_odin", rs.getString("full_odin"));
-        map.put("short_odin", rs.getString("short_odin"));
-        map.put("updater", rs.getString("updater"));
-        map.put("tx_index", rs.getString("tx_index"));
-        map.put("tx_hash", rs.getString("tx_hash"));
-        map.put("validity", rs.getString("validity"));
-        map.put("block_index", rs.getString("block_index"));
-        map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-        
-        try{
-          JSONObject update_set = new JSONObject(rs.getString("update_set")); 
-          map=OdinUpdate.parseOdinUpdateSet(map,rs.getString("updater"),rs.getString("destination"),update_set);
-          odins.add(map);
-        }catch (Exception e) {
-          logger.error(e.toString());
-        }
-      }
-    } catch (SQLException e) {
-    }
+    odins = ODIN.getUserUpdateLogs(address,"history",0,10);
     attributes.put("my_update_logs", odins);
     
     attributes.put("LANG_REGIST_NEW_ODIN", Language.getLangLabel("Registe a new ODIN"));
@@ -1095,13 +1111,148 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_STATUS", Language.getLangLabel("Status"));
     attributes.put("LANG_UPDATE_DESC", Language.getLangLabel("Update description"));
     
-    attributes.put("LANG_PENDING", Language.getLangLabel("Pending"));
-    attributes.put("LANG_VALID", Language.getLangLabel("valid"));    
+    attributes.put("LANG_PENDING", Language.getLangLabel(Config.ODIN_STATUS_PENDING));
+    attributes.put("LANG_VALID", Language.getLangLabel(Config.ODIN_STATUS_VALID));    
+    attributes.put("LANG_UPDATE", Language.getLangLabel("Update"));      
+    attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
+    attributes.put("LANG_AWAIT_YOUR_CONFIRM", Language.getLangLabel("Awaiting your confirm"));  
+    attributes.put("LANG_AWAIT_YOUR_RECEIPT", Language.getLangLabel("Awaiting your receipt"));  
+    attributes.put("LANG_SUBMIT_TIME", Language.getLangLabel("Submit time"));
+    attributes.put("LANG_UPDATER", Language.getLangLabel("Updater"));
+    
+    attributes.put("LANG_MORE_LIST", Language.getLangLabel("More list"));
+    attributes.put("LANG_ASK_TO_CONFIRM_THIS_UPDATE", Language.getLangLabel("Are you sure to confirm this update?"));
+    
+    
+    return attributes;
+  }
+  
+  public Map<String, Object> handleOdinMoreListRequest(Request request) {
+    Map<String, Object> attributes = new HashMap<String, Object>();
+    request.session(true);
+    attributes = updateCommonStatus(request, attributes);
+    attributes.put("title", "OdinMoreList");
+    
+    int page_start = Integer.parseInt(request.queryParams("start"));
+    if(page_start<0)
+        page_start = 0;
+    
+    int page_size = Integer.parseInt(request.queryParams("size"));
+    if(page_size<=0)
+        page_size = 20;
+
+    String address = (String)attributes.get("address");
+    String query_type = request.queryParams("query");
+    
+    String more_list_title = Language.getLangLabel( 
+            "myregistered".equals(query_type)  ? "My registed ODINs" : "My admin ODINs"
+        );
+        
+    int my_odin_num = "myregistered".equals(query_type) 
+                            ? ODIN.getUserRegisteredNum(address)
+                            : ODIN.getUserAdminNum(address);
+    attributes.put("my_odin_num", my_odin_num );
+    
+    if(my_odin_num>0){
+        ArrayList<HashMap<String, Object>> odins 
+                    = ODIN.getUserRelatedODINs(
+                            address,
+                            query_type == "myregistered",
+                            page_start,
+                            page_size
+                       );
+        
+        if(odins==null){
+            attributes.put("error", "handleOdinUpdateLogListRequest: invalid query.");
+            return attributes;
+        }
+        
+        attributes.put("my_odins", odins);
+        attributes.put("list_navi_html", Util.getListNaviHtml("odin-more-list?query="+query_type,page_start,page_size,my_odin_num));
+    }
+    
+    attributes.put("more_list_title", more_list_title);
+
+    attributes.put("LANG_FULL_ODIN", Language.getLangLabel("Full ODIN"));
+    attributes.put("LANG_SHORT_ODIN", Language.getLangLabel("SN"));
+    attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+    attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
+    attributes.put("LANG_ADMIN_REGISTER", Language.getLangLabel("Admin/Register"));
+    attributes.put("LANG_ADMIN_BY", Language.getLangLabel("Admin by"));
+    attributes.put("LANG_REGISTED_BY", Language.getLangLabel("Registed by"));
+    attributes.put("LANG_AP_LIST", Language.getLangLabel("Access Point"));
+    attributes.put("LANG_STATUS", Language.getLangLabel("Status"));
+    attributes.put("LANG_UPDATE_DESC", Language.getLangLabel("Update description"));
+    
+    attributes.put("LANG_PENDING", Language.getLangLabel(Config.ODIN_STATUS_PENDING));
+    attributes.put("LANG_VALID", Language.getLangLabel(Config.ODIN_STATUS_VALID));    
     attributes.put("LANG_UPDATE", Language.getLangLabel("Update"));      
     attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
     attributes.put("LANG_AWAIT_YOUR_CONFIRM", Language.getLangLabel("Awaiting your confirm"));  
     attributes.put("LANG_AWAIT_YOUR_RECEIPT", Language.getLangLabel("Awaiting your receipt"));  
     
+    attributes.put("LANG_SUBMIT_TIME", Language.getLangLabel("Submit time"));
+    attributes.put("LANG_UPDATER", Language.getLangLabel("Updater"));
+    
+    return attributes;
+  }
+
+  public Map<String, Object> handleOdinUpdateLogListRequest(Request request) {
+    Map<String, Object> attributes = new HashMap<String, Object>();
+    request.session(true);
+    attributes = updateCommonStatus(request, attributes);
+    attributes.put("title", "OdinUpdateLogList");
+
+    int page_start = Integer.parseInt(request.queryParams("start"));
+    if(page_start<0)
+        page_start = 0;
+    
+    int page_size = Integer.parseInt(request.queryParams("size"));
+    if(page_size<=0)
+        page_size = 20;
+
+    String address=(String)attributes.get("address");
+    
+    int my_update_num = ODIN.getUserUpdateNum(address);
+    attributes.put("my_update_num", my_update_num );
+    
+    if(my_update_num>0){
+        ArrayList<HashMap<String, Object>> updates 
+            = ODIN.getUserUpdateLogs(address,"all",page_start,page_size);
+
+        if(updates==null){
+            attributes.put("error", "handleOdinUpdateLogListRequest: invalid query.");
+            return attributes;
+        }
+        
+        attributes.put("my_updates", updates);
+        attributes.put("list_navi_html", Util.getListNaviHtml("odin-update-list?",page_start,page_size,my_update_num));
+    }
+    
+    attributes.put("more_list_title", Language.getLangLabel("My update logs"));
+
+    attributes.put("LANG_FULL_ODIN", Language.getLangLabel("Full ODIN"));
+    attributes.put("LANG_SHORT_ODIN", Language.getLangLabel("SN"));
+    attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+    attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
+    attributes.put("LANG_ADMIN_REGISTER", Language.getLangLabel("Admin/Register"));
+    attributes.put("LANG_ADMIN_BY", Language.getLangLabel("Admin by"));
+    attributes.put("LANG_REGISTED_BY", Language.getLangLabel("Registed by"));
+    attributes.put("LANG_AP_LIST", Language.getLangLabel("Access Point"));
+    attributes.put("LANG_STATUS", Language.getLangLabel("Status"));
+    attributes.put("LANG_UPDATE_DESC", Language.getLangLabel("Update description"));
+    
+    attributes.put("LANG_PENDING", Language.getLangLabel(Config.ODIN_STATUS_PENDING));
+    attributes.put("LANG_VALID", Language.getLangLabel(Config.ODIN_STATUS_VALID));    
+    attributes.put("LANG_UPDATE", Language.getLangLabel("Update"));      
+    attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
+    attributes.put("LANG_AWAIT_YOUR_CONFIRM", Language.getLangLabel("Awaiting your confirm"));  
+    attributes.put("LANG_AWAIT_YOUR_RECEIPT", Language.getLangLabel("Awaiting your receipt"));  
+    
+    attributes.put("LANG_SUBMIT_TIME", Language.getLangLabel("Submit time"));
+    attributes.put("LANG_UPDATER", Language.getLangLabel("Updater"));
+    
+    attributes.put("LANG_ASK_TO_CONFIRM_THIS_UPDATE", Language.getLangLabel("Are you sure to confirm this update?"));
     
     return attributes;
   }
@@ -1121,31 +1272,41 @@ public class GuiServer implements Runnable {
        
     String address=(String)attributes.get("address");
     
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    OdinInfo odinInfo=ODIN.getOdinInfo(odin);
 
     if(odinInfo==null){
       attributes.put("error", "handleOdinUpdateRequest Invalid odin.");
-    } else {  
-      HashMap<String,Object> map = new HashMap<String,Object>();
-      map.put("full_odin", odinInfo.fullOdin);
-      map.put("short_odin", odinInfo.shortOdin.toString());
-      map.put("register", odinInfo.register);
-      map.put("admin", odinInfo.admin);
-      map.put("tx_index",odinInfo.txIndex.toString());
-      map.put("tx_hash", odinInfo.txHash);
-      map.put("block_index", odinInfo.blockIndex.toString());
-      map.put("block_time", Util.timeFormat(odinInfo.blockTime));
-      map.put("validity",odinInfo.validity);
-      
-      try{
+      return attributes;
+    } 
+    
+    HashMap<String,Object> map = new HashMap<String,Object>();
+    map.put("full_odin", odinInfo.fullOdin);
+    map.put("short_odin", odinInfo.shortOdin.toString());
+    map.put("register", odinInfo.register);
+    map.put("admin", odinInfo.admin);
+    map.put("tx_index",odinInfo.txIndex.toString());
+    map.put("tx_hash", odinInfo.txHash);
+    map.put("block_index", odinInfo.blockIndex.toString());
+    map.put("block_time", Util.timeFormat(odinInfo.blockTime));
+    map.put("validity",odinInfo.validity);
+    map.put("validity_label", Language.getLangLabel( odinInfo.validity ));
+
+    try{
         JSONObject odin_set = odinInfo.odinSet; 
-        map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
+        map=ODIN.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
+
+        if(! ( map.containsKey("me_updatable") && (boolean)map.get("me_updatable") ) ){
+            attributes.put("error", "handleOdinUpdateRequest: no right to update.");
+            return attributes;
+        } 
 
         attributes.put("odin", map);    
-      }catch (Exception e) {
+    }catch (Exception e) {
         logger.error(e.toString());
-      }
-    }          
+        attributes.put("error", "handleOdinUpdateRequest: meet exception. ");
+        return attributes;
+    }
+         
     
     attributes.put("LANG_UPDATE_THE_ADMIN_SET_OF", Language.getLangLabel("Update the admin set of"));
 
@@ -1154,9 +1315,11 @@ public class GuiServer implements Runnable {
     
     attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
     attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
+    attributes.put("LANG_THE_PNS_URL_FOR", Language.getLangLabel("The URL of custom Peer Naming Service"));
     attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
     attributes.put("LANG_ODIN_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
     attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+    attributes.put("LANG_PNS", Language.getLangLabel("Peer Naming Service"));  
     attributes.put("LANG_ODIN_AUTHORITY", Language.getLangLabel("Authority"));    
     attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
@@ -1188,19 +1351,21 @@ public class GuiServer implements Runnable {
         attributes.put("error", "handleOdinUpdateApSetRequest: no odin.");
         return attributes;
     } 
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    OdinInfo odinInfo=ODIN.getOdinInfo(odin);
     if(odinInfo==null){
       attributes.put("error", "handleOdinUpdateApSetRequest Invalid odin.");
     } else {  
-        HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
+        HashMap<String,Object> map = ODIN.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
         attributes.put("odin", map);    
     }          
     
     attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
     attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
+    attributes.put("LANG_THE_PNS_URL_FOR", Language.getLangLabel("The URL of custom Peer Naming Service"));
     attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
     attributes.put("LANG_ODIN_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
     attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+    attributes.put("LANG_PNS", Language.getLangLabel("Peer Naming Service"));  
     attributes.put("LANG_ODIN_AUTHORITY", Language.getLangLabel("Authority"));    
     attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
@@ -1242,23 +1407,23 @@ public class GuiServer implements Runnable {
     attributes.put("apid", tmp_apid);  
     
     
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    OdinInfo odinInfo=ODIN.getOdinInfo(odin);
     if(odinInfo==null){
       attributes.put("error", "handleOdinEditApRequest Invalid odin.");
     } else {  
-      HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
+      HashMap<String,Object> map = ODIN.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
       
       try{
         String old_ap_url=request.queryParams("old_ap_url");
         if(old_ap_url!=null && old_ap_url.length()>0){
             try{
-                String str_ap_resp_json=Util.fetchURI(old_ap_url);
-                JSONObject obj_ap_resp=PPkURI.parseRespOfPTTP(old_ap_url,str_ap_resp_json,null);
-                if(obj_ap_resp!=null){
-                    int status_code =  obj_ap_resp.getInt("status_code");
-                    byte[] old_page_content= (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) ;
+                String req_uri = Config.PPK_URI_PREFIX + odinInfo.shortOdin + Config.PPK_URI_RESOURCE_MARK;
+                JSONObject obj_decoded_resp=PTTP.fetchAndValidationAP(req_uri,null,old_ap_url,null);
+                if(obj_decoded_resp!=null){
+                    int status_code =  obj_decoded_resp.getInt(Config.PTTP_KEY_STATUS_CODE);
+                    byte[] old_page_content= (byte[])obj_decoded_resp.opt(Config.JSON_KEY_CHUNK_BYTES) ;
                     if(old_page_content!=null){
-                        if(status_code==200)
+                        if(status_code==Config.PTTP_STATUS_CODE_OK)
                             attributes.put("old_page_content", new String(old_page_content));
                         else
                             attributes.put("old_page_content", ""+status_code+" "+(new String(old_page_content)));
@@ -1271,6 +1436,10 @@ public class GuiServer implements Runnable {
         } 
         
         attributes.put("odin", map);    
+        
+        //默认用短标识作为应答URI
+        String sample_resp_uri =  Config.PPK_URI_PREFIX + odinInfo.shortOdin + "/" + Config.PPK_URI_RESOURCE_MARK;// + Util.getNowTimestamp();
+        attributes.put("sample_resp_uri", sample_resp_uri);    
       }catch (Exception e) {
         logger.error(e.toString());
       }
@@ -1286,16 +1455,19 @@ public class GuiServer implements Runnable {
 
     attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
     attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
+    attributes.put("LANG_THE_PNS_URL_FOR", Language.getLangLabel("The URL of custom Peer Naming Service"));
     attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
     attributes.put("LANG_ODIN_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
     attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+    attributes.put("LANG_PNS", Language.getLangLabel("Peer Naming Service"));  
     attributes.put("LANG_ODIN_AUTHORITY", Language.getLangLabel("Authority"));    
     attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
     attributes.put("LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and admin must update together"));
+    attributes.put("LANG_URI", Language.getLangLabel("URI"));
     attributes.put("LANG_NEXT", Language.getLangLabel("Next"));
     attributes.put("LANG_PRIVATE_KEY", Language.getLangLabel("Private key"));
-    attributes.put("LANG_ALGORITHM", Language.getLangLabel("Algorithm"));
+    attributes.put("LANG_VD_TYPE", Language.getLangLabel("Encode type"));
     attributes.put("LANG_THE_PRIVATE_KEY_FOR_SIGN_PAGE", Language.getLangLabel("The private key for signing the page."));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
@@ -1328,12 +1500,12 @@ public class GuiServer implements Runnable {
     attributes.put("apid", tmp_apid);  
     
     
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    OdinInfo odinInfo=ODIN.getOdinInfo(odin);
     if(odinInfo==null){
       attributes.put("error", "handleOdinSignApRequest Invalid odin.");
     } else {  
       try{
-        HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
+        HashMap<String,Object> map = ODIN.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
 
         if(!map.containsKey("me_updatable")){
             throw new Exception(Language.getLangLabel("No permission."));
@@ -1346,7 +1518,7 @@ public class GuiServer implements Runnable {
         tmp_page_content_encoded=new String(Util.hexStringToBytes(tmp_page_content_encoded),Config.PPK_TEXT_CHARSET);
         String chunk_content=java.net.URLDecoder.decode(tmp_page_content_encoded, "UTF-8");
         String content_type="text/html";
-        int status_code=200;
+        int status_code=Config.PTTP_STATUS_CODE_OK;
         String status_info="OK";
         
         if(chunk_content.startsWith("302 ")){
@@ -1356,37 +1528,63 @@ public class GuiServer implements Runnable {
             status_info="Moved Temporarily";
         }
         
-        String sample_ppk_uri =  Config.PPK_URI_PREFIX + odinInfo.fullOdin +"/#" + Util.getNowTimestamp();
-        System.out.println("sample_ppk_uri="+sample_ppk_uri);
-
-        JSONObject obj_chunk_metainfo=new JSONObject();
-        obj_chunk_metainfo.put("chunk_index", 0 );
-        obj_chunk_metainfo.put("chunk_count", 1 );
-        obj_chunk_metainfo.put("content_type", content_type  );
-        obj_chunk_metainfo.put("content_length", chunk_content.length()  );
-
-        JSONObject obj_newest_ap_chunk=new JSONObject();
-        obj_newest_ap_chunk.put("uri",sample_ppk_uri);
-        obj_newest_ap_chunk.put("status_code",status_code);
-        obj_newest_ap_chunk.put("status_info","OK");
-
-        obj_newest_ap_chunk.put("metainfo",obj_chunk_metainfo);
-        obj_newest_ap_chunk.put("content",chunk_content);
-
-        String ap_chunk_str=obj_newest_ap_chunk.toString();
-        attributes.put("ap_chunk", ap_chunk_str);
+        String sample_resp_uri =  request.queryParams("sample_resp_uri");
         
-        //if(!Blocks.bRemoteWalletMode){  //本地钱包模式
-            //系统为用户自动产生一对RSA公私钥供选用
-            JSONObject keyMap=Util.getRSAKeys(odinInfo.fullOdin,true,true);
-          
-            String publicKey = RSACoder.getPublicKey(keyMap);  
-            String privateKey = RSACoder.getPrivateKey(keyMap);            
+        if(sample_resp_uri==null || sample_resp_uri.length()==0)
+            sample_resp_uri = Config.PPK_URI_PREFIX + odinInfo.shortOdin +"/"+Config.PPK_URI_RESOURCE_MARK;// + Util.getNowTimestamp();
+        
+        System.out.println("sample_resp_uri="+sample_resp_uri);
 
-            attributes.put("new_vd_set_pubkey", publicKey);
-            attributes.put("new_vd_set_prvkey", privateKey);
-        //}
-        attributes.put("new_vd_set_algo", RSACoder.DEFAULT_SIGNATURE_ALGORITHM);
+        JSONObject obj_data_metainfo=new JSONObject();
+        obj_data_metainfo.put(Config.PTTP_KEY_STATUS_CODE,status_code);
+        obj_data_metainfo.put(Config.PTTP_KEY_STATUS_DETAIL,"OK");
+        obj_data_metainfo.put(Config.PTTP_KEY_CONTENT_TYPE, content_type  );
+        obj_data_metainfo.put(Config.PTTP_KEY_CONTENT_LENGTH, chunk_content.length()  );
+        //obj_data_metainfo.put("chunk_index", 0 );
+        //obj_data_metainfo.put("chunk_count", 1 );
+        
+
+        JSONObject obj_newest_ap_data=new JSONObject();
+        
+        obj_newest_ap_data.put(Config.PTTP_KEY_VER,Config.PTTP_PROTOCOL_VER);
+        obj_newest_ap_data.put(Config.PTTP_KEY_URI,sample_resp_uri);
+        obj_newest_ap_data.put(Config.PTTP_KEY_METAINFO,obj_data_metainfo.toString() );
+        obj_newest_ap_data.put(Config.PTTP_KEY_CONTENT,chunk_content);
+       
+        String sign_spec=Config.PTTP_KEY_SPEC_NONE;
+        String vd_set_pubkey="";
+        String vd_set_prvkey="";
+        String vd_set_type="";
+        
+        //判断用户是否配置了验证参数
+        JSONObject vd_set =  odinInfo.odinSet.optJSONObject("vd_set");
+        if(vd_set!=null){
+            vd_set_pubkey = vd_set.optString("pubkey","");
+            vd_set_type = vd_set.optString(Config.ODIN_SET_VD_TYPE,Config.ODIN_SET_VD_ENCODE_TYPE_PEM) ;
+            
+            if(vd_set_pubkey.length()>0){
+                sign_spec = Config.PTTP_KEY_SPEC_PAST+Config.PTTP_KEY_SPEC_PAST_HEADER_V1_PUBLIC;
+                
+                //获取已生成的RSA公私钥
+                JSONObject keyMap=Util.getRSAKeys(odinInfo.fullOdin,false,true);
+                if(keyMap!=null){ 
+                    String local_vd_set_pubkey = RSACoder.getPublicKey(keyMap);
+                    
+                    if(vd_set_pubkey.equals(local_vd_set_pubkey)){
+                        //链上登记的公钥和本地保存的公钥一致时，本地保存的私钥才有效
+                        vd_set_prvkey = RSACoder.getPrivateKey(keyMap);
+                    }
+                }
+            }
+        }
+
+        obj_newest_ap_data.put(Config.PTTP_KEY_SPEC,sign_spec);
+        attributes.put("ap_data_no_sign", obj_newest_ap_data.toString());
+        
+        attributes.put("sign_spec", sign_spec);
+        attributes.put("vd_set_pubkey", vd_set_pubkey);
+        attributes.put("vd_set_prvkey", vd_set_prvkey);
+        attributes.put("vd_set_type",vd_set_type);
 
         attributes.put("odin", map);    
       }catch (Exception e) {
@@ -1405,9 +1603,11 @@ public class GuiServer implements Runnable {
 
     attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
     attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
+    attributes.put("LANG_THE_PNS_URL_FOR", Language.getLangLabel("The URL of custom Peer Naming Service"));
     attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
     attributes.put("LANG_ODIN_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
     attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+    attributes.put("LANG_PNS", Language.getLangLabel("Peer Naming Service"));  
     attributes.put("LANG_ODIN_AUTHORITY", Language.getLangLabel("Authority"));    
     attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
     attributes.put("LANG_ONLY_THE_ADMIN_CAN_UPDATE", Language.getLangLabel("Only the admin can update"));
@@ -1415,8 +1615,9 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_SUBMIT_TO_UPDATE", Language.getLangLabel("Submit to update"));
     attributes.put("LANG_PRIVATE_KEY", Language.getLangLabel("Private key"));
     attributes.put("LANG_PUBLIC_KEY", Language.getLangLabel("Public key"));
-    attributes.put("LANG_ALGORITHM", Language.getLangLabel("Algorithm"));
+    attributes.put("LANG_VD_TYPE", Language.getLangLabel("Encode type"));
     attributes.put("LANG_THE_PRIVATE_KEY_FOR_SIGN_PAGE", Language.getLangLabel("The private key for signing the page."));
+    attributes.put("LANG_PTTP_SPECIFICATION", Language.getLangLabel("Specification"));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
     attributes.put("LANG_UPDATE_BASEINFO", Language.getLangLabel("Update base info")); 
@@ -1441,29 +1642,31 @@ public class GuiServer implements Runnable {
         attributes.put("error", "handleOdinUpdateVdSetRequest: no odin.");
         return attributes;
     } 
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    OdinInfo odinInfo=ODIN.getOdinInfo(odin);
 
     if(odinInfo==null){
       attributes.put("error", "handleOdinUpdateApSetRequest Invalid odin.");
     } else {  
       try{
-        HashMap<String,Object> map = Odin.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
+        HashMap<String,Object> map = ODIN.parseOdinSet(odinInfo,address,odinInfo.register,odinInfo.admin);
 
+        attributes.put("odin", map);    
+        
         //if(!Blocks.bRemoteWalletMode){  //本地钱包模式
-            //系统为用户自动产生一对RSA公私钥供选用
-            JSONObject keyMap=Util.getRSAKeys(odinInfo.fullOdin,true,true);
-          
-            String publicKey = RSACoder.getPublicKey(keyMap);  
-            String privateKey = RSACoder.getPrivateKey(keyMap);            
+        //系统为用户自动产生一对RSA公私钥供选用
+        JSONObject keyMap=Util.getRSAKeys(odinInfo.fullOdin,true,true);
+      
+        String publicKeyPEM = RSACoder.getPublicKey(keyMap);  
+        String privateKeyPEM = RSACoder.getPrivateKey(keyMap);            
 
-            
-            attributes.put("new_vd_set_pubkey", publicKey);
-            attributes.put("new_vd_set_prvkey", privateKey);
+        
+        attributes.put("new_vd_set_pubkey", publicKeyPEM);
+        attributes.put("new_vd_set_prvkey", privateKeyPEM);
         //}
         
-        attributes.put("new_vd_set_algo", RSACoder.DEFAULT_SIGNATURE_ALGORITHM);
+        attributes.put("new_vd_set_type", Config.ODIN_SET_VD_ENCODE_TYPE_PEM);
         
-        attributes.put("odin", map);    
+        
       }catch (Exception e) {
         logger.error(e.toString());
       }
@@ -1473,7 +1676,7 @@ public class GuiServer implements Runnable {
 
     attributes.put("LANG_CURRENT_VALIDTION_SETTING", Language.getLangLabel("Current Validtion Setting"));
     attributes.put("LANG_URI", Language.getLangLabel("URI"));
-    attributes.put("LANG_ALGORITHM", Language.getLangLabel("Algorithm"));
+    attributes.put("LANG_VD_TYPE", Language.getLangLabel("Encode type"));
     attributes.put("LANG_PUBLIC_KEY", Language.getLangLabel("Public key"));
     attributes.put("LANG_PRIVATE_KEY", Language.getLangLabel("Private key"));
     attributes.put("LANG_YOU_CAN_GENERATE_THE_PUBLIC_KEY_BY_YOURSELF", Language.getLangLabel("You can generate the public key by yourself and save it to a trusted storage service on the network, then fill its resource URI here."));
@@ -1511,7 +1714,7 @@ public class GuiServer implements Runnable {
       attributes.put("error", "handleOdinTransRequest : no odin.");
       return attributes;
     } 
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    OdinInfo odinInfo=ODIN.getOdinInfo(odin);
 
     if(odinInfo==null){
       attributes.put("error", "handleOdinTransRequest : Invalid odin.");
@@ -1521,10 +1724,11 @@ public class GuiServer implements Runnable {
       map.put("short_odin", odinInfo.shortOdin.toString());
       map.put("register", odinInfo.register);
       map.put("validity",odinInfo.validity);
+      map.put("validity_label", Language.getLangLabel( odinInfo.validity ));
       
       try{
         JSONObject odin_set = odinInfo.odinSet; 
-        map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
+        map=ODIN.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
 
         attributes.put("odin", map);    
       }catch (Exception e) {
@@ -1558,7 +1762,7 @@ public class GuiServer implements Runnable {
     Blocks blocks = Blocks.getInstance();
     String address=(String)attributes.get("address");
     
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    OdinInfo odinInfo=ODIN.getOdinInfo(odin);
 
     if(odinInfo==null){
       attributes.put("error", "handleOdinDetailRequest: Invalid odin.");
@@ -1575,18 +1779,27 @@ public class GuiServer implements Runnable {
     map.put("block_index", odinInfo.blockIndex.toString());
     map.put("block_time", Util.timeFormat(odinInfo.blockTime));
     map.put("validity",odinInfo.validity);
-    
-    map.put("escaped_list_debug", Odin.getEscapedListOfShortODIN(odinInfo.shortOdin).toString());
+    map.put("validity_label", Language.getLangLabel( odinInfo.validity ));
+
+    map.put("escaped_list_debug", ODIN.getEscapedListOfShortODIN(odinInfo.shortOdin).toString());
     
     try{
       String awaiting_update_log_id=request.queryParams("awaiting_update_log_id");
       
-      JSONObject odin_set = odinInfo.odinSet; 
-      map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
+      JSONObject odin_set = odinInfo.odinSet;  
+      map=ODIN.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
       attributes.put("odin", map);   
       
+      String pns_url = odin_set.optString(Config.ODIN_BASE_SET_PNS_URL,"").trim();
+      if(pns_url.length()>0){
+        //设置了有效的标识托管服务
+        String test_uri = "ppk:"+odinInfo.shortOdin+Config.PPK_URI_RESOURCE_MARK;
+        //attributes.put("test_pns_url", "/?go="+ test_uri );
+        attributes.put("test_pns_url", pns_url+"?pttp="+ test_uri );        
+      }
+      
       //get valid updates that awaiting my confirm or receipt 
-      String sql_str="select l.log_id from odins cp,odin_update_logs l where  (cp.full_odin='"+odin+"' or cp.short_odin='"+odin+"')  AND ( ( l.validity='awaiting' and l.full_odin=cp.full_odin and l.required_confirmer='"+address+"' and (cp.register=l.required_confirmer or cp.admin=l.required_confirmer ) ) or (l.validity='receipting' and l.full_odin=cp.full_odin and  l.destination='"+address+"') ) ";
+      String sql_str="select l.log_id from odins cp,odin_update_logs l where  (cp.full_odin='"+odin+"' or cp.short_odin='"+odin+"')  AND ( ( l.validity='"+Config.ODIN_UPDATE_STATUS_AWAITING+"' and l.full_odin=cp.full_odin and l.required_confirmer='"+address+"' and (cp.register=l.required_confirmer or cp.admin=l.required_confirmer ) ) or (l.validity='"+Config.ODIN_UPDATE_STATUS_RECEIPTING+"' and l.full_odin=cp.full_odin and  l.destination='"+address+"') ) ";
       
       if(awaiting_update_log_id!=null) //指定某条更新记录
         sql_str+=" and l.log_id='"+awaiting_update_log_id+"'";
@@ -1603,8 +1816,10 @@ public class GuiServer implements Runnable {
         int sn=0;
         while ( rs.next()) {
           awaiting_update_log_id = rs.getString("log_id");
-          System.out.println("update_log_id="+awaiting_update_log_id);
-          OdinUpdateInfo updateOdinInfo=OdinUpdate.getOdinUpdateInfo(awaiting_update_log_id);
+          //System.out.println("update_log_id="+awaiting_update_log_id);
+          OdinUpdateInfo updateOdinInfo=
+                        OdinUpdate.getOdinUpdateInfo(awaiting_update_log_id);
+
           if(updateOdinInfo!=null && updateOdinInfo.updateSet!=null){
             HashMap<String,Object> map_log = new HashMap<String,Object>();
             
@@ -1614,18 +1829,19 @@ public class GuiServer implements Runnable {
             map_log.put("block_time", Util.timeFormat(updateOdinInfo.blockTime));
             map_log.put("updater", updateOdinInfo.updater);
             map_log.put("destination", updateOdinInfo.destination);
-           
-            map_log=OdinUpdate.parseOdinUpdateSet(map_log,updateOdinInfo.updater,updateOdinInfo.destination,updateOdinInfo.updateSet);
             
+            map_log=OdinUpdate.parseOdinUpdateSet(map_log,updateOdinInfo.updater,updateOdinInfo.destination,updateOdinInfo.updateSet);
+
             update_logs.add(map_log);
             
             sn++;
+            
           }else{
-            System.out.println("meet invalid update log:"+awaiting_update_log_id);
+            logger.error("meet invalid update log:"+awaiting_update_log_id);
           }
         }
-        
-        System.out.println("update_logs.size()="+update_logs.size());
+
+        //System.out.println("update_logs.size()="+update_logs.size());
         if(update_logs.size()>0){
           attributes.put("awaiting_update_log_num", update_logs.size());
           attributes.put("awaiting_update_logs", update_logs);
@@ -1643,6 +1859,9 @@ public class GuiServer implements Runnable {
 
     attributes.put("LANG_CONFIRM_THE_BELOW_UPDATE_OF", Language.getLangLabel("Confirm the below update of"));
     attributes.put("LANG_VIEW_THE_DETAIL_OF", Language.getLangLabel("View the detail of"));
+    attributes.put("LANG_SELL_IT", Language.getLangLabel("Sell it"));
+    attributes.put("LANG_WANT_IT", Language.getLangLabel("Want it"));
+    attributes.put("ppk_auction_tool_uri", Config.ppkSwapToolURI);
 
     attributes.put("LANG_ODIN_ADMIN_ADDRESS", Language.getLangLabel("Admin BTC address"));
     attributes.put("LANG_ODIN_REGISTER_ADDRESS", Language.getLangLabel("Register BTC address"));
@@ -1651,9 +1870,11 @@ public class GuiServer implements Runnable {
     
     attributes.put("LANG_ODIN_TITLE", Language.getLangLabel("ODIN title"));
     attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the admin"));
+    attributes.put("LANG_THE_PNS_URL_FOR", Language.getLangLabel("The URL of custom Peer Naming Service"));
     attributes.put("LANG_ODIN_AP", Language.getLangLabel("Access Point"));
     attributes.put("LANG_ODIN_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
     attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+    attributes.put("LANG_PNS", Language.getLangLabel("Peer Naming Service"));  
     attributes.put("LANG_ODIN_AUTHORITY", Language.getLangLabel("Authority"));  
     attributes.put("LANG_ODIN_VALIDTION", Language.getLangLabel("Validtion"));  
     attributes.put("LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE", Language.getLangLabel("The register or admin can update"));
@@ -1666,11 +1887,23 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_SUBMIT_TO_CREATE_FIRST_AP", Language.getLangLabel("Create your first AP sample based distributed system like Blockchain ..."));
     
     attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
-    attributes.put("LANG_CONFIRM_THE_UPDATE", Language.getLangLabel("Confirm this update")); 
+    attributes.put("LANG_CONFIRM_THE_UPDATES", Language.getLangLabel("Confirm the updates")); 
     attributes.put("LANG_UPDATE", Language.getLangLabel("Update"));          
-    attributes.put("LANG_BROWSE_AP", Language.getLangLabel("Browse the Aeccss Point"));      
+    attributes.put("LANG_TEST_RESOLVE_PNS", Language.getLangLabel("Test PNS Resolve"));    
+    attributes.put("LANG_PNS_DISABLED", Language.getLangLabel("PNS disabled"));   
+    attributes.put("LANG_ENABLE_PNS", Language.getLangLabel("Enable PNS"));       
+    attributes.put("LANG_VIEW_PNS_HOMEPAGE", Language.getLangLabel("View the PNS homepage"));    
+    attributes.put("PLEASE_SET_AP_ON_PNS", Language.getLangLabel("Please set AP on the PNS platform after enabled PNS.The AP setting below exists on BTC blockchain and only for reserved."));        
+    
+    attributes.put("LANG_BROWSE_AP", Language.getLangLabel("Browse the Access Point"));      
     attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
     attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+    attributes.put("LANG_SUBMIT_TIME", Language.getLangLabel("Submit time"));
+    attributes.put("LANG_UPDATER", Language.getLangLabel("Updater"));
+    attributes.put("LANG_BLOCK", Language.getLangLabel("Block"));
+    attributes.put("LANG_UPDATE_SETTING", Language.getLangLabel("Update setting"));
+
+    attributes.put("LANG_ASK_TO_CONFIRM_ALL_UPDATES", Language.getLangLabel("Are you sure to confirm all updates?"));
         
     return attributes;
   }
@@ -1687,12 +1920,12 @@ public class GuiServer implements Runnable {
         attributes.put("matched_result", "handleOdinMatchRequest : no word.");
     } 
     
-    String matched_odin=Odin.convertLetterToNumberInRootODIN(input_word);
+    String matched_odin=ODIN.convertLetterToNumberInRootODIN(input_word);
     
     if(matched_odin==null){
       attributes.put("matched_result", Language.getLangLabel("No matched ODIN for the word!"));
     }else{
-      OdinInfo odinInfo=Odin.getOdinInfo(matched_odin);
+      OdinInfo odinInfo=ODIN.getOdinInfo(matched_odin);
       if(odinInfo==null){
         attributes.put("matched_result", Language.getLangLabel("Matched ODIN")+"["+matched_odin+"]. "+Language.getLangLabel("The ODIN not appeared")  );
       }else{
@@ -1729,7 +1962,7 @@ public class GuiServer implements Runnable {
     Blocks blocks = Blocks.getInstance();
     String address=(String)attributes.get("address");
     
-    OdinInfo odinInfo=Odin.getOdinInfo(odin);
+    OdinInfo odinInfo=ODIN.getOdinInfo(odin);
 
     if(odinInfo==null){
       attributes.put("error", "handleOdinCheckApVdRequest Invalid odin.");
@@ -1746,20 +1979,23 @@ public class GuiServer implements Runnable {
     map.put("block_index", odinInfo.blockIndex.toString());
     map.put("block_time", Util.timeFormat(odinInfo.blockTime));
     map.put("validity",odinInfo.validity);
+    map.put("validity_label", Language.getLangLabel( odinInfo.validity ));
     
     try{
       JSONObject odin_set = odinInfo.odinSet; 
-      map=Odin.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
+      map=ODIN.parseOdinSet(map,odin_set,address,odinInfo.register,odinInfo.admin);
       attributes.put("odin", map);
       
       String ap_url=(String)map.get("ap"+apid+"_url");
       
-      String vd_set_algo=(String)map.get("vd_set_algo");
+      String vd_set_type=(String)map.get("vd_set_type");
       String vd_set_pubkey=(String)map.get("vd_set_pubkey");
+      
+      String req_uri=Config.PPK_URI_PREFIX+odinInfo.shortOdin+"/"+Config.PPK_URI_RESOURCE_MARK;
 
-      JSONObject obj_ap_resp=PPkURI.fetchAndValidationAP(
-            Config.PPK_URI_PREFIX+odinInfo.fullOdin+"/",
-            odinInfo.fullOdin,
+      JSONObject obj_ap_resp=PTTP.fetchAndValidationAP(
+            req_uri,
+            null,
             odin_set.getJSONObject("ap_set").getJSONObject(apid) ,
             odin_set.optJSONObject("vd_set")
         );
@@ -1769,36 +2005,52 @@ public class GuiServer implements Runnable {
       String ap_resp_url="";
       String ap_resp_sign="";
       String ap_resp_validate_result="<font color='#F00'>Invalid</font>";
+      String more_info="";
       
       if(obj_ap_resp!=null){
-        ap_resp_url=obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_URL,"");
-        if( obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase().startsWith("text") )
-          ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
+        ap_resp_url=obj_ap_resp.optString(Config.JSON_KEY_CHUNK_URL,"");
+        
+        String content_type = obj_ap_resp.optString(Config.JSON_KEY_CHUNK_TYPE,"");
+        
+        ap_resp_content = obj_ap_resp.optString(Config.PTTP_KEY_STATUS_CODE) 
+                        + " " + content_type 
+                        + " Size:"+obj_ap_resp.optInt(Config.JSON_KEY_CHUNK_LENGTH)+"\n";
+        if( content_type.toLowerCase().startsWith("text") )
+          ap_resp_content += new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_CHUNK_BYTES) );
         else
-          ap_resp_content = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"No defined content type");
+          ap_resp_content += "Content is binary. ";
         
-        ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI);
-        ap_resp_sign = obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN);
+        ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI,"");
+        ap_resp_sign = obj_ap_resp.optString(Config.PTTP_KEY_SIGNATURE,"");
         
-        int validcode=obj_ap_resp.optInt(Config.JSON_KEY_PPK_VALIDATION,Config.PPK_VALIDATION_ERROR);
-        if( validcode == Config.PPK_VALIDATION_IGNORED )
+        String spec_type = obj_ap_resp.optString(Config.PTTP_KEY_SPEC,"");
+        int validcode=obj_ap_resp.optInt(Config.JSON_KEY_PPK_VALIDATION,Config.PTTP_VALIDATION_ERROR);
+        if( validcode == Config.PTTP_VALIDATION_IGNORED )
            ap_resp_validate_result="<font color='#F72'>Valiade ignored! The content unable to be identified. </font>";
-        else if( validcode == Config.PPK_VALIDATION_OK )
-           ap_resp_validate_result="<font color='#0F0'>Valiade OK using algorithm: "+vd_set_algo+"</font>";
+        else if( validcode == Config.PTTP_VALIDATION_OK )
+           ap_resp_validate_result="<font color='#0F0'>Valiade OK using specification: "+spec_type+"</font>";
         else
-           ap_resp_validate_result="<font color='#F00'>Valiade failed using algorithm: "+vd_set_algo+" ! Please check the related setting.</font>";
+           ap_resp_validate_result="<font color='#F00'>Valiade failed using specification: "+spec_type+" ! Please check the related setting.</font>";
+       
+        long iat_utc = obj_ap_resp.optLong(Config.PTTP_KEY_IAT);
+        long exp_utc = obj_ap_resp.optLong(Config.JSON_KEY_EXP_UTC);
+        more_info = " CACHE_AS_LATEST= "+obj_ap_resp.optString(Config.PTTP_KEY_CACHE_AS_LATEST)
+                +"\n FROM_CACHE= "+obj_ap_resp.optBoolean(Config.JSON_KEY_FROM_CACHE)
+                +"\n IAT_UTC= "+ iat_utc
+                +"\n EXP_UTC= "+ exp_utc
+                +"\n LEFT_SECONDS= "+ ( exp_utc - Util.getNowTimestamp() );
       }
-      
+
       attributes.put("apid", apid);   
       attributes.put("ap_url", ap_url);   
-      
+      attributes.put("req_uri", req_uri);   
       attributes.put("ap_resp_content", ap_resp_content);   
       attributes.put("ap_resp_ppk_uri", ap_resp_ppk_uri);   
       attributes.put("ap_resp_url", ap_resp_url);   
       attributes.put("ap_resp_sign", ap_resp_sign);   
       attributes.put("vd_set_pubkey", vd_set_pubkey);   
       attributes.put("ap_resp_validate_result", ap_resp_validate_result);        
-      
+      attributes.put("more_info", more_info);   
     }catch (Exception e) {
       logger.error("GuiServer.handleOdinCheckApVdRequest() : "+e.toString());
     }
@@ -1814,13 +2066,14 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_UPDATE_VD_SET", Language.getLangLabel("Validtion setting"));  
     attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
     
+    attributes.put("LANG_REQUEST_URI", Language.getLangLabel("Request URI"));
     attributes.put("LANG_RESPONSE_URI", Language.getLangLabel("Response URI"));
     attributes.put("LANG_RESPONSE_URL", Language.getLangLabel("Response URL"));
     attributes.put("LANG_RESPONSE_CONTENT", Language.getLangLabel("Response content"));
     attributes.put("LANG_RESPONSE_SIGNATURE", Language.getLangLabel("Response signature"));
     attributes.put("LANG_VALIDATE_PUBKEY", Language.getLangLabel("Validate pubkey"));
     attributes.put("LANG_VALIDATE_RESULT", Language.getLangLabel("Validate result"));
-
+    attributes.put("LANG_MORE_INFO", Language.getLangLabel("More information"));
         
     return attributes;
   }

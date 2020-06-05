@@ -90,7 +90,7 @@ public class Database {
       executeUpdate("CREATE TABLE IF NOT EXISTS sys_parameters (para_name VARCHAR(32) PRIMARY KEY, para_value TEXT )");
       
       // ODIN
-      Odin.createTables(this);
+      ODIN.createTables(this);
 
     } catch (Exception e) {
       logger.error("Error during create tables: "+e.toString());

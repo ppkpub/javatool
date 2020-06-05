@@ -3,16 +3,16 @@
 <#if !success??  && !error??>
 <div class="row section">
   <div class="form-group">
-    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_UPDATE_THE_VD_SET_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_UPDATE_THE_VD_SET_OF} ${LANG_ODIN}[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
     <div class="col-sm-7" id="top_buttons" align="right">
      <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
      <a class="btn btn-warning" role="button" href='/odin-update-ap?odin=${odin["short_odin"]}'>${LANG_UPDATE_AP_SET}...</a>
-     <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
     </div>
   </div>
 </div>
 
 <h3>${LANG_CURRENT_VALIDTION_SETTING}</h3>
+<form class="form-horizontal" >
 <div class="form-group">
     <label for="vd_set_cert_uri" class="col-sm-2 control-label">${LANG_URI}</label>
     <div class="col-sm-10">
@@ -21,9 +21,9 @@
 </div>
 
 <div class="form-group">
-    <label for="vd_set_algo" class="col-sm-2 control-label">${LANG_ALGORITHM}</label>
+    <label for="vd_set_type" class="col-sm-2 control-label">${LANG_VD_TYPE}</label>
     <div class="col-sm-10">
-     <textarea class="form-control" id="vd_set_algo" rows=1 readonly><#if odin["vd_set_algo"]??>${odin["vd_set_algo"]}</#if></textarea>
+     <textarea class="form-control" id="vd_set_type" rows=1 readonly><#if odin["vd_set_type"]??>${odin["vd_set_type"]}</#if></textarea>
     </div>
 </div>
 
@@ -33,31 +33,12 @@
      <textarea class="form-control" id="vd_set_pubkey" rows=3 readonly><#if odin["vd_set_pubkey"]??>${odin["vd_set_pubkey"]}</#if></textarea>
     </div>
 </div>
+</form>
 
 <!--<#if odin["vd_set_debug"]??>${odin["vd_set_debug"]}</#if>-->
 
 <h3>${LANG_UPDATE_VALIDTION_SETTING}</h3>
-${LANG_YOU_CAN_GENERATE_THE_PUBLIC_KEY_BY_YOURSELF}
-<form action="/confirmtx" class="form-horizontal" method="post">
-  <input type="hidden" name="form" value="update-vdset">
-  <input type="hidden" name="odin" value='${odin["short_odin"]}'>
-  <input type="hidden" name="updater" value="${address}">
-  
-  <div class="form-group">
-    <label for="new_vd_set_cert_uri" class="col-sm-2 control-label">${LANG_URI}</label>
-    <div class="col-sm-10">
-     <input class="form-control" type="text" name="new_vd_set_cert_uri" id="new_vd_set_cert_uri" value='<#if new_vd_set_cert_uri??>${new_vd_set_cert_uri}</#if>' >
-    </div>
-  </div>
-  
-  <div class="form-group" align="center">
-    <div class="col-sm-offset-2 col-sm-10">
-      <button class="btn btn-warning btn-lg" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled2="disabled"</#if>>${LANG_SUBMIT_TO_UPDATE}</button>
-    </div>
-  </div>
 
-</form>
-<hr size="1">
 ${LANG_GENERATE_PUBLIC_AND_PRIVATE_KEYS_HERE}
 <form action="/confirmtx" class="form-horizontal" method="post">
   <input type="hidden" name="form" value="update-vdset">
@@ -65,17 +46,14 @@ ${LANG_GENERATE_PUBLIC_AND_PRIVATE_KEYS_HERE}
   <input type="hidden" name="updater" value="${address}">
   
   <div class="form-group">
-    <label for="new_vd_set_algo" class="col-sm-2 control-label">${LANG_ALGORITHM}</label>
+    <label for="new_vd_set_type" class="col-sm-2 control-label">${LANG_VD_TYPE}</label>
     <div class="col-sm-10">
-     <input class="form-control" type="text" name="new_vd_set_algo" id="new_vd_set_algo" value='<#if new_vd_set_algo??>${new_vd_set_algo}</#if>'  list="algo_list" >
+     <input class="form-control" type="text" name="new_vd_set_type" id="new_vd_set_type" value='<#if new_vd_set_type??>${new_vd_set_type}</#if>'  list="encode_type_list" >
     </div>
   </div>
-  <datalist id="algo_list">
-    <option value="SHA256withRSA" label="SHA256withRSA">
-    <option value="SHA384withRSA" label="SHA384withRSA">
-    <option value="SHA512withRSA" label="SHA512withRSA">
-    <option value="SHA1withRSA" label="SHA1withRSA">
-    <option value="MD5withRSA" label="MD5withRSA">
+  <datalist id="encode_type_list">
+    <option value="PEM" label="PEM">
+    <option value="BASE64" label="BASE64">
   </datalist>
   
   <div class="form-group">
@@ -113,6 +91,39 @@ ${LANG_GENERATE_PUBLIC_AND_PRIVATE_KEYS_HERE}
   </div>
 
 </form>
+<hr size="1">
+${LANG_YOU_CAN_GENERATE_THE_PUBLIC_KEY_BY_YOURSELF}
+<form action="/confirmtx" class="form-horizontal" method="post">
+  <input type="hidden" name="form" value="update-vdset">
+  <input type="hidden" name="odin" value='${odin["short_odin"]}'>
+  <input type="hidden" name="updater" value="${address}">
+  
+  <div class="form-group">
+    <label for="new_vd_set_type" class="col-sm-2 control-label">${LANG_VD_TYPE}</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" name="new_vd_set_type" id="new_vd_set_type" value='<#if new_vd_set_type??>${new_vd_set_type}</#if>'  list="encode_type_list" >
+    </div>
+  </div>
+  <datalist id="encode_type_list">
+    <option value="PEM" label="PEM">
+    <option value="BASE64" label="BASE64">
+  </datalist>
+  
+  <div class="form-group">
+    <label for="new_vd_set_cert_uri" class="col-sm-2 control-label">${LANG_URI}</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" name="new_vd_set_cert_uri" id="new_vd_set_cert_uri" value='<#if new_vd_set_cert_uri??>${new_vd_set_cert_uri}</#if>' >
+    </div>
+  </div>
+  
+  <div class="form-group" align="center">
+    <div class="col-sm-offset-2 col-sm-10">
+      <button class="btn btn-warning btn-lg" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled2="disabled"</#if>>${LANG_SUBMIT_TO_UPDATE}</button>
+    </div>
+  </div>
+
+</form>
+
 <!--
     <hr>
     <p>
@@ -131,7 +142,7 @@ y9PQ7sGYKhIm9TvIdZiq5xzyaw8NOLzKZ1k486MePYG4tSuoaxSbwuPLwVUzYFvn<br>
 UZo7aWCIGKn16UWTM4nxc/+dwce+bhcKrlLbTWi8l580LTE7GxclTh8z7gHq59iv<br>
 haoGbK7FNxlUfB4TSQIDAQAB<br>
 -----END PUBLIC KEY-----<br>
-将第一行和最后一行之间的部分并删除换行符后复制粘贴到这里作为内容验证用的rsa公钥<br>
+将上述密钥复制粘贴到这里作为内容验证用的rsa公钥<br>
 
 将私钥文件pkcs8_rsa_private_key保存好，并配置到AP上对数据内容进行签名使用。<br>
     </p>
@@ -155,7 +166,7 @@ function init(){
         );
     }else{
         console.log("PeerWeb not valid");
-        //alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.2.6 above.");
+        //alert("${LANG_PEERWEB_NOT_VALID}");
     }
 }
 

@@ -2,7 +2,7 @@
 <@template.content>
 <#if !success??  && !error??>
 <div class="row section">
-<h3>${LANG_TRANSFER_THE_REGISTER_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3>
+<h3>${LANG_TRANSFER_THE_REGISTER_OF} ${LANG_ODIN}[${odin["short_odin"]}]:${odin["full_odin"]}</h3>
 <form action="/confirmtx" class="form-horizontal" method="post">
     <input type="hidden" name="form" value="trans-register">
     <input type="hidden" name="odin" value="${odin["short_odin"]}">

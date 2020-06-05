@@ -136,7 +136,7 @@ public class BrowserMainUI extends JFrame {
     //JScrollPane scrollpane = new JScrollPane(webpagepane);
     JScrollPane treescollpane=new JScrollPane();
     // 默认主页URL地址
-    String urladdress = "ppk:0/";
+    String urladdress = Config.ppkDefaultHomepage;
     //建立分隔栏
     JSplitPane splitPane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
     //创建树根节点
@@ -149,7 +149,7 @@ public class BrowserMainUI extends JFrame {
     // 建立一个链表来保存书签记录
     BrowserPageList bookmarklist = new BrowserPageList();
   
-    public final static String PPkPrefix=Config.ppkDefaultHrefApUrl+"?"+Config.JSON_KEY_PPK_URI+"=";
+    public final static String PPkPrefix=Config.ppkDefaultHrefApUrl+"?go=";
     private  String cachedPageContent="";
   
     public BrowserMainUI() {
@@ -280,7 +280,7 @@ public class BrowserMainUI extends JFrame {
         contentpane.add(splitPane);
         //程序加载时载入书签文件 
         try{
-            File loadbookmarklist=new File(Config.dbPath+"BookMarkList.txt");
+            File loadbookmarklist=new File(Config.dbDirPrefix+"BookMarkList.txt");
             FileReader filereader=new FileReader(loadbookmarklist);
             BufferedReader bufferedreader=new BufferedReader(filereader);
             //临时存放网页标题
@@ -358,7 +358,7 @@ public class BrowserMainUI extends JFrame {
     //获得url地址的内容
     public String getContent(String urladdress)
     {
-        return Util.fetchURI(urladdress);
+        return Util.fetchUriContent(urladdress);
         /*
         String linesep;
         String line="";
@@ -414,9 +414,19 @@ public class BrowserMainUI extends JFrame {
               public void run() {
                   cachedPageContent=temp==null? "<html>Stopped</html>" : temp;
                   webView.getEngine().loadContent(cachedPageContent);
+                  
+                  int resp_url_start=cachedPageContent.indexOf("<!--RESP_PPK_URI=");
+                  if( resp_url_start>0 ){
+                      resp_url_start += "<!--RESP_PPK_URI=".length();
+                      int resp_url_end=cachedPageContent.indexOf("-->",resp_url_start);
+                      urlfield.setText(cachedPageContent.substring(resp_url_start,resp_url_end));
+                  }
+                  
                   if( cachedPageContent.indexOf(">Valiade OK<")>0 ){
                       urlfield.setForeground( new Color(34,139,34) );
                   }
+                  
+                  
               }
             });
 
@@ -432,7 +442,7 @@ public class BrowserMainUI extends JFrame {
         // 添加进历史链表
         if(flag==0)
         {
-            historylist.addURL(title,urladdress);
+            historylist.addURL(title,urlfield.getText());
         }
     
         updateToolbarStatus();
@@ -447,6 +457,7 @@ public class BrowserMainUI extends JFrame {
 
         this.setTitle(historylist.getCurrentPageNode().getPagename());
     }
+    
     //获取网页标题
     public String getTitle(String urladdress,String htmlcontent)
     {
@@ -468,7 +479,7 @@ public class BrowserMainUI extends JFrame {
     //退出时处理书签文件的保存
     public void savebookmarklist()
     {
-        File savefile=new File(Config.dbPath+"BookMarkList.txt");
+        File savefile=new File(Config.dbDirPrefix+"BookMarkList.txt");
         String linesep=System.getProperty("line.separator");
         try{
             FileWriter filewriter=new FileWriter(savefile);
@@ -680,7 +691,7 @@ public class BrowserMainUI extends JFrame {
             }
             // 回到主页
             if (e.getSource() == home) {
-                urladdress =  "ppk:0/";
+                urladdress =  Config.ppkDefaultHomepage;
                 BrowserMainUI.this.setNewPage(0,urladdress);
             }
             // 单击go或者回车事件
@@ -762,7 +773,7 @@ public class BrowserMainUI extends JFrame {
             {
         if(nodename.equalsIgnoreCase("主页"))
                 {
-                    String tempurl="ppk:0/";
+                    String tempurl=Config.ppkDefaultHomepage;
                     setNewPage(0,tempurl);
                 }else{    
                     //获取节点URL

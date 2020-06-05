@@ -115,7 +115,7 @@ public class Util {
     return format(input, "#.00");
   }
   
-  public static Long getNowTimestamp() {
+  public static long getNowTimestamp() {
     return (new Date()).getTime()/(long)1000;
   }
 
@@ -130,7 +130,7 @@ public class Util {
     return formattedDate;
   }
 
-  public static String timeFormat(Integer timestamp) {
+  public static String timeFormat(long timestamp) {
     Date date = new Date(timestamp*1000L); // *1000 is to convert seconds to milliseconds
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); // the format of your date
     sdf.setTimeZone(TimeZone.getTimeZone(Config.defaultTimeZone));
@@ -288,42 +288,28 @@ public class Util {
         }
     } catch (Exception e) {
       logger.error(e.toString());
-      return getUnspentsWithoutDustTX(address);
+      return getUnspentListWithoutDustTX(address);
     }
     return unspents;
    
   }
   */
   
-  public static int getUnspentCount(String address) {
-     try {
-        String api_url="https://chain.api.btc.com/v3/address/" + address + "/unspent";
-        JSONObject tempObject=fetchBtcAPI(api_url);
-        
-        int total_count=tempObject.getJSONObject("data").getInt("total_count");
-        return total_count;
-      } catch (Exception e) {
-        //此API有异常
-        logger.error("getUnspentCount() BTC.com API exception:"+e.toString());
-        return -1;
-    }
-  }
-  
   //缺省获取指定地址未花费交易的方法，包含多重签名类型的输出
   public static List<UnspentOutput> getUnspents(String address,boolean isOdinTransaction) {
     if(!Config.useDustTX){
-      UnspentList ul = getUnspentsWithoutDustTX(address);
+      UnspentList ul = getUnspentListWithoutDustTX(address);
       return ul.unspents;
     }
 
     if(!isOdinTransaction){ //普通转账交易，直接返回最大允许数量的UTXO列表
         try {
-            UnspentList ul=getValidUnspents(address,Config.maxUseUTXO,true);
+            UnspentList ul=getValidUnspents(address,false,true);
             return ul.unspents;
         } catch (Exception e) {
             //主API有异常，自动切换到另一个备用API
             logger.error("getUnspents() BTC.com API exception:"+e.toString());
-            UnspentList ul = getUnspentsWithoutDustTX(address);
+            UnspentList ul = getUnspentListWithoutDustTX(address);
             return ul.unspents;
         }
     }
@@ -354,101 +340,177 @@ public class Util {
 
     
     //调用API服务来获取可用的未花费交易列表
-    unspents=new ArrayList<UnspentOutput> ();
-
-    try {
-        String result=null;
-        JSONObject tempObject=null;
-        
-        /*
-        //检查API服务是否正常更新到最新区块
-        Blocks blocks = Blocks.getInstance();
-        int block_height=blocks.bitcoinBlock ; // Current block height in the longest chain
-        result = CommonHttpUtil.getInstance().getContentFromUrl( "https://chain.api.btc.com/v3/block/" + block_height  );
-        tempObject=new JSONObject(result);
-        
-        //System.out.println("block_height: "+block_height +"\ntempObject="+tempObject);
-        if(tempObject.getJSONObject("data").getInt("height")!=block_height){
-            throw new IOException("API mismatched the block height:"+block_height);
-        }
-        
-        //API服务正常则继续调用查询未花费交易列表
-        result = CommonHttpUtil.getInstance().getContentFromUrl( "https://chain.api.btc.com/v3/address/" + address + "/unspent" );
-        */
-        String api_url="https://chain.api.btc.com/v3/address/" + address + "/unspent";
-        tempObject=fetchBtcAPI(api_url);
-        
-        Integer total_count=tempObject.getJSONObject("data").getInt("total_count");
-        Integer pagesize=tempObject.getJSONObject("data").getInt("pagesize");
-        JSONArray utxoArray=tempObject.getJSONObject("data").getJSONArray("list");
-        
-        if(total_count>pagesize){
-          result = CommonHttpUtil.getInstance().getContentFromUrl( "https://chain.api.btc.com/v3/address/" + address + "/unspent?page="+ 
-                            Math.round( Math.ceil((double)total_count/(double)pagesize) ) );
-          JSONArray lastArray=(new JSONObject(result)).getJSONObject("data").optJSONArray("list");
-          if(lastArray!=null) {
-	       	  for(int tt=lastArray.length()-1;tt>=0;tt--){
-	       		utxoArray.put( lastArray.get(tt) ); //合并第一页和最后一页的交易列表数组
-	    	  }
-          }
-        }
-        
-        
-        
-        txCounter=0;
-        valueCounter=0L;
-        for(int tt=utxoArray.length()-1;tt>=0;tt--){
-            JSONObject item_obj=(JSONObject)utxoArray.get(tt);
-            
-            UnspentOutput tempUnspentObj=new UnspentOutput();
-            
-            tempUnspentObj.amt_satoshi=BigInteger.valueOf(item_obj.getLong("value"));
-            tempUnspentObj.txid=item_obj.getString("tx_hash");
-            tempUnspentObj.vout=item_obj.getInt("tx_output_n");
-            tempUnspentObj.scriptPubKeyHex="";
-            
-            //System.out.println("  tempUnspentObj: "+tempUnspentObj.toString());
-            
-            try {
-                JSONObject tempObjectTx=fetchBtcAPI("https://blockchain.info/zh-cn/rawtx/" + tempUnspentObj.txid);
-                JSONArray tempArrayOutputs=tempObjectTx.getJSONArray("out");
-                JSONObject item_output=(JSONObject)tempArrayOutputs.get(tempUnspentObj.vout);
-
-                tempUnspentObj.scriptPubKeyHex=item_output.getString("script");
-            }catch (Exception e1) {
-              logger.error(" getUnspents() blockchain.info  : "+e1.toString());
-              try {
-                  JSONObject tempObjectTx=fetchBtcAPI("https://chain.api.btc.com/v3/tx/" + tempUnspentObj.txid + "?verbose=3");
-                  JSONArray tempArrayOutputs=tempObjectTx.getJSONObject("data").getJSONArray("outputs");
-                  JSONObject item_output=(JSONObject)tempArrayOutputs.get(tempUnspentObj.vout);
-
-                  tempUnspentObj.scriptPubKeyHex=item_output.getString("script_hex");
-              }catch (Exception e2) {
-                  logger.error(" getUnspents() api.btc.com: "+e2.toString());
-              }
-            }
-            //System.out.println(">>>>>>>>>>tempUnspentObj["+tt+"]:"+tempUnspentObj.txid+","+tempUnspentObj.amt_satoshi+","+tempUnspentObj.vout+","+tempUnspentObj.scriptPubKeyHex);
-            
-            if(tempUnspentObj.scriptPubKeyHex.length()>0){
-              unspents.add(tempUnspentObj);
-              valueCounter += item_obj.getLong("value");
-              txCounter ++ ;
-            }
-            
-            if( txCounter>Config.MAX_MULTISIG_TX_NUM+1 
-               && (valueCounter > Config.maxFee || valueCounter >  Config.ppkStandardDataFee + (Config.MAX_MULTISIG_TX_NUM+1) * Config.dustSize))  {  //if enough for max ODIN fee 
-              break;
-            }
-        }
-    } catch (Exception e) {
-      //此API有异常，自动切换到另一个备用API
-      logger.error("getUnspents() BTC.com API exception:"+e.toString());
-      UnspentList ul = getUnspentsWithoutDustTX(address);
-      return ul.unspents;
-    }
+    UnspentList ul = getValidUnspents(address,true, true);
     
+    if( ul==null ){
+        unspents = new ArrayList<UnspentOutput> () ;
+        System.out.println("Util.getUnspents() unspents is empty");
+    }else{
+        unspents = ul.unspents;
+        System.out.println("Util.getUnspents() unspents tx_num="+ul.tx_num+"  sum_satoshi="+ul.sum_satoshi);
+    }
+
     return unspents;
   }
+  
+  public static UnspentList getValidUnspents(String address,boolean for_odin_transaction, boolean need_script_detail) {
+    List<UnspentOutput> unspents=new ArrayList<UnspentOutput> () ;
+    int txCounter=0;
+    long valueCounter=0L;
+    int total_count=0;
+    boolean is_enough=false; 
+    
+    //先获取可用的普通未花费交易列表
+    UnspentList ulWithoutDustTX = getUnspentListWithoutDustTX(address);
+    
+    if(ulWithoutDustTX!=null ){
+        unspents = ulWithoutDustTX.unspents;
+        txCounter = ulWithoutDustTX.tx_num;
+        valueCounter = ulWithoutDustTX.sum_satoshi.longValue();
+        total_count = ulWithoutDustTX.tx_total_num;
+    }
+    
+    System.out.println("Util.getValidUnspents() ulWithoutDustTX txCounter="+txCounter+"  valueCounter="+valueCounter+"  total_count="+total_count);
+    
+    if(Config.useDustTX){
+        //再补充获取可用的特殊多重签名未花费交易列表
+        String api_url="";
+        try {
+            String result=null;
+            JSONObject tempObject=null;
+
+            api_url="https://chain.api.btc.com/v3/address/" + address + "/unspent";       
+            tempObject=fetchBtcAPI(api_url);
+            
+            total_count=tempObject.getJSONObject("data").getInt("total_count");
+            int pagesize=tempObject.getJSONObject("data").getInt("pagesize");
+            JSONArray tempArray=tempObject.getJSONObject("data").getJSONArray("list");
+            
+            if( tempArray.length()<pagesize )
+                total_count=tempArray.length(); //纠正API返回的异常总数
+            else if(total_count>pagesize) //对于超过1页的utxo数，需要特殊检查来确定数量是正确的
+                total_count=getRealUnspentCount(address);
+
+            int max_page=(int)(Math.round( Math.ceil((double)total_count/(double)pagesize) ));
+            for(int pp=1;pp<=max_page;pp++){
+                System.out.println("\nDEBUG20200328 getValidUnspents() page = "+pp+"\n");
+                if(pp>1){ //第一页不需要重复获取，直接使用上文已获得的数据
+                    api_url="https://chain.api.btc.com/v3/address/" + address + "/unspent?page=" + pp ;
+                    tempObject=fetchBtcAPI(api_url);
+                    tempArray=tempObject.getJSONObject("data").getJSONArray("list");
+                }
+
+                for(int tt=tempArray.length()-1;tt>=0;tt--){
+                    JSONObject item_obj=(JSONObject)tempArray.get(tt);
+
+                    UnspentOutput tempUnspentObj=new UnspentOutput();
+                    
+                    tempUnspentObj.amt_satoshi=BigInteger.valueOf(item_obj.getLong("value"));
+                    tempUnspentObj.txid=item_obj.getString("tx_hash");
+                    tempUnspentObj.vout=item_obj.getInt("tx_output_n");
+                    tempUnspentObj.scriptPubKeyHex="";
+                    
+                    System.out.println("\nDEBUG20200328 check utxo: "+tempUnspentObj.toString()+" \n");
+
+                    if( !existedUnspent(unspents,tempUnspentObj) ){
+                        System.out.println("\nDEBUG20200328 found new utxo\n");
+                        if(need_script_detail){
+                            try {
+                                JSONObject tempObjectTx=fetchBtcAPI("https://blockchain.info/zh-cn/rawtx/" + tempUnspentObj.txid);;
+                                JSONArray tempArrayOutputs=tempObjectTx.getJSONArray("out");
+                                JSONObject item_output=(JSONObject)tempArrayOutputs.get(tempUnspentObj.vout);
+
+                                tempUnspentObj.scriptPubKeyHex=item_output.getString("script");
+                            }catch (Exception e1) {
+                                try {
+                                  JSONObject tempObjectTx=fetchBtcAPI("https://chain.api.btc.com/v3/tx/" + tempUnspentObj.txid + "?verbose=3");
+                                  JSONArray tempArrayOutputs=tempObjectTx.getJSONObject("data").getJSONArray("outputs");
+                                  JSONObject item_output=(JSONObject)tempArrayOutputs.get(tempUnspentObj.vout);
+
+                                  tempUnspentObj.scriptPubKeyHex=item_output.getString("script_hex");
+                                }catch (Exception e2) {
+                                  logger.error(" getUnspents() api.btc.com: "+e2.toString());
+                                }
+                            }
+                            //System.out.println(">>>>>>>>>>tempUnspentObj["+tt+"]:"+tempUnspentObj.txid+","+tempUnspentObj.amt_satoshi+","+tempUnspentObj.vout+","+tempUnspentObj.scriptPubKeyHex);
+                        }
+                        
+                        if(!need_script_detail || tempUnspentObj.scriptPubKeyHex.length()>0){
+                          unspents.add(tempUnspentObj);
+                          valueCounter += item_obj.getLong("value");
+                          txCounter ++ ;
+                        }
+                    }
+                    
+                    if(for_odin_transaction){ //按组织ODIN消息需要判断是否已有足够的UTXO数
+                        if( txCounter>Config.MAX_MULTISIG_TX_NUM+1 
+                           && (valueCounter > Config.maxFee || valueCounter >  Config.ppkStandardDataFee + (Config.MAX_MULTISIG_TX_NUM+1) * Config.dustSize))  {  //if enough for max ODIN fee 
+                           is_enough = true;
+                        }
+                    }else if( txCounter >= Config.maxUseUTXO )  {   //按组织普通转账消息需要判断是否已达到最大UTXO数
+                        is_enough = true;
+                    }
+                    
+                    if(is_enough)
+                        break;
+                }
+                
+                if(is_enough)
+                    break;
+            }
+        } catch (Exception e) {
+          //处理API时有异常提前结束
+          logger.error("getValidUnspents() API("+api_url+" ) exception:"+e.toString());
+        }
+    }else{
+        System.out.println("Util.getValidUnspents() ignored dust UTXO");
+    }
+    
+    if(total_count<txCounter || txCounter==0) //处理异常的总数
+        total_count = txCounter;
+        
+    System.out.println("Util.getValidUnspents() result txCounter="+txCounter+"  valueCounter="+valueCounter+"  total_count="+total_count);
+
+    return new UnspentList(unspents,txCounter,valueCounter,total_count);
+  }
+  
+  public static boolean existedUnspent(List<UnspentOutput> unspents,UnspentOutput matchUnspentObj){
+      for (UnspentOutput unspent : unspents) {
+          if(unspent.txid.equalsIgnoreCase(matchUnspentObj.txid)
+            && unspent.vout == matchUnspentObj.vout
+          )
+              return true;
+      }
+      
+      return false;
+  }
+
+  public static int getRealUnspentCount(String address) {
+     try {
+        UnspentList ul = getUnspentListWithoutDustTX(address);
+        int normal_tx_count = ul.tx_total_num;
+        
+        System.out.println("\nDEBUG20200328 normal_tx_count = "+normal_tx_count+"\n");
+        
+        //从btc.com和blockchain.info分别取金额，计算差值来得出正确的utxo数
+        BigInteger balanceWithDustTX = getBTCBalanceWithDustTX(address);
+        BigInteger balanceWithoutDustTX = getBTCBalanceWithoutDustTX(address);
+        
+        if(balanceWithDustTX==null || balanceWithoutDustTX==null){
+            return normal_tx_count;
+        }
+        
+        int ppk_special_tx_count = ( balanceWithDustTX.subtract(balanceWithoutDustTX).intValue( ) )/1000 ;
+        System.out.println("\nDEBUG20200328 ppk_special_tx_count = "+ppk_special_tx_count+"\n");
+        
+        return normal_tx_count+ppk_special_tx_count;
+      } catch (Exception e) {
+        //此API有异常
+        logger.error("getRealUnspentCount() BTC.com API exception:"+e.toString());
+        return -1;
+    }
+  }
+  
   /*
   public static List<UnspentOutput> getAllUnspents(String address) {
     List<UnspentOutput> unspents=null;
@@ -538,23 +600,8 @@ public class Util {
     return unspents;
   }
   */
-  public static JSONObject fetchBtcAPI(String api_url) throws Exception {
-    String result=null;
-    try {
-        //System.out.println("\nCall fetchBtcAPI("+api_url+")\n");
-        result = CommonHttpUtil.getInstance().getContentFromUrl( api_url );
-        //System.out.println("\n result = "+result+"\n");
-        return new JSONObject(result);
-    }catch (Exception e) {
-        //System.out.println("\n Retry by proxy\n");
-        if(Config.proxyURL!=null && Config.proxyURL.length()>0)
-            api_url=Config.proxyURL+"?url=" + java.net.URLEncoder.encode(api_url);
-        result = CommonHttpUtil.getInstance().getContentFromUrl( api_url );
-        return new JSONObject(result);
-    }
-  }
-  
-  public static UnspentList getValidUnspents(String address,int max_num,boolean need_script_detail) {
+  /*
+  public static UnspentList getValidUnspentsOLD(String address,int max_num,boolean need_script_detail) {
     List<UnspentOutput> unspents=null;
     int txCounter=0;
     long valueCounter=0L;
@@ -571,11 +618,14 @@ public class Util {
         tempObject=fetchBtcAPI(api_url);
         
         total_count=tempObject.getJSONObject("data").getInt("total_count");
-        Integer pagesize=tempObject.getJSONObject("data").getInt("pagesize");
+        int pagesize=tempObject.getJSONObject("data").getInt("pagesize");
         
+        if(total_count>pagesize) //对于超过一页的utxo数，需要特殊检查来确定数字是正确的
+            total_count=getRealUnspentCount(address);
+
         int max_page=(int)(Math.round( Math.ceil((double)total_count/(double)pagesize) ));
         for(int pp=max_page;pp>0;pp--){
-            //System.out.println("\n pp = "+pp+"\n");
+            System.out.println("\nDEBUG20200328 getValidUnspents() pp = "+pp+"\n");
             api_url="https://chain.api.btc.com/v3/address/" + address + "/unspent?page=" + pp ;
             tempObject=fetchBtcAPI(api_url);
         
@@ -628,20 +678,35 @@ public class Util {
     } catch (Exception e) {
       //此API有异常
       logger.error("getValidUnspents() API("+api_url+" ) exception:"+e.toString());
-      return getUnspentsWithoutDustTX(address);
+      return getUnspentListWithoutDustTX(address);
     }
     
     return new UnspentList(unspents,txCounter,valueCounter,total_count);
   }
-
+*/
+  public static JSONObject fetchBtcAPI(String api_url) throws Exception {
+    String result=null;
+    try {
+        //System.out.println("\nCall fetchBtcAPI("+api_url+")\n");
+        result = CommonHttpUtil.getInstance().getContentFromUrl( api_url );
+        //System.out.println("\n result = "+result+"\n");
+        return new JSONObject(result);
+    }catch (Exception e) {
+        //System.out.println("\n Retry by proxy\n");
+        if(Config.proxyURL!=null && Config.proxyURL.length()>0)
+            api_url=Config.proxyURL+"?url=" + java.net.URLEncoder.encode(api_url);
+        result = CommonHttpUtil.getInstance().getContentFromUrl( api_url );
+        return new JSONObject(result);
+    }
+  }
+  
   //备用的获取指定地址未花费交易的方法，不包含多重签名类型的输出
-  public static UnspentList getUnspentsWithoutDustTX(String address) {
+  public static UnspentList getUnspentListWithoutDustTX(String address) {
     List<UnspentOutput> unspents = new ArrayList<UnspentOutput> ();
     int txCounter=0;
     long valueCounter=0L;
     try {
-        String result = CommonHttpUtil.getInstance().getContentFromUrl( "https://blockchain.info/unspent?active="+address );
-        JSONObject tempResultObject=new JSONObject(result);
+        JSONObject tempResultObject=fetchBtcAPI("https://blockchain.info/unspent?active="+address);
         JSONArray tempArray=tempResultObject.getJSONArray("unspent_outputs");
         ArrayList<HashMap<String, Object>> item_set_array = new ArrayList<HashMap<String, Object>>();
         for(int tt=0;tt<tempArray.length();tt++){
@@ -662,7 +727,7 @@ public class Util {
             txCounter ++ ;
         }
     } catch (Exception e) {
-        logger.error(" getUnspentsWithoutDustTX() "+e.toString());
+        logger.error(" getUnspentListWithoutDustTX() "+e.toString());
     }
     return new UnspentList(unspents,txCounter,valueCounter,txCounter);
   }
@@ -717,13 +782,12 @@ public class Util {
       return getBTCBalanceWithoutDustTX(address);
     }
     
+    return getBTCBalanceWithDustTX(address);
+  }
+  
+  public static BigInteger getBTCBalanceWithDustTX(String address) {
     try {
-      String api_url="https://chain.api.btc.com/v3/address/"+address;
-      if(Config.proxyURL!=null && Config.proxyURL.length()>0)
-          api_url=Config.proxyURL+"?url=" + java.net.URLEncoder.encode(api_url);
-      String result = CommonHttpUtil.getInstance().getContentFromUrl( api_url );
-        
-      JSONObject tempResultObject=new JSONObject(result);
+      JSONObject tempResultObject=fetchBtcAPI("https://chain.api.btc.com/v3/address/"+address);
       tempResultObject=tempResultObject.getJSONObject("data");
 
       return  BigInteger.valueOf(tempResultObject.getLong("balance"));
@@ -734,9 +798,8 @@ public class Util {
   }
 
   public static BigInteger getBTCBalanceWithoutDustTX(String address) {
-    String result = CommonHttpUtil.getInstance().getContentFromUrl( "https://blockchain.info/zh-cn/address/"+address+"?format=json&limit=0" );
     try {
-      JSONObject addressInfo=new JSONObject(result);
+      JSONObject addressInfo=fetchBtcAPI("https://blockchain.info/zh-cn/address/"+address+"?format=json&limit=0");
       return BigInteger.valueOf(addressInfo.getLong("final_balance"));
     } catch (Exception e) {
       logger.error("getBTCBalanceWithoutDustTX() "+e.toString());
@@ -994,6 +1057,8 @@ public class Util {
       FileWriter fw = new FileWriter(fileName);  
       fw.write(text,0,text.length());  
       fw.flush();  
+      fw.close();
+
       return true;
     } catch (Exception e) {
       logger.info(e.toString());
@@ -1018,15 +1083,32 @@ public class Util {
         read.close();
         return str;
     }catch(Exception e){
-      logger.error( "readTextFile() "+e.toString());
+      //logger.error( "readTextFile() "+e.toString());
       return null;
     }
   }
   
+  //循环删除目录和文件函数 
+  public static void deleteDir(String file_path,boolean del_self) {
+      File fp = new File(file_path);
+      deleteDir(fp, del_self);
+  }    
+  public static void deleteDir(File file,boolean del_self) {
+    if (file.isDirectory()) {
+        for (File f : file.listFiles())
+            deleteDir(f,true);
+    }
+    
+    if(del_self)
+        file.delete(); 
+  }
+  
   public static JSONObject getRSAKeys(String address,boolean auto_generate,boolean auto_save) throws Exception{  
-    String  privateKeyFilename="resources/db/keys/"+address+".json";
-          
-    if (!(new File(privateKeyFilename)).exists() ){
+    String  keyFilenamePrefix="resources/db/keys/"+address;
+    String  default_key_filename=keyFilenamePrefix+".key.json";
+    
+
+    if (!(new File(default_key_filename)).exists() ){
       if(!auto_generate)
         return null;
       
@@ -1035,18 +1117,35 @@ public class Util {
       //logger.info("Generated new keys: " + keyMap.toString());  
     
       if(auto_save){
-        if(!exportTextToFile(keyMap.toString(),privateKeyFilename)){
-          logger.error("Failed to save generated RSA keys to "+privateKeyFilename);
+        String tmp_filename = default_key_filename;
+        if(!exportTextToFile(keyMap.toString(),tmp_filename)){
+          logger.error("Failed to save generated RSA keys to "+tmp_filename);
           return null;
         }
+        
+        String pemext = ".rsa"+keyMap.optInt("keysize")+".pem";
+        tmp_filename=keyFilenamePrefix+".prvkey"+pemext;
+        if(!exportTextToFile(RSACoder.getPrivateKey(keyMap),tmp_filename)){
+          logger.error("Failed to save generated RSA prvkey to "+tmp_filename);
+          return null;
+        }
+
+        tmp_filename=keyFilenamePrefix+".pubkey"+pemext;
+        if(!exportTextToFile(RSACoder.getPublicKey(keyMap),tmp_filename)){
+          logger.error("Failed to save generated RSA public to "+tmp_filename);
+          return null;
+        }
+        
+        
+
       }else{
         return keyMap;
       }
     }
     
-    String  tmpKeyStr=Util.readTextFile(privateKeyFilename);
+    String  tmpKeyStr=Util.readTextFile(default_key_filename);
     if(tmpKeyStr==null){
-      logger.error("Failed to get RSA keys from "+privateKeyFilename);
+      logger.error("Failed to get RSA keys from "+default_key_filename);
       return null;          
     }
     
@@ -1237,14 +1336,14 @@ public class Util {
     }
   }
   
-  public static String getIpfsData(String ipfs_hash_address){
+  public static String getIpfsContent(String ipfs_hash_address){
     try{
       IPFS ipfs = new IPFS(Config.IPFS_API_ADDRESS);
       Multihash filePointer = Multihash.fromBase58(ipfs_hash_address);
       byte[] fileContents = ipfs.cat(filePointer);
       return new String(fileContents);
     }catch(Exception e){
-      System.out.println("Util.getIpfsData() error:"+e.toString());
+      System.out.println("Util.getIpfsContent() error:"+e.toString());
       
       String tmp_url=Config.IPFS_DOWNLOAD_URL+ipfs_hash_address;
       System.out.println("Using IPFS Proxy to fetch:"+ tmp_url);
@@ -1277,7 +1376,7 @@ public class Util {
       }
   }
   
-  public static String getBtmfsData(String btmfs_uri){
+  public static String getBtmfsContent(String btmfs_uri){
       String tmp_url=Config.BTMFS_PROXY_URL+"?uri=" + java.net.URLEncoder.encode(btmfs_uri);
       System.out.println("Using BTMFS Proxy to fetch:"+ tmp_url);
       
@@ -1310,7 +1409,7 @@ public class Util {
       }
   }
   
-  public static String getDatData(String dat_uri){
+  public static String getDatContent(String dat_uri){
       String dat_hash=dat_uri.substring("dat://".length());
       
       String tmp_url=null;
@@ -1339,27 +1438,34 @@ public class Util {
         return null;
       }
   }
-
-  public static String  fetchURI(String uri){
+  
+  //判断一个字符串是URI
+  public static boolean  isURI(String str){
+      return str!=null && str.indexOf(':')>0;
+  }
+  
+  //获取URI的正文内容
+  //会自动处理301/302转向得到最终内容
+  public static String  fetchUriContent(String uri){
     try{
       String[] uri_chunks=uri.split(":");
       if(uri_chunks.length<2){
-        logger.error("Util.fetchURI() meet invalid uri:"+uri);
+        logger.error("fetchUriContent() meet invalid uri:"+uri);
         return null;
       }
       
       if(uri_chunks[0].equalsIgnoreCase("ipfs")){
-        return getIpfsData(uri_chunks[1]);
+        return getIpfsContent(uri_chunks[1]);
       }else if(uri_chunks[0].equalsIgnoreCase("dat")){
-        return getDatData(uri);
+        return getDatContent(uri);
       }else if(uri_chunks[0].equalsIgnoreCase("btmfs")){
-        return getBtmfsData(uri);
+        return getBtmfsContent(uri);
       }else if(uri_chunks[0].equalsIgnoreCase("ppk")){
-        JSONObject obj_ap_resp=PPkURI.fetchPPkURI(uri);
-        if(obj_ap_resp==null)
+        JSONObject obj_decoded_chunk=PTTP.getPPkResource(uri);
+        if(obj_decoded_chunk==null)
           return null;
         
-        return obj_ap_resp.optString(Config.JSON_KEY_ORIGINAL_RESP,"ERROR:Invalid PTTP data!");
+        return new String( (byte[])obj_decoded_chunk.opt(Config.JSON_KEY_CHUNK_BYTES) );
       }else if(uri_chunks[0].equalsIgnoreCase("data")){
         int from=uri_chunks[1].indexOf(",");
         if(from>=0){
@@ -1370,10 +1476,11 @@ public class Util {
         return CommonHttpUtil.getInstance().getContentFromUrl(uri) ;
       }
     }catch(Exception e){
-      logger.error("Util.fetchURI("+uri+") error:"+e.toString());
+      logger.error("fetchUriContent("+uri+") error:"+e.toString());
     }
     return null;
   }
+
   
   /**
    * 对图片字节数组进行Base64编码处理生成Data URL
@@ -1403,7 +1510,59 @@ public class Util {
       }
       return true;
   }
+  
+  //获得分页控件代码
+  public static String getListNaviHtml(String page_base_url, int page_start, int page_size,int total_num){
+    page_base_url += "&size="+page_size+"&start=";
 
+    String str_list_navi_html = "";
+    
+    if(page_start>=page_size) {//说明有前页
+        //第一页
+        str_list_navi_html += "<a class='btn btn-primary' role='button'  href='"
+                        + page_base_url+ 0 
+                        + "'>&lt;&lt; "+Language.getLangLabel("First page")+"</a> ";
+        //上一页            
+        str_list_navi_html += "<a class='btn btn-success' role='button'  href='"
+                        + page_base_url+(page_start-page_size)
+                        + "'>&lt; "+Language.getLangLabel("Prev page")+"</a> ";
+    }
+
+    int total_page = (int)Math.floor((total_num-1)/page_size) + 1;
+    str_list_navi_html += Language.getLangLabel("Current page")+ " " 
+                          +((page_start/page_size)+1);
+
+    str_list_navi_html += " / "+total_page;                           
+                          
+    if( page_start + page_size < total_num) {//说明有后页
+        //后一页
+        str_list_navi_html += " <a class='btn btn-success' role='button'  href='"
+                        + page_base_url+(page_start+page_size)
+                        + "'>"+Language.getLangLabel("Next page")+" &gt;</a> ";
+        //最后一页        
+        str_list_navi_html += " <a class='btn btn-primary' role='button'  href='"
+                        + page_base_url+ ( ( total_page -1 ) * page_size )
+                        + "'>"+Language.getLangLabel("Last page")+" &gt;&gt;</a> ";
+    }
+    
+    
+    
+    return str_list_navi_html;
+  }
+
+  //获得配置权限的显示标签
+  public static String getOdinAuthRightLabel(String auth_right) {
+    String tmp_auth_label = "Unkwown auth_right";
+    if( "0".equals(auth_right) ){
+        tmp_auth_label = "The register or admin can update";
+    }else if( "1".equals(auth_right) ){
+        tmp_auth_label = "Only the admin can update";
+    }else if( "2".equals(auth_right) ){
+        tmp_auth_label = "Register and admin must update together";
+    }
+    
+    return Language.getLangLabel(tmp_auth_label)+"(" + auth_right + ")";
+ }
 
 }
 

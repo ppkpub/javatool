@@ -15,16 +15,19 @@ public class PPkTool {
     
     System.out.println(Language.getLangLabel("PPkPub"));
     System.out.println(Language.getLangLabel("Loading")+" "+Config.appName+" Tool V"+Config.version);
-    
+
     Blocks blocks = Blocks.getInstanceSkipVersionCheck();
+
     blocks.init();
     blocks.versionCheck(false);
+    
     JsonRpcServletEngine engine = new JsonRpcServletEngine();
     try {
       engine.startup();
     } catch (Exception e) {
       e.printStackTrace();
     }
+    
     blocks.follow();
     Thread blocksThread = new Thread(blocks);
     blocksThread.setDaemon(true);

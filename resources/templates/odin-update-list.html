@@ -1,0 +1,72 @@
+<#import "template.html" as template>
+<@template.content>
+
+<#if !error??>
+  <div class="row section">
+      <div class="form-group">
+        <label for="top_buttons" class="col-sm-5 control-label"><h3>${more_list_title}(${my_update_num})</h3></label>
+        <div class="col-sm-7" id="top_buttons" align="right">
+
+        </div>
+      </div>
+  </div>
+
+  <#if my_updates??>
+  <div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>${LANG_FULL_ODIN}</th>
+        <th>${LANG_SHORT_ODIN}</th>
+        <th>${LANG_TIME}</th>
+        <th>${LANG_UPDATE_DESC}</th>
+        <th>${LANG_STATUS}</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <#list my_updates as odin>
+        <tr>
+          <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["full_odin"]}</a></td>
+          <td><a href='/odin-detail?odin=${odin["short_odin"]}'>${odin["short_odin"]}</a></td>
+          <td><a href="https://btc.com/${odin["tx_hash"]}/">${odin["block_time"]}</a></td>
+          <td>
+            ${odin["update_desc"]}
+            <hr>
+            <p align="right">${LANG_UPDATER}:  ${odin["updater"]}</p>
+          </td>
+          <td>
+            ${odin["validity_label"]}<br>
+            <#if odin["awaiting_my_receipting"]?? || odin["awaiting_my_confirm"]??>
+            <a class="btn btn-danger" role="button" href='javascript:confirmSubmitUpdate("${odin["short_odin"]}","${odin["log_id"]}" );'><#if odin["awaiting_my_receipting"]??>${LANG_AWAIT_YOUR_RECEIPT}<#else>${LANG_AWAIT_YOUR_CONFIRM}</#if>...</a>
+            </#if>
+          </td>
+        </tr>
+      </#list>
+      
+    </tbody>
+  </table>
+  </div>
+  
+  <center>${list_navi_html}</center>
+  </#if>
+  
+  <script type="text/javascript">
+    function confirmSubmitUpdate( short_odin,update_log_id ){
+        location.href="/confirmtx?form=confirm-update-log&odin="+short_odin+"&awaiting_update_log_num=1&update_log_id0="+update_log_id;
+        return true;
+        /*
+        //JAVA客户端不支持弹出对话框
+        if(window.confirm("${LANG_ASK_TO_CONFIRM_THIS_UPDATE}")) { 
+            location.href="/confirmtx?form=confirm-update-log&odin="+short_odin+"&awaiting_update_log_num=1&update_log_id0="+update_log_id;
+            return true;
+        }else{
+            return false;
+        }
+        */
+    }
+ </script>
+
+</#if>
+
+</@template.content>

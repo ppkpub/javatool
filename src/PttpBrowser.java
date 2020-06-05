@@ -58,7 +58,7 @@ public class PttpBrowser {
     
     //Show Browser Window
     PttpBrowser core=new PttpBrowser();
-
+    
     while(true){   
       if(!bNoSyncBlocks){
         //Start blocks thread
@@ -98,6 +98,6 @@ public class PttpBrowser {
       }
       
       Thread.sleep(8000);
-    }
+    } 
   }
 }

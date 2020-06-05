@@ -5,17 +5,16 @@
 
 <div class="row section">
   <div class="form-group">
-    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_CREATE_AP_SAMPLE} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_CREATE_AP_SAMPLE} ${LANG_ODIN}[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
     <div class="col-sm-7" id="top_buttons" align="right">
       <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
       <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
-      <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
     </div>
   </div>
 </div>
 
 <div class="form-group">
- <textarea class="form-control" id="ap_chunk" rows=8 ><#if ap_chunk??>${ap_chunk}</#if></textarea>
+ <textarea class="form-control" id="ap_data_no_sign" rows=8 ><#if ap_data_no_sign??>${ap_data_no_sign}</#if></textarea>
 </div>
 
 <form action="/confirmtx" class="form-horizontal" method="post" id="sign_form">
@@ -23,8 +22,8 @@
   <input type="hidden" name="apid" value="${apid}">
   <input type="hidden" name="odin" id="odin" value='${odin["short_odin"]}'>
   <input type="hidden" name="updater" value="${address}">
-  <input type="hidden" name="ap_chunk_encoded" id="ap_chunk_encoded" value="">
-  <input type="hidden" name="ap_data_signed" id="ap_data_signed" value="">
+  <input type="hidden" name="ap_data_no_sign_encoded" id="ap_data_no_sign_encoded" value="">
+  <input type="hidden" name="signature" id="signature" value="">
 
    <div class="form-group">
     <label for="ap_type" class="col-sm-2 control-label">${LANG_SELECT_FIRST_AP_TYPE}</label>
@@ -37,33 +36,30 @@
     </div>
   </div>
 
-  <#if new_vd_set_prvkey??>
+
   <div class="form-group">
-    <label for="sign_algo" class="col-sm-2 control-label">${LANG_ALGORITHM}</label>
+    <label for="sign_spec" class="col-sm-2 control-label">${LANG_PTTP_SPECIFICATION}</label>
     <div class="col-sm-10">
-     <input class="form-control" type="text" name="sign_algo" id="sign_algo" value='<#if new_vd_set_algo??>${new_vd_set_algo}</#if>'  list="algo_list" >
+     <input class="form-control" type="text" name="sign_spec" id="sign_spec" value='<#if sign_spec??>${sign_spec}</#if>'  list="spec_list" >
     </div>
   </div>
-  <datalist id="algo_list">
-    <option value="SHA256withRSA" label="SHA256withRSA">
-    <option value="SHA384withRSA" label="SHA384withRSA">
-    <option value="SHA512withRSA" label="SHA512withRSA">
-    <option value="SHA1withRSA" label="SHA1withRSA">
-    <option value="MD5withRSA" label="MD5withRSA">
+  <datalist id="spec_list">
+    <option value="none" label="none">
+    <option value="past.v1.public." label="past.v1.public.">
   </datalist>
   <div class="form-group">
     <label for="sign_prvkey" class="col-sm-2 control-label">${LANG_PRIVATE_KEY}</label>
     <div class="col-sm-10">
-     <textarea class="form-control" name="sign_prvkey" id="sign_prvkey" rows=3 >${new_vd_set_prvkey}</textarea>
+     <textarea class="form-control" name="sign_prvkey" id="sign_prvkey" rows=3 ><#if vd_set_prvkey??>${vd_set_prvkey}</#if></textarea>
      <span>${LANG_THE_PRIVATE_KEY_FOR_SIGN_PAGE}</span>
     </div>
   </div>
-  </#if>
+  
   
   <div class="form-group">
     <label for="sign_pubkey" class="col-sm-2 control-label">${LANG_PUBLIC_KEY}</label>
     <div class="col-sm-10">
-     <textarea class="form-control" name="sign_pubkey" id="sign_pubkey" rows=3 readonly><#if new_vd_set_pubkey??>${new_vd_set_pubkey}</#if></textarea>
+     <textarea class="form-control" name="sign_pubkey" id="sign_pubkey" rows=3 readonly><#if vd_set_pubkey??>${vd_set_pubkey}</#if></textarea>
     </div>
   </div>
 
@@ -89,7 +85,7 @@ function init(){
     if(typeof(PeerWeb) !== 'undefined'){ //检查PPk开放协议相关PeerWeb JS接口可用性
         console.log("PeerWeb enabled");
         
-        default_odin_uri='ppk:'+document.getElementById("odin").value+'#';
+        default_odin_uri='ppk:'+document.getElementById("odin").value+'*';
 
         try{
             PeerWeb.getPPkResourcePubkey(
@@ -101,7 +97,7 @@ function init(){
         }
     }else{
         console.log("PeerWeb not valid");
-        //alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.3.2 above.");
+        //alert("${LANG_PEERWEB_NOT_VALID}");
     }
 }
 
@@ -123,15 +119,21 @@ function callback_getPPkResourcePubkey(status,obj_data){
 
 //编码可能带有HTML关键字的内容字符串
 function signApContent(){
-    var ap_chunk=document.getElementById("ap_chunk").value;
+    var ap_data_no_sign=document.getElementById("ap_data_no_sign").value;
     
     try{
-        var input_prvkey=document.getElementById("sign_prvkey");
-        if( input_prvkey != null && input_prvkey.value.length>30 ){ //使用本地钱包私钥
-            document.getElementById("ap_chunk_encoded").value=stringToHex(encodeURIComponent(ap_chunk)); //encode两次避免提示XSS错误
+        var sign_spec=document.getElementById("sign_spec").value;
+        var input_prvkey=document.getElementById("sign_prvkey").value;
+        if(  sign_spec==""
+          || sign_spec=="none"
+          || input_prvkey.length>30 )
+        { //不需要签名或者可使用本地有效钱包私钥签名
+            document.getElementById("ap_data_no_sign_encoded").value=stringToHex(encodeURIComponent(ap_data_no_sign)); //encode两次避免提示XSS错误
             document.getElementById("sign_form").submit();
-        }else if(typeof(PeerWeb) !== 'undefined'){ //检查PPk开放协议相关PeerWeb JS接口可用性
-            var mTempDataHex = bytesToHex( encodeUtf8(ap_chunk) ) ; //需要签名的原文
+        }
+        else if(typeof(PeerWeb) !== 'undefined')
+        { //检查PPk开放协议相关PeerWeb JS接口可用性
+            var mTempDataHex = bytesToHex( encodeUtf8(ap_data_no_sign) ) ; //需要签名的原文
             //alert(mTempDataHex);
         
             console.log("PeerWeb enabled");
@@ -148,7 +150,7 @@ function signApContent(){
             );
         }else { 
             //console.log("PeerWeb not valid");
-            alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.3.2 above.");
+            alert("${LANG_PEERWEB_NOT_VALID}");
         }
     }catch(e){
         alert("签名操作有误!\n"+e);
@@ -162,17 +164,10 @@ function callback_signWithPPkResourcePrvKey(status,obj_data){
     if('OK'==status){
         try{
             //alert("res_uri="+obj_data.res_uri+" \nsign="+obj_data.sign+" \algo="+obj_data.algo);
-            var ap_chunk=document.getElementById("ap_chunk").value;
-            var obj_ap_data={
-                "ver":1,
-                "data":ap_chunk,
-                "sign": obj_data.algo+":"+obj_data.sign,
-            };
-            
-            var ap_data_signed= JSON.stringify(obj_ap_data);
-            //alert("ap_data_signed="+ap_data_signed);
-            //document.getElementById("ap_data_signed").value=stringToHex(ap_data_signed);
-            document.getElementById("ap_data_signed").value=ap_data_signed;
+            //alert("obj_data.sign="+obj_data.sign);
+
+            document.getElementById("signature").value=obj_data.sign;
+            document.getElementById("sign_spec") = "past.v1.public.";
             
             document.getElementById("sign_form").submit();
         }catch(e){

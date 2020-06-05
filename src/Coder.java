@@ -9,7 +9,7 @@ import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;  
   
 /** 
- * 基础加密组件 
+ * 基础加密哈希组件 
  *  
  * @author 梁栋 
  * @version 1.0 

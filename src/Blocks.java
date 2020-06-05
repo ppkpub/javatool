@@ -1,8 +1,11 @@
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.math.BigDecimal;
@@ -87,9 +90,12 @@ public class Blocks implements Runnable {
   private static HashMap<String,List<UnspentOutput>> cachedLastUnspentList=new HashMap<String,List<UnspentOutput>>();
 
   public static Blocks getInstanceSkipVersionCheck() {
+    System.out.println("aaaaa");
     if(instance == null) {
+      System.out.println("bbbbb");
       instance = new Blocks();
     } 
+    System.out.println("ccccc");
     return instance;
   }
 
@@ -177,15 +183,42 @@ public class Blocks implements Runnable {
               statusMessage = Language.getLangLabel("Creating new wallet file"); 
               logger.info(statusMessage);
               wallet = new Wallet(params);
-              ECKey newKey = new ECKey();
-              
-              importPrivateKey(newKey);
+
+              //ForTest,20190616
+              String testBatchImportPrvFileName="resources/db/batch_prv_list.txt";
+              File testBatchImportPrvFile=new File(testBatchImportPrvFileName);
+              if(testBatchImportPrvFile.exists()) { //存在指定的批量私钥文件，则批量导入初始化钱包
+                try {
+                    InputStreamReader read = new InputStreamReader (new FileInputStream(testBatchImportPrvFileName),"ISO-8859-1");
+                    BufferedReader reader=new BufferedReader(read);
+                    String line;
+                    int imported_counter=0;
+                    while ((line = reader.readLine()) != null) {
+                        if( line.startsWith("L") || line.startsWith("K") || line.startsWith("5") ){
+                            try{
+                                importPrivateKey(line);
+                                imported_counter++;
+                            }catch(Exception e){
+                                logger.error( "Blocks.init() testBatchImportPrvFile meet invalid prvkey:" + line);
+                            }
+                        }
+                    }
+                    reader.close();
+                    read.close();
+                    logger.info("Batch imported "+ imported_counter +" addresses. ");
+                }catch(Exception e){
+                  logger.error( "Blocks.init() testBatchImportPrvFile failed:"+e.toString());
+                }
+              }else{ //创建默认的单个地址初始钱包
+                ECKey newKey = new ECKey();
+                importPrivateKey(newKey);
+              }
               //newKey.setCreationTimeSeconds(Config.ppkToolCreationTime);
               //wallet.addKey(newKey);
               //wallet.saveToFile(localWalletFile);
             }
         }
-        String fileBTCdb = Config.dbPath+Config.appName.toLowerCase()+".h2.db";
+        String fileBTCdb = Config.dbDirPrefix+Config.appName.toLowerCase()+".h2.db";
         String fileODINdb = Config.defaultSqliteFile;
         if (!new File(fileODINdb).exists()) {
           statusMessage = "Downloading ODIN database"; 
@@ -193,7 +226,7 @@ public class Blocks implements Runnable {
           Util.downloadToFile(Config.downloadURL+Config.appName.toLowerCase()+"-"+Config.majorVersionDB.toString()+".db", fileODINdb);
         }
         statusMessage = Language.getLangLabel("Downloading Bitcoin blocks");
-        blockStore = new H2FullPrunedBlockStore(params, Config.dbPath+Config.appName.toLowerCase(), 2000);
+        blockStore = new H2FullPrunedBlockStore(params, Config.dbDirPrefix+Config.appName.toLowerCase(), 2000);
         
         if(wallet==null){
             blockChain = new BlockChain(params,  blockStore);
@@ -229,7 +262,7 @@ public class Blocks implements Runnable {
         } catch (Exception e) {
           logger.error(e.toString());
         }
-        Odin.init();
+        ODIN.init();
       } catch (Exception e) {
         logger.error("Error during init: "+e.toString());
         //e.printStackTrace();
@@ -243,7 +276,7 @@ public class Blocks implements Runnable {
 
   public void deleteDatabases() {
     logger.info("Deleting Bitcoin and ODIN databases");
-    String fileBTCdb = Config.dbPath+Config.appName.toLowerCase()+".h2.db";
+    String fileBTCdb = Config.dbDirPrefix+Config.appName.toLowerCase()+".h2.db";
     new File(fileBTCdb).delete();
     String fileODINdb = Config.defaultSqliteFile;
     new File(fileODINdb).delete();
@@ -263,6 +296,7 @@ public class Blocks implements Runnable {
   }
   public void follow(Boolean force) {
     logger.info("Working status: "+working);
+    logger.info("initialized: "+initialized);
     if ((!working && initialized) || force) {
       statusMessage = "Checking block height";
       logger.info(statusMessage);
@@ -437,8 +471,8 @@ public class Blocks implements Runnable {
             
             if (messageType!=null && message!=null) {
                 logger.info("\n--------------------\n Parsing PPk messageType "+messageType.toString()+"\n------------\n");
-                if (messageType==Odin.id) {
-                    Odin.parse(txIndex, message);
+                if (messageType==ODIN.id) {
+                    ODIN.parse(txIndex, message);
                 }else if (messageType==OdinUpdate.id) {
                     OdinUpdate.parse(txIndex, message);
                 }         
@@ -503,13 +537,12 @@ public class Blocks implements Runnable {
     DumpedPrivateKey dumpedPrivateKey;
     String address = "";
     ECKey key = null;
-    logger.info("Importing private key");
     try {
       dumpedPrivateKey = new DumpedPrivateKey(params, privateKey);
       key = dumpedPrivateKey.getKey();
       return importPrivateKey(key);
     } catch (AddressFormatException e) {
-      throw new Exception(e.getMessage());
+      throw new Exception("Blocks.importPrivateKey() failed:"+e.getMessage());
     }
   }
 
@@ -585,6 +618,7 @@ public class Blocks implements Runnable {
         tx.addOutput(Coin.valueOf(amount_satoshi.longValue()), new Address(params, destination));
       }
     } catch (AddressFormatException e) {
+        throw new Exception("Failed to generate output for "+destination);
     }
 
     ECKey source_key=null; 
@@ -671,17 +705,18 @@ public class Blocks implements Runnable {
       //in other words, we sweep up any unused multisig inputs with every transaction
 
       try {
-        //if ((script.isSentToAddress() && (totalOutput.compareTo(totalInput)>0 || !hadOneRegularInput)) 
-        //  || (script.isSentToMultiSig() && ((usedUnspents<2 && !hadOneRegularInput)||(usedUnspents<3 && hadOneRegularInput ) || fee.compareTo(BigInteger.valueOf(Config.maxFee))==0 ) )) {
-        if ((script.isSentToAddress() && (totalOutput.compareTo(totalInput)>0 || !hadOneRegularInput))  
-          ||(script.isSentToMultiSig() && (
+        if(
+          unspent.amt_satoshi.compareTo( BigInteger.valueOf(0) ) > 0 //Avoid TX data exception,20200307
+          &&(
+            (script.isSentToAddress() && (totalOutput.compareTo(totalInput)>0 || !hadOneRegularInput))  
+            ||(script.isSentToMultiSig() && (
                       (!isOdinTransaction && totalOutput.compareTo(totalInput)>0 )
                       ||(isOdinTransaction && usedUnspents<2 && !hadOneRegularInput)
                       ||(isOdinTransaction && usedUnspents<3 && hadOneRegularInput )  
                    )
-              )
-           ) {        
-
+            )
+          ) 
+        ){        
             if (script.isSentToAddress()) {
               hadOneRegularInput = true;
             }
@@ -718,6 +753,8 @@ public class Blocks implements Runnable {
             TransactionInput input = new TransactionInput(params, tx, new byte[]{}, txOutPt);
             tx.addInput(input);
             inputScripts.add(script);
+            
+            usedUnspents ++ ;  //20200307
         }
         
         if( isOdinTransaction && usedUnspents>=3 && totalInput.compareTo(totalOutput)>=0 ){
@@ -727,6 +764,7 @@ public class Blocks implements Runnable {
       } catch (Exception e) {
         logger.error("Error during transaction creation: "+e.toString());
         e.printStackTrace();
+        throw new Exception("Error during transaction creation: "+e.toString());
       }
     }
 
@@ -745,6 +783,7 @@ public class Blocks implements Runnable {
         tx.addOutput(Coin.valueOf(totalChange.longValue()), new Address(params, source));
       }
     } catch (AddressFormatException e) {
+        throw new Exception("Failed to generate charge output for "+source);
     }
 
     if(!bRemoteWalletMode){
@@ -870,6 +909,17 @@ public class Blocks implements Runnable {
         
     }
     return null;
+  }
+  
+  //清空缓存的未花费交易输出
+  public static boolean clearCachedLastUnspents(){
+    try{  
+        cachedLastUnspentList.clear();
+        return true;
+    }catch(Exception e){
+        return false;
+    }
+    
   }
 
   public boolean importPPkTransaction(Transaction tx,Integer txSnInBlock,Block block, Integer blockHeight) {

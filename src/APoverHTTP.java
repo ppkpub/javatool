@@ -20,13 +20,13 @@ public class APoverHTTP {
 
   public static String fetchInterest(String ap_url, String interest) {
     String str_ap_resp_json=null;
-    String ap_fetch_url=ap_url+"?pttp_interest="+java.net.URLEncoder.encode(interest);
-    logger.info("APoverHTTP.fetchInterest("+ap_fetch_url+") ...");
+    String ap_fetch_url=ap_url+"?"+Config.PTTP_INTEREST+"="+java.net.URLEncoder.encode(interest);
+    logger.info("fetchInterest("+ap_fetch_url+") ...");
     
     try{
       str_ap_resp_json=new String(CommonHttpUtil.getInstance().getContentFromUrl(ap_fetch_url));
     }catch(Exception e){
-      logger.error("APoverHTTP.fetchInterest("+ap_fetch_url+") error: "+e.toString());
+      logger.error("fetchInterest("+ap_fetch_url+") error: "+e.toString());
     }
     
     //System.out.println("APoverHTTP.fetchInterest() str_ap_resp_json:"+str_ap_resp_json);

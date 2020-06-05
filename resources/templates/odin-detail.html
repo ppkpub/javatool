@@ -4,10 +4,14 @@
 
 <div class="row section">
   <div class="form-group">
-    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_VIEW_THE_DETAIL_OF} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_VIEW_THE_DETAIL_OF} ${LANG_ODIN}[<a href='/?go=ppk:${odin["short_odin"]}*'>${odin["short_odin"]}</a>]:${odin["full_odin"]}</h3></label>
     <div class="col-sm-7" id="top_buttons" align="right">
      <#if odin["me_updatable"]??>
+      <a class="btn btn-success" role="button" href='javascript:setAsDefaultODIN();'>${LANG_USE_AS_MY_ID}</a> 
       <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE}...</a>
+      <a class="btn btn-primary" role="button" href='${ppk_auction_tool_uri}new_sell.php?asset_id=${odin["short_odin"]}'>${LANG_SELL_IT}...</a>
+     <#else>
+      <a class="btn btn-info" role="button" href='${ppk_auction_tool_uri}new_want.php?asset_id=${odin["short_odin"]}'>${LANG_WANT_IT}...</a>
      </#if>
     </div>
   </div>
@@ -17,11 +21,33 @@
 <li>${LANG_ODIN_ADMIN_ADDRESS} : ${odin["admin"]}</li>
 <li>${LANG_ODIN_TITLE} : ${odin["title"]}</li>
 <li>${LANG_EMAIL} : ${odin["email"]}</li>
-
-<li>${LANG_ODIN_AUTHORITY} : <#if odin["auth"]="0">${LANG_THE_REGISTER_OR_ADMIN_CAN_UPDATE}</#if><#if odin["auth"]="1">${LANG_ONLY_THE_ADMIN_CAN_UPDATE}</#if><#if odin["auth"]="2">${LANG_REGISTER_AND_ADMIN_MUST_UPDATE_TOGETHER}</#if></li>
+<li>${LANG_ODIN_AUTHORITY} : ${odin["auth_label"]}</li>
 
 <li>${LANG_ODIN_REGISTER_ADDRESS} : ${odin["register"]}</li>
 <li>${LANG_TIME}: ${odin["block_time"]}   ${LANG_BLOCK}:${odin["block_index"]}</li>
+
+<li>${LANG_PNS}</li>
+<#if test_pns_url??>
+<ul>  
+    <p><a href='${odin["pns_url"]}' target="_blank">${odin["pns_url"]}</a></p>
+    <ul>
+    <a class="btn btn-success" role="button" href='${test_pns_url}'>${LANG_TEST_RESOLVE_PNS}  ppk:${odin["short_odin"]}*</a>
+     <a class="btn btn-primary" role="button" href='${odin["pns_url"]}' target="_blank">${LANG_VIEW_PNS_HOMEPAGE}</a>
+    </ul>
+</ul>
+
+<p>
+<font size="-1">${PLEASE_SET_AP_ON_PNS}</font><br>
+</p>
+
+<#else>
+<ul>
+    <p>${LANG_PNS_DISABLED}</p>
+    <ul>
+    <#if odin["me_updatable"]??><a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_ENABLE_PNS}...</a></#if>
+    </ul>
+</ul>
+</#if>
 
 <li>${LANG_ODIN_AP}</li>
 <ul>
@@ -36,10 +62,11 @@
     </div>
   </div></#if>
   </#list>
-  <#if odin["me_updatable"]?? && !odin["ap0_url"]??>
+  <#if !test_pns_url?? && odin["me_updatable"]?? && !odin["ap0_url"]??>
   <ul><a href='/odin-ap-edit?odin=${odin["short_odin"]}' >${LANG_SUBMIT_TO_CREATE_FIRST_AP}</a></ul>
   </#if>
 </ul>
+
 
 <li>${LANG_ODIN_VALIDTION} : </li>
 <div class="row section">
@@ -64,9 +91,9 @@ ${update_info["log_sn"]+1}.
 <ul>
 <input type="hidden" name='update_log_id${update_info["log_sn"]}' value='${update_info["log_id"]}'>
 <!--<li>update_log_id:${update_info["log_id"]}</li>-->
-<li>Submit time: ${update_info["block_time"]}   Block:${update_info["block_index"]}</li>
-<li>Updater: ${update_info["updater"]}</li>
-<li>Update setting:${update_info["update_desc"]}</li>
+<li>${LANG_SUBMIT_TIME}: ${update_info["block_time"]}   ${LANG_BLOCK}:${update_info["block_index"]}</li>
+<li>${LANG_UPDATER}: ${update_info["updater"]}</li>
+<li>${LANG_UPDATE_SETTING}:${update_info["update_desc"]}</li>
 </ul>
 <hr size=1>
 </#list>
@@ -74,14 +101,14 @@ ${update_info["log_sn"]+1}.
 <div class="input-group">
     <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
     <span class="input-group-btn">
-        <button class="btn btn-danger" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled2="disabled"</#if>>${LANG_CONFIRM_THE_UPDATE}</button>
+        <button class="btn btn-danger" type="submit"  onclick="return confirmSubmitUpdates();" >${LANG_CONFIRM_THE_UPDATES}</button>
     </span>
 </div>
 </form>
 </#if>
 
 <#if odin["me_updatable"]??>
-<p align=center><a class="btn btn-warning" role="button" href='javascript:setAsDefaultODIN();'>使用该ODIN标识作为开放身份</a></p>
+
 
 <script type="text/javascript">
     function setAsDefaultODIN(){
@@ -94,13 +121,29 @@ ${update_info["log_sn"]+1}.
                 'callback_setNewODIN'  //回调方法名称
             );
         }else{
-            alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.3.2 above.");
+            alert("${LANG_PEERWEB_NOT_VALID}");
         }
     }
     function callback_setNewODIN(status,obj_data){
         if('OK'!=status){
-           alert("抱歉出错了！\n"+status+"\n"+obj_data.errdesc);
+           alert("${LANG_ERROR}\n"+status+"\n"+obj_data.errdesc);
         }
+    }
+    
+    function confirmSubmitUpdates( ){
+        this.innerHTML='${LANG_CLICKED_WAITING}';
+        this.disabled=true;
+        form.submit();
+        /*
+        //JAVA客户端不支持弹出对话框
+        if(window.confirm("${LANG_ASK_TO_CONFIRM_ALL_UPDATES}")) { 
+            this.innerHTML='${LANG_CLICKED_WAITING}';
+            this.disabled=true;
+            form.submit();
+        }else{
+            return false;
+        }
+        */
     }
 </script>
 

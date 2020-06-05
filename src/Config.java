@@ -12,8 +12,8 @@ public class Config {
   public static String downloadURL = "http://ppkpub.org/javatool/";
   public static String proxyURL = null;
   public static String minVersionPage = downloadURL+"min_version.txt";
-  public static String dbPath = "resources/db/";
-  public static String cachePath = "resources/cache/";
+  public static String dbDirPrefix = "resources/db/";
+  public static String cacheDirPrefix = "resources/cache/";
   public static String newsUrl = downloadURL+"news.html";
   public static String newsUrlCN = downloadURL+"news_cn.html";
   public static String downloadZipUrl = downloadURL+"download.txt"; //Only update package
@@ -30,7 +30,7 @@ public class Config {
   
   //version
   public static Integer majorVersion = 0;
-  public static Integer minorVersion = 809;
+  public static Integer minorVersion = 901;
   public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
   public static Integer majorVersionDB = 1;
   
@@ -48,71 +48,117 @@ public class Config {
   public static Integer btc_unit = 100000000;
 
   //PPk
-  public static long ppkToolCreationTime = 1400561240-1;  //UTC 2014-5-20 04:47:20
-  public static Integer firstBlock = 0;  
-  
   public static Integer ppkStandardDataFee = 1000;
   
-  public static int ODIN_PROTOCOL_VER=1; 
+  public static final long ppkToolCreationTime = 1400561240-1;  //UTC 2014-5-20 04:47:20
+  public static Integer firstBlock = 0;  
+
+  public static final int ODIN_PROTOCOL_VER=2; 
+  public static final int PTTP_PROTOCOL_VER=2; 
   
-  public static Integer TESTNET_FIRST_BLOCK = 547660;  //Testnet
-  public static String PPK_ODIN_MARK_PUBKEY_HEX_TESTNET="02d173743cd0d94f64d241d82a42c6ca92327c443e489f3842464a4df118d4920a";//1PPkT1hoRbnvSRExCeNoP4s1zr61H12bbg : For testnet
+  public static final Integer TESTNET_FIRST_BLOCK = 547660;  //Testnet
+  public static final String PPK_ODIN_MARK_PUBKEY_HEX_TESTNET="02d173743cd0d94f64d241d82a42c6ca92327c443e489f3842464a4df118d4920a";//1PPkT1hoRbnvSRExCeNoP4s1zr61H12bbg : For testnet
   
-  public static Integer MAINNET_FIRST_BLOCK = 426896;  //Mainnet
-  public static String PPK_ODIN_MARK_PUBKEY_HEX_MAINNET="0320a0de360cc2ae8672db7d557086a4e7c8eca062c0a5a4ba9922dee0aacf3e12";//1PPkPubRnK2ry9PPVW7HJiukqbSnWzXkbi : For Mainnet
+  public static final Integer MAINNET_FIRST_BLOCK = 426896;  //Mainnet
+  public static final String PPK_ODIN_MARK_PUBKEY_HEX_MAINNET="0320a0de360cc2ae8672db7d557086a4e7c8eca062c0a5a4ba9922dee0aacf3e12";//1PPkPubRnK2ry9PPVW7HJiukqbSnWzXkbi : For Mainnet
   
   public static String PPK_ODIN_MARK_PUBKEY_HEX=null;
   
-  public static byte PPK_PUBKEY_TYPE_FLAG=(byte)3;  //ODIN协议承载消息内容使用的公钥类型前缀取值
-  public static byte PPK_PUBKEY_LENGTH=33;  //ODIN协议承载消息内容使用的单条公钥长度
-  public static byte PPK_PUBKEY_EMBED_DATA_MAX_LENGTH=31;  //ODIN协议在单条公钥中最多嵌入的消息数据长度
+  public static final byte PPK_PUBKEY_TYPE_FLAG=(byte)3;  //ODIN协议承载消息内容使用的公钥类型前缀取值
+  public static final byte PPK_PUBKEY_LENGTH=33;  //ODIN协议承载消息内容使用的单条公钥长度
+  public static final byte PPK_PUBKEY_EMBED_DATA_MAX_LENGTH=31;  //ODIN协议在单条公钥中最多嵌入的消息数据长度
   
-  public static int MAX_MULTISIG_TX_NUM = 2; //一条交易里能支持的最大数量多重签名输出条目，建议设为2，如果过大可能会被比特币网络拒绝
-  public static int MAX_N = 3;   //多重签名1-OF-N中的参数N最大数量，建议设为3，如果过大可能会被比特币网络拒绝
-  public static int MAX_OP_RETURN_LENGTH = 75; //OP_RETURN能存放数据的最大字节数
-  public static int MAX_ODIN_DATA_LENGTH=(MAX_N-2)*PPK_PUBKEY_EMBED_DATA_MAX_LENGTH+(MAX_N-1)*PPK_PUBKEY_EMBED_DATA_MAX_LENGTH*(MAX_MULTISIG_TX_NUM-1)+MAX_OP_RETURN_LENGTH;  //支持嵌入的ODIN数据最大字节数
+  public static final int MAX_MULTISIG_TX_NUM = 2; //一条交易里能支持的最大数量多重签名输出条目，建议设为2，如果过大可能会被比特币网络拒绝
+  public static final int MAX_N = 3;   //多重签名1-OF-N中的参数N最大数量，建议设为3，如果过大可能会被比特币网络拒绝
+  public static final int MAX_OP_RETURN_LENGTH = 75; //OP_RETURN能存放数据的最大字节数
+  public static final int MAX_ODIN_DATA_LENGTH=(MAX_N-2)*PPK_PUBKEY_EMBED_DATA_MAX_LENGTH+(MAX_N-1)*PPK_PUBKEY_EMBED_DATA_MAX_LENGTH*(MAX_MULTISIG_TX_NUM-1)+MAX_OP_RETURN_LENGTH;  //支持嵌入的ODIN数据最大字节数
   
   
-  public static Byte FUNC_ID_ODIN_REGIST='R'; 
-  public static Byte FUNC_ID_ODIN_UPDATE='U'; 
+  public static final Byte FUNC_ID_ODIN_REGIST='R'; 
+  public static final Byte FUNC_ID_ODIN_UPDATE='U'; 
 
-  public static Byte DATA_TEXT_UTF8= 'T'; //normal text in UTF-8
-  public static Byte DATA_BIN_GZIP = 'G'; //Compressed by gzip
-  public static Byte DATA_BIN_DEFLATE = 'D'; //Compressed by deflate
+  public static final Byte DATA_TEXT_UTF8= 'T'; //normal text in UTF-8
+  public static final Byte DATA_BIN_GZIP = 'G'; //Compressed by gzip
+  public static final Byte DATA_BIN_DEFLATE = 'D'; //Compressed by deflate
   
-  public static String ODIN_CMD_UPDATE_BASE_INFO ="BI";
-  public static String ODIN_CMD_UPDATE_AP_SET ="AP";
-  public static String ODIN_CMD_UPDATE_VD_SET ="VD";
-  public static String ODIN_CMD_CONFIRM_UPDATE ="CU";
-  public static String ODIN_CMD_TRANS_REGISTER ="TR";  
+  public static final String ODIN_CMD_UPDATE_BASE_INFO ="BI";
+  public static final String ODIN_CMD_UPDATE_AP_SET ="AP";
+  public static final String ODIN_CMD_UPDATE_VD_SET ="VD";
+  public static final String ODIN_CMD_CONFIRM_UPDATE ="CU";
+  public static final String ODIN_CMD_TRANS_REGISTER ="TR";  
   
-  public static Byte DATA_CATALOG_UNKNOWN= 0; //Unkown Data,reserved
+  public static final String ODIN_STATUS_PENDING = "pending";       //"等待区块链收录"
+  public static final String ODIN_STATUS_VALID = "valid";         //"正常"
+  public static final String ODIN_STATUS_INVALID = "invalid";       //"有错误"
   
-  public static String PPK_URI_PREFIX="ppk:";
-  public static String PPK_URI_RESOURCE_MARK="#";
+  public static final String ODIN_UPDATE_STATUS_RECEIPTING = "receipting";    //"待接收";
+  public static final String ODIN_UPDATE_STATUS_AWAITING = "awaiting";      //"待同意更新"
+  
+  public static final String ODIN_BASE_SET_REGISTER="register";
+  public static final String ODIN_BASE_SET_ADMIN="admin";
+  public static final String ODIN_BASE_SET_AUTH="auth";
+  public static final String ODIN_BASE_SET_PNS_URL="pns_url";
+  
+  public static final String ODIN_SET_VD_TYPE="type";
+  public static final String ODIN_SET_VD_PUBKEY="pubkey";
+  public static final String ODIN_SET_VD_CERT_URI="cert_uri"; //保留字段，用于测试
+  public static final String ODIN_SET_VD_ENCODE_TYPE_PEM = "PEM";   
+  public static final String ODIN_SET_VD_ENCODE_TYPE_BASE64 = "BASE64";  
+  
+  public static final Byte DATA_CATALOG_UNKNOWN= 0; //Unkown Data,reserved
+  
+  public static String PTTP_INTEREST="pttp";
+  
+  public static final String PPK_URI_PREFIX="ppk:";
+  public static final String PPK_URI_RESOURCE_MARK="*";
 
-  public static String PTTP_INTEREST="pttp_interest";
+  public static final String PTTP_KEY_VER="ver";
+  public static final String PTTP_KEY_URI="uri";
   
-  public static String JSON_KEY_PPK_DATA="data";
-  public static String JSON_KEY_PPK_SIGN="sign";
-  public static String JSON_KEY_PPK_URI="ppk-uri";
-  public static String JSON_KEY_PPK_ALGO="algo";
-  public static String JSON_KEY_PPK_SIGN_BASE64="sign_base64";
-  public static String JSON_KEY_PPK_PUBKEY="pubkey";
-  public static String JSON_KEY_PPK_CERT_URI="cert_uri";
-  public static String JSON_KEY_PPK_VALIDATION="validation";
-  public static String JSON_KEY_PPK_CHUNK="chunk";
-  public static String JSON_KEY_PPK_CHUNK_TYPE="chunk-type";
-  public static String JSON_KEY_PPK_CHUNK_LENGTH="chunk-length";
-  public static String JSON_KEY_PPK_CHUNK_URL="chunk-url";
-  public static String JSON_KEY_PPK_REGISTER="register";
-  public static String JSON_KEY_PPK_ADMIN="admin";
-  public static String JSON_KEY_ORIGINAL_RESP="original_resp";
-  public static String JSON_KEY_STATUS_CODE="status_code";
+  public static final String PTTP_KEY_OPTION="option";
+
+  public static final String PTTP_KEY_SPEC="spec";
+  public static final String PTTP_KEY_SPEC_NONE="none"; //无签名
+  public static final String PTTP_KEY_SPEC_PAST="past."; //带有签名并符合PASTPAST规范
+  public static final String PTTP_KEY_SPEC_PAST_HEADER_V1_PUBLIC="v1.public."; //符合PASTPAST规范v1版本和采用公钥数字签名
   
-  public static int PPK_VALIDATION_OK        = 0;
-  public static int PPK_VALIDATION_IGNORED   = 1;
-  public static int PPK_VALIDATION_ERROR     = 2;
+  public static final String PTTP_KEY_METAINFO="metainfo";
+  public static final String PTTP_KEY_IAT="iat";
+  public static final String PTTP_KEY_STATUS_CODE="status_code";
+  public static final String PTTP_KEY_STATUS_DETAIL="status_detail";
+  public static final String PTTP_KEY_CONTENT_ENCODING="content_encoding";
+  public static final String PTTP_KEY_CONTENT_TYPE="content_type";
+  public static final String PTTP_KEY_CONTENT_LENGTH="content_length";
+  public static final String PTTP_KEY_CACHE_AS_LATEST="cache_as_latest";
+  
+  public static final String PTTP_KEY_CONTENT="content";
+  public static final String PTTP_KEY_SIGNATURE="signature";
+  
+  public static final String PTTP_SIGN_MARK_INTEREST  =  "INTEREST";
+  public static final String PTTP_SIGN_MARK_DATA  =  "DATA";
+  
+  public static final int PTTP_STATUS_CODE_OK = 200;
+  public static final int PTTP_STATUS_CODE_LOCAL_ERROR = 775;  //PPk定义的本地异常代码
+
+  public static final String JSON_KEY_PPK_URI="ppk-uri";
+  public static final String JSON_KEY_PPK_VALIDATION="validation";
+  public static final String JSON_KEY_CHUNK_BYTES="chunk";
+  public static final String JSON_KEY_CHUNK_TYPE="chunk-type";
+  public static final String JSON_KEY_CHUNK_LENGTH="chunk-length";
+  public static final String JSON_KEY_CHUNK_URL="chunk-url";
+  public static final String JSON_KEY_EXP_UTC="exp-utc";
+  public static final String JSON_KEY_FROM_CACHE="from-cache";
+
+  public static final String JSON_KEY_ORIGINAL_RESP="original-resp";
+  
+  public static final String DEFAULT_CACHE_AS_LATEST="public,max-age=600"; //默认作为最新版本的缓存时间是10分钟
+  public static final String IGNORE_CACHE_AS_LATEST="no-store"; //不作为最新版本缓存
+  
+  public static final long CACHE_NO_EXP_UTC=0; //长期缓存的特殊时间戳，没有具体失效时间，会根据系统存储容量等条件尽可能缓存长的时间
+
+  public static final int PTTP_VALIDATION_OK        = 0;
+  public static final int PTTP_VALIDATION_IGNORED   = 1;
+  public static final int PTTP_VALIDATION_ERROR     = 2;
 
   //Dat
   public static String DAT_UPLOAD_URL="http://tool.ppkpub.org/dat/"; 
@@ -125,18 +171,24 @@ public class Config {
   //Bytom File System
   public static String BTMFS_PROXY_URL="http://btmdemo.ppkpub.org/btmfs/"; //Test service
   
+  //P2P
+  public static boolean enableP2P = false;
+  public static String  p2pSetJSON = null;   
+  
   //AP
   public static Integer ppkPttpServicePort = 8088;
   public static String  ppkPttpServiceIP   = "127.0.0.1";
   public static String  ppkDefaultHrefApUrl ;
   
-  public static String  ppkDefaultHomepage      = "ppk:0/";
+  public static String  ppkDefaultHomepage      = "ppk:0/";  //缺省主页
+  public static String  ppkSwapToolURI           = "https://tool.ppkpub.org/swap/"; //关联的PPk开放交换工具网址
+  public static String  ppkDefaultPnsURI = "" ; //缺省的PNS服务网址
 
   //Charset
   public static String PPK_TEXT_CHARSET="UTF-8";  //适用文本内容
   public static String PPK_JS_CHARSET="UnicodeBigUnmarked"; //适用JS以HEX编码上传的文本内容
   public static String BINARY_DATA_CHARSET="ISO-8859-1";  //适用原始二进制数据与字符串类型间的转换
-
+  
   //etc.
   public static Integer maxExpiration = 4*2016;
   public static Integer maxInt = ((int) Math.pow(2.0,63.0))-1;
@@ -163,7 +215,7 @@ public class Config {
         ppkPttpServiceIP = strTemp;
       }
       System.out.println("PttpServiceIP:"+ppkPttpServiceIP);
-      ppkDefaultHrefApUrl = "http://"+ppkPttpServiceIP+":"+ppkPttpServicePort+"/";
+      //ppkDefaultHrefApUrl = "http://"+ppkPttpServiceIP+":"+ppkPttpServicePort+"/";
       
       strTemp = prop.getProperty("DefaultHomepage");
       System.out.println("DefaultHomepage:"+strTemp);
@@ -227,6 +279,18 @@ public class Config {
         debugKey=false;
       }
       
+      strTemp = prop.getProperty("EnableP2P");
+      System.out.println("EnableP2P:"+strTemp);
+      if(strTemp!=null && strTemp.equals("1") ){
+        enableP2P=true;
+      }else{
+        enableP2P=false;
+      }
+      
+      if(enableP2P){
+         p2pSetJSON = prop.getProperty("P2P_Set");
+      }
+
       strTemp = prop.getProperty("GuiServerPort");
       if(strTemp!=null && strTemp.length()>0 ){
         GuiServerPort = Integer.parseInt( strTemp );
@@ -237,7 +301,7 @@ public class Config {
       }
       System.out.println("GuiServerPort:"+GuiServerPort);
       
-      defaultSqliteFile = dbPath + appName.toLowerCase()+"-"+majorVersionDB.toString()+".db";
+      defaultSqliteFile = dbDirPrefix + appName.toLowerCase()+"-"+majorVersionDB.toString()+".db";
       
       strTemp = prop.getProperty("JDBC");
       if(strTemp!=null && strTemp.length()>0  ){
@@ -291,6 +355,23 @@ public class Config {
         defaultTimeZone = strTemp;
       }
       System.out.println("TimeZone:"+defaultTimeZone);
+      
+      strTemp = prop.getProperty("PPkSwapToolURI");
+      if(strTemp!=null && strTemp.length()>0 ){
+        ppkSwapToolURI = strTemp;
+      }
+      System.out.println("PPkSwapToolURI:"+ppkSwapToolURI);
+      
+      strTemp = prop.getProperty("DefaultPnsURI");
+      if(strTemp!=null && strTemp.trim().length()>0 ){
+        ppkDefaultPnsURI = strTemp.trim();
+      }
+      System.out.println("DefaultPnsURI:"+ppkDefaultPnsURI);
+      
+      
+      //自动清除缓存
+      //Util.deleteDir(cacheDirPrefix,false);
+      //System.out.println("Cleared PTTP cache : "+cacheDirPrefix);
       
     } catch (IOException e) {
     }    

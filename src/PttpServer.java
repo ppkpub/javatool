@@ -59,6 +59,7 @@ public class PttpServer implements Runnable {
     }
     
     setPort(Config.ppkPttpServicePort);    
+    Config.ppkDefaultHrefApUrl = "http://"+Config.ppkPttpServiceIP+":"+Config.ppkPttpServicePort+"/";
     
     final Configuration configuration = new Configuration();
     try {
@@ -77,42 +78,17 @@ public class PttpServer implements Runnable {
       public ModelAndView handle(Request request, Response response) {
         setConfiguration(configuration);
         
-        String pttp_interest=request.queryParams(Config.PTTP_INTEREST);
+        String pttp_interest=request.queryParams("pttp");
+        String ppk_uri=request.queryParams("go");
         
-        if( pttp_interest != null  ){
-          pttp_interest = pttp_interest.trim();
-          String ppk_uri;
-          try{
-            //Request like http://127.0.0.1:8088/?pttp_interest={"ver":1,"hop_limit":6,"interest":{"uri":"ppk:0/"}}
-            //URLEncode as http://127.0.0.1:8088/?pttp_interest=%7b%22ver%22%3a1%2c%22hop_limit%22%3a6%2c%22interest%22%3a%7b%22uri%22%3a%22ppk%3a0%23%22%7d%7d
-            JSONObject objInterest=new JSONObject(pttp_interest);
-            ppk_uri=objInterest.getJSONObject("interest").getString("uri");
-          }catch(Exception e){
-            logger.error("PttpServer.get() meet misformated pttp_interest:"+pttp_interest);
-            if(pttp_interest.startsWith("ppk:"))
-              ppk_uri=pttp_interest; 
-            else{
-              Map<String, Object> attributes = new HashMap<String, Object>();
-              attributes.put("pttp_data", "ERROR:400");
-              return modelAndView(attributes, "pttp-data.html");
-            }
-          }
-          
-          JSONObject obj_ap_resp=PPkURI.fetchPPkURI( ppk_uri );
-          
-          String original_resp="ERROR: Invalid pttp data!";
-          if(obj_ap_resp!=null)
-            original_resp=obj_ap_resp.optString(Config.JSON_KEY_ORIGINAL_RESP,original_resp);
-          
-          Map<String, Object> attributes = new HashMap<String, Object>();
-          attributes.put("pttp_data", original_resp);
+        if( pttp_interest != null ){
+          //For get PTTP data
+          Map<String, Object> attributes = handlePttpProxyRequest(request,pttp_interest);
           return modelAndView(attributes, "pttp-data.html");
         }else{
-          String ppk_uri=request.queryParams(Config.JSON_KEY_PPK_URI);
-          if( ppk_uri==null || ppk_uri.length( ) == 0 )
+          //For browse content
+          if( ppk_uri==null || ppk_uri.trim().length( ) == 0 )
             ppk_uri = Config.ppkDefaultHomepage;
-          
-          ppk_uri = ppk_uri.trim();
    
           Map<String, Object> attributes = handlePttpBrowserRequest(request,ppk_uri);
           return modelAndView(attributes, "pttp-browser.html");
@@ -145,7 +121,7 @@ public class PttpServer implements Runnable {
     */
   }
  
-  public Map<String, Object> updateCommonStatus(Request request, Map<String, Object> attributes) {
+  public static Map<String, Object> updateCommonStatus(Request request, Map<String, Object> attributes) {
     attributes.put("version", Config.version);
     attributes.put("version_major", Config.majorVersion);
     attributes.put("version_minor", Config.minorVersion);
@@ -178,8 +154,46 @@ public class PttpServer implements Runnable {
         
     return attributes;
   }
+  
+  public static Map<String, Object> handlePttpProxyRequest(Request request,String pttp_interest) {
+    Map<String, Object> attributes = new HashMap<String, Object>();
+    
+    if(pttp_interest==null){
+        attributes.put("error", "ERROR:no pttp_interest.");
+        return attributes;
+    } 
+    
+    pttp_interest = pttp_interest.trim();
 
-  public Map<String, Object> handlePttpBrowserRequest(Request request,String ppk_uri) {
+    String ppk_uri=null;
+    try{
+        //Request like http://127.0.0.1:8088/?pttp={"ver":1,"hop_limit":6,"uri":"ppk:0/","option":{}}
+        //or  like http://127.0.0.1:8088/?pttp=ppk:0/
+        if(pttp_interest.startsWith("ppk:")){
+          ppk_uri=pttp_interest; 
+        }else{
+          JSONObject objInterest=new JSONObject(pttp_interest);
+          ppk_uri=objInterest.getString("uri");
+        }
+
+    }catch(Exception e){
+        System.out.println("PttpServer.get() meet misformated pttp_interest:"+pttp_interest);
+        attributes.put("pttp_data", "ERROR:400");
+        return attributes;
+    }
+     
+    JSONObject obj_decoded_chunk=PTTP.fetchPPkURI( ppk_uri );
+      
+    String original_resp="ERROR: Invalid pttp data!";
+    if(obj_decoded_chunk!=null)
+        original_resp=obj_decoded_chunk.optString(Config.JSON_KEY_ORIGINAL_RESP,original_resp);
+      
+    attributes.put("pttp_data", original_resp);
+    
+    return attributes;
+  }
+
+  public static Map<String, Object> handlePttpBrowserRequest(Request request,String ppk_uri) {
     Map<String, Object> attributes = new HashMap<String, Object>();
     request.session(true);
     
@@ -189,11 +203,19 @@ public class PttpServer implements Runnable {
         attributes.put("error", "no ppk-uri.");
         return attributes;
     } 
+    
+    ppk_uri = ppk_uri.trim();
+    
+    int path_mark_posn=ppk_uri.indexOf('/');
+    int resoure_mark_posn=ppk_uri.indexOf( Config.PPK_URI_RESOURCE_MARK );
+    if( path_mark_posn<0 &&  resoure_mark_posn<0) //输入地址类似 ppk:100 的情况，这时尾部加/表示默认访问内容主页
+        ppk_uri+="/";
+        
     attributes.put("title", ppk_uri);
     attributes.put("ppk_uri", ppk_uri);
     
     try{
-      JSONObject obj_ap_resp=PPkURI.fetchPPkURI( ppk_uri );
+      JSONObject obj_decoded_chunk=PTTP.getPPkResource( ppk_uri );
       
       String ap_resp_content="";
       String ap_resp_ppk_uri="";
@@ -201,57 +223,77 @@ public class PttpServer implements Runnable {
       String ap_resp_sign="";
       String ap_resp_validate_result="";
       
-      if(obj_ap_resp!=null){
-        ap_resp_url=obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_URL,"");
+      if(obj_decoded_chunk!=null){
+        ap_resp_ppk_uri = obj_decoded_chunk.optString(Config.JSON_KEY_PPK_URI);
         
-        int status_code = obj_ap_resp.getInt("status_code");
-        if(status_code==200){
-            String str_chunk_type = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase();
-            if( str_chunk_type.startsWith("text/html") ){ //网页
-              ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
-              
-              //处理页面内容中的图片
-              ap_resp_content = processPPkImagesInPage(ap_resp_content); 
-              
-              //将页面内容中以ppk:起始的href链接替换为适合本地浏览的链接格式
-              String tmp_href_ap_url=Config.ppkDefaultHrefApUrl+"?"+Config.JSON_KEY_PPK_URI+"="+Config.PPK_URI_PREFIX;
-
-              ap_resp_content = ap_resp_content.replaceAll("'"+Config.PPK_URI_PREFIX,"'"+tmp_href_ap_url)
-                                               .replaceAll("\""+Config.PPK_URI_PREFIX,"\""+tmp_href_ap_url)
-                                               .replaceAll("#\"","%23\"");
-              
-              
-            }else if(str_chunk_type.startsWith("text")){ //其他文本
-              ap_resp_content = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
-            }else if(str_chunk_type.startsWith("image")){
-              ap_resp_content = "<img src='"+Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK))+"'>";
-            }else{
-              //Not supported chunk_type now
-              ap_resp_content =  obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"");
-            }
-        }else if(status_code==302){
-            String dest_url = new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) );
-            ap_resp_content="<head><meta http-equiv='refresh' content='2;url="+dest_url+"'></head>Redirected to "+dest_url;
+        int validcode=obj_decoded_chunk.optInt(Config.JSON_KEY_PPK_VALIDATION,Config.PTTP_VALIDATION_ERROR);
+        if(validcode==Config.PTTP_VALIDATION_ERROR){
+            ap_resp_content="<font color='#F00'>Valiade failed!</font>";
         }else{
-            ap_resp_content = status_code+" "+(new String( (byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK) ));
+            ap_resp_url=obj_decoded_chunk.optString(Config.JSON_KEY_CHUNK_URL,"");
+            
+            int status_code = obj_decoded_chunk.getInt(Config.PTTP_KEY_STATUS_CODE);
+            if(status_code==Config.PTTP_STATUS_CODE_OK){
+                String str_chunk_type = obj_decoded_chunk.optString(Config.JSON_KEY_CHUNK_TYPE,"").toLowerCase();
+                if( str_chunk_type.startsWith("text/html") ){ //网页
+                  ap_resp_content = new String( (byte[])obj_decoded_chunk.opt(Config.JSON_KEY_CHUNK_BYTES) );
+                  
+                  //处理页面内容中的图片
+                  ap_resp_content = processPPkImagesInPage(ap_resp_content); 
+                  
+                  //将页面内容中以ppk:起始的href链接替换为适合本地浏览的链接格式
+                  String tmp_href_ap_url=Config.ppkDefaultHrefApUrl+"?go="+Config.PPK_URI_PREFIX;
+
+                  ap_resp_content = ap_resp_content.replace("'"+Config.PPK_URI_PREFIX,"'"+tmp_href_ap_url)
+                                                   .replace("\""+Config.PPK_URI_PREFIX,"\""+tmp_href_ap_url);
+                  
+                  
+                }else if(str_chunk_type.startsWith("text")){ //其他文本
+                  ap_resp_content = new String( (byte[])obj_decoded_chunk.opt(Config.JSON_KEY_CHUNK_BYTES) );
+                }else if(str_chunk_type.startsWith("image")){
+                  ap_resp_content = "<img src='"+Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_decoded_chunk.opt(Config.JSON_KEY_CHUNK_BYTES))+"'>";
+                }else{
+                  //Not supported chunk_type now
+                  ap_resp_content =  "Not supported chunk_type: "+obj_decoded_chunk.optString(Config.JSON_KEY_CHUNK_TYPE,"");
+                }
+            }else if(status_code==301 || status_code==302){
+                String dest_url = new String( (byte[])obj_decoded_chunk.opt(Config.JSON_KEY_CHUNK_BYTES) );
+                if(dest_url.startsWith(Config.PPK_URI_PREFIX)){
+                    dest_url = Config.ppkDefaultHrefApUrl+"?go="+ java.net.URLEncoder.encode(dest_url) ;
+                }
+                ap_resp_content="<html><head><meta http-equiv='refresh' content='2;url="+dest_url+"'></head>Redirecting to "+dest_url+"<html>";
+            }else{
+                ap_resp_content = status_code+" "+(new String( (byte[])obj_decoded_chunk.opt(Config.JSON_KEY_CHUNK_BYTES) ));
+            }
+            
+            
+            //ap_resp_sign = obj_decoded_chunk.optString(Config.PTTP_KEY_SIGNATURE,"");
+            
+            if( validcode == Config.PTTP_VALIDATION_OK )
+               ap_resp_validate_result="<font color='#0F0'>Valiade OK</font>";
+            else if( validcode == Config.PTTP_VALIDATION_IGNORED )
+               ap_resp_validate_result="<font color='#F72'>Valiade ignored! The content unable to be identified. </font>";
+            else
+               ap_resp_validate_result="<font color='#F72'>Valiade unknown("+validcode+"). </font>";
+
+            ap_resp_content += "\n<!--"+ap_resp_validate_result+"--><!--RESP_PPK_URI="+ap_resp_ppk_uri+"--><!--RESP_URL="+ap_resp_url+"-->";   
+
+            if(Config.debugKey){
+                long exp_utc = obj_decoded_chunk.optLong(Config.JSON_KEY_EXP_UTC);
+                ap_resp_content += "\n<hr>DEBUG: "+ap_resp_validate_result
+                                    +" <br>\nREQ_URI= "+ppk_uri
+                                    +" <br>\nRESP_URI= "+ap_resp_ppk_uri
+                                    +" <br>\nRESP_AP= "+ap_resp_url
+                                    +" <br>\nFROM_CACHE= "+obj_decoded_chunk.optBoolean(Config.JSON_KEY_FROM_CACHE)
+                                    +" <br>\nEXP_UTC= "+ exp_utc
+                                    +" <br>\nLEFT_SECONDS= "+ ( exp_utc - Util.getNowTimestamp() )
+                                    +" \n<hr><center><a href='"+Config.ppkDefaultHrefApUrl+"'>返回主页 "+Config.ppkDefaultHrefApUrl+" </a></center>"; 
+            }            
         }
-        
-        ap_resp_ppk_uri = obj_ap_resp.optString(Config.JSON_KEY_PPK_URI);
-        ap_resp_sign = obj_ap_resp.optString(Config.JSON_KEY_PPK_SIGN,"");
-        
-        int validcode=obj_ap_resp.optInt(Config.JSON_KEY_PPK_VALIDATION,Config.PPK_VALIDATION_ERROR);
-        if( validcode == Config.PPK_VALIDATION_IGNORED )
-           ap_resp_validate_result="<font color='#F72'>Valiade ignored! The content unable to be identified. </font>";
-        else if( validcode == Config.PPK_VALIDATION_OK )
-           ap_resp_validate_result="<font color='#0F0'>Valiade OK</font>";
-        else
-           ap_resp_validate_result="<font color='#F00'>Valiade failed!</font>";
       }else{
-        ap_resp_validate_result="<font color='#F00'>No valid data</font>";
+        ap_resp_content="<font color='#F00'>No valid response</font>";
       }
-      
-      ap_resp_content += "\n<!--"+ap_resp_validate_result+"-->";
-      
+
       attributes.put("ap_resp_content", ap_resp_content);   
       attributes.put("ap_resp_ppk_uri", ap_resp_ppk_uri);   
       attributes.put("ap_resp_url", ap_resp_url);   
@@ -259,7 +301,8 @@ public class PttpServer implements Runnable {
       //attributes.put("vd_set_pubkey", vd_set_pubkey);   
       attributes.put("ap_resp_validate_result", ap_resp_validate_result);     
     }catch (Exception e) {
-      logger.error(e.toString());
+      System.out.println("handlePttpBrowserRequest() error: "+e.toString());
+      e.printStackTrace();
     }
 
     attributes.put("LANG_BROWSE_PPK_NETWORK", Language.getLangLabel("Browse PPk network"));
@@ -272,7 +315,7 @@ public class PttpServer implements Runnable {
   }
   
   //处理页面中包含的"ppk:"起始的图片
-  protected String processPPkImagesInPage(String str_content){
+  protected static String processPPkImagesInPage(String str_content){
     List<String> srcList = new ArrayList<String>(); //用来存储获取到的图片地址  
     Pattern p = Pattern.compile("<(img|IMG)(.*?)(>|></img>|/>)");//匹配字符串中的img标签  
     Matcher matcher = p.matcher(str_content);  
@@ -299,14 +342,14 @@ public class PttpServer implements Runnable {
 
     for(int kk=0; kk<srcList.size(); kk++){
       String old_img_src = (String) srcList.get(kk);
-      JSONObject obj_ap_resp = PPkURI.fetchPPkURI(old_img_src);
-      if(obj_ap_resp!=null){
-        String str_chunk_type = obj_ap_resp.optString(Config.JSON_KEY_PPK_CHUNK_TYPE,"").toLowerCase();
+      JSONObject obj_decoded_chunk = PTTP.getPPkResource(old_img_src);
+      if(obj_decoded_chunk!=null){
+        String str_chunk_type = obj_decoded_chunk.optString(Config.JSON_KEY_CHUNK_TYPE,"").toLowerCase();
         
-        String new_img_src = Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_ap_resp.opt(Config.JSON_KEY_PPK_CHUNK));
-        
-        str_content = str_content.replaceAll("src='"+old_img_src,"src='"+new_img_src)
-                                 .replaceAll("src=\""+old_img_src,"src=\""+new_img_src);
+        String new_img_src = Util.imageToBase64DataURL(str_chunk_type,(byte[])obj_decoded_chunk.opt(Config.JSON_KEY_CHUNK_BYTES));
+        //System.out.println("RRRRRRRR "+old_img_src+"  -> "+new_img_src +" size="+new_img_src.length());
+        str_content = str_content.replace("src='"+old_img_src+"'","src='"+new_img_src+"'")
+                                 .replace("src=\""+old_img_src+"\"","src=\""+new_img_src+"\"");
       }
     }
     

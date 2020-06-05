@@ -16,11 +16,10 @@
 
 <div class="row section">
   <div class="form-group">
-    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_CREATE_AP_SAMPLE} ODIN[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
+    <label for="top_buttons" class="col-sm-5 control-label"><h3>${LANG_CREATE_AP_SAMPLE} ${LANG_ODIN}[${odin["short_odin"]}]:${odin["full_odin"]}</h3></label>
     <div class="col-sm-7" id="top_buttons" align="right">
       <a class="btn btn-warning" role="button" href='/odin-update?odin=${odin["short_odin"]}'>${LANG_UPDATE_BASEINFO}...</a>
       <a class="btn btn-warning" role="button" href='/odin-update-vd?odin=${odin["short_odin"]}'>${LANG_UPDATE_VD_SET}...</a>
-      <a class="btn btn-danger" role="button" href='/odin-trans?odin=${odin["short_odin"]}'>${LANG_TRANSFER_REGISTER}...</a>
     </div>
   </div>
 </div>
@@ -62,6 +61,13 @@ ${old_page_content}
           <!--<option value="302Page">跳转到新网址(HTML网页)</option>-->
           <option value="302PTTP">跳转到新网址(PTTP状态码302)</option>
       </select>
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label for="sample_resp_uri" class="col-sm-2 control-label">${LANG_URI}</label>
+    <div class="col-sm-10">
+     <input class="form-control" type="text" name="sample_resp_uri" id="sample_resp_uri" value='<#if sample_resp_uri??>${sample_resp_uri}</#if>'  >
     </div>
   </div>
 
@@ -313,15 +319,15 @@ function stringToHex(str){
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">   
 </head>
 <body>
-欢迎来到属于 <a href="ppk:${odin["short_odin"]}#">ppk:${odin["short_odin"]}#</a> 的对等网站示例页面。<br>
+欢迎来到 <a href="ppk:${odin["short_odin"]}/">ppk:${odin["short_odin"]}/</a> 的对等网站示例页面。<br>
 该页面去中心化托管在Dat、IPFS、BtmFS等不同特色的分布式存储服务上。<br>
 
 简单的开始，体验PPk新业态（PWEB/DWEB/WEB3.0）的第一步...<br>
 
-This is the first PeerWeb page of <a href="ppk:${odin["short_odin"]}#">ppk:${odin["short_odin"]}#</a> <br>
+This is the first PeerWeb page of <a href="ppk:${odin["short_odin"]}/">ppk:${odin["short_odin"]}/</a> <br>
 The page is storaged on BtmFS which is a distributed file system based Bytom blockchain.<br> 
 
-<p><img src="ppk:0/image/logo#1.0"  title="0/image/logo#1.0"><br>Powered by PPkPub <a target="_top" href="ppk:0/">ppk:0/</a></p>
+<p><img src="ppk:0/image/logo.png"  title="0/image/logo.png"><br>Powered by PPkPub <a target="_top" href="ppk:0/">ppk:0/</a></p>
 <p><img src="http://ppk001.sinaapp.com/ppkpub/ppkn1/images/qrcode_for_PPkPub_WXService.png"></p>
 </body>
 </html>
@@ -381,7 +387,7 @@ function init(){
         );
     }else{
         console.log("PeerWeb not valid");
-        //alert("PeerWeb not valid. Please visit by PPk Browser For Android v0.2.6 above.");
+        //alert("${LANG_PEERWEB_NOT_VALID}");
     }
 }
 

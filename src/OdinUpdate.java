@@ -64,20 +64,16 @@ public class OdinUpdate {
             byteBuffer.put(b);
           }      
           
-          String validity = "invalid";
+          String validity = Config.ODIN_STATUS_INVALID;
           String required_confirmer="";
           JSONObject update_set=new JSONObject( );
           
           String full_odin=getFullOdinFromUpdateMessage(byteBuffer); 
-          OdinInfo oldOdinInfo=Odin.getOdinInfo(full_odin);
+          OdinInfo oldOdinInfo=ODIN.getOdinInfo(full_odin);
           
           //logger.info( "full_odin="+full_odin+",source="+source+",oldOdinInfo="+oldOdinInfo.toString());
           if(oldOdinInfo!=null && !source.equals("") ){
-            String authSet="";
-            try{
-                authSet=oldOdinInfo.odinSet.getString("auth");
-            }catch(Exception e){
-            }
+            String authSet=""+oldOdinInfo.odinSet.optInt(Config.ODIN_BASE_SET_AUTH,0); //兼容处理填写非数字的取值
             
             Byte update_set_data_type=byteBuffer.get(UPDATE_ODIN_PREFIX_LENGTH); 
             BitcoinVarint update_set_len_varint=BitcoinVarint.getFromBuffer(byteBuffer,UPDATE_ODIN_PREFIX_LENGTH+1);
@@ -120,57 +116,57 @@ public class OdinUpdate {
                                  if(source.equals(waitingUpdateInfo.required_confirmer)){
                                    //如果是old register发起转移给old admin(即old admin=required_confirmer=new regiser)，
                                    //则required_confirmer确认将只需一步即完成确认和签收
-                                   validity = "valid";
-                                 }else if(waitingUpdateInfo.validity.equals("receipting")) {
+                                   validity = Config.ODIN_STATUS_VALID;
+                                 }else if(waitingUpdateInfo.validity.equals(Config.ODIN_UPDATE_STATUS_RECEIPTING)) {
                                    //否则需要在经过old register/admin的确认后new regiser再签收一次
-                                   //确认为"receipting"状态即现有管理者/注册者确认完成
-                                   validity = "valid";
+                                   //确认为receipting状态即现有管理者/注册者确认完成
+                                   validity = Config.ODIN_STATUS_VALID;
                                  }
                                  
-                                 if(validity.equals("valid")){
+                                 if(validity.equals(Config.ODIN_STATUS_VALID)){
                                    if(updateOdinRecordByUpdateSet( waitingUpdateInfo.updater,waitingUpdateInfo.destination,oldOdinInfo,waitingUpdateInfo.updateSet)){
-                                      validity = "valid";
+                                      validity = Config.ODIN_STATUS_VALID;
                                       db.executeUpdate("UPDATE odin_update_logs SET validity='"+validity+"' WHERE tx_index='"+waitingUpdateInfo.txIndex+"';");
                                    }else{
-                                     validity = "invalid";
+                                     validity = Config.ODIN_STATUS_INVALID;
                                    }
                                  }
-                               }else if(Odin.checkUpdatable(authSet,source,oldOdinInfo.register,oldOdinInfo.admin)){
-                                 validity = "valid";
+                               }else if(ODIN.checkUpdatable(authSet,source,oldOdinInfo.register,oldOdinInfo.admin)){
+                                 validity = Config.ODIN_STATUS_VALID;
 
                                  //将该ODIN标识的未生效的状态为receipting的历史更新记录置为失效
-                                 PreparedStatement ps = db.connection.prepareStatement("UPDATE odin_update_logs SET validity='invalid' WHERE full_odin=? and validity='receipting';");
+                                 PreparedStatement ps = db.connection.prepareStatement("UPDATE odin_update_logs SET validity='"+Config.ODIN_STATUS_INVALID+"' WHERE full_odin=? and validity='"+Config.ODIN_UPDATE_STATUS_RECEIPTING+"';");
                                  ps.setString(1, full_odin);
                                  ps.execute();
                                  
-                                 //更新发起update_log为"receipting" 表示现有管理者/注册者确认完成，等待转移目标新注册者签收
-                                 db.executeUpdate("UPDATE odin_update_logs SET validity='receipting' WHERE tx_index='"+waitingUpdateInfo.txIndex+"';");
+                                 //更新发起update_log为receipting 表示现有管理者/注册者确认完成，等待转移目标新注册者签收
+                                 db.executeUpdate("UPDATE odin_update_logs SET validity='"+Config.ODIN_UPDATE_STATUS_RECEIPTING+"' WHERE tx_index='"+waitingUpdateInfo.txIndex+"';");
                                }
                             }else if(!source.equals(waitingUpdateInfo.updater)
-                              && Odin.checkUpdatable(authSet,source,oldOdinInfo.register,oldOdinInfo.admin) ){ //confirm another's update operations
+                              && ODIN.checkUpdatable(authSet,source,oldOdinInfo.register,oldOdinInfo.admin) ){ //confirm another's update operations
                               if(updateOdinRecordByUpdateSet( waitingUpdateInfo.updater,waitingUpdateInfo.destination,oldOdinInfo,waitingUpdateInfo.updateSet)){
-                                validity = "valid";
+                                validity = Config.ODIN_STATUS_VALID;
                                 db.executeUpdate("UPDATE odin_update_logs SET validity='"+validity+"' WHERE tx_index='"+waitingUpdateInfo.txIndex+"';");
                               }
                             }
                         }
                       }
-                  }else if( Odin.checkUpdatable(authSet,source,oldOdinInfo.register,oldOdinInfo.admin) ){
+                  }else if( ODIN.checkUpdatable(authSet,source,oldOdinInfo.register,oldOdinInfo.admin) ){
                     if(authSet.equals("2") && !oldOdinInfo.register.equals(oldOdinInfo.admin)){ //need update by diffrent register and admin together
-                       validity = "awaiting";
+                       validity = Config.ODIN_UPDATE_STATUS_AWAITING;
                        required_confirmer = source.equals(oldOdinInfo.register) ?  oldOdinInfo.admin : oldOdinInfo.register;
                     }else if(cmd.equals(Config.ODIN_CMD_TRANS_REGISTER)){
-                       //对于transfer register 更新update_log为"receipting" 表示等待转移目标新注册者签收
+                       //对于transfer register 更新update_log为receipting 表示等待转移目标新注册者签收
                        //updater.equals(oldOdinInfo.register) || updater.equals(oldOdinInfo.admin)
-                       validity = "receipting";
+                       validity = Config.ODIN_UPDATE_STATUS_RECEIPTING;
                        
                        //将该ODIN标识的未生效的状态为receipting的历史更新记录置为失效
-                       PreparedStatement ps = db.connection.prepareStatement("UPDATE odin_update_logs SET validity='invalid' WHERE full_odin=? and validity='receipting';");
+                       PreparedStatement ps = db.connection.prepareStatement("UPDATE odin_update_logs SET validity='"+Config.ODIN_STATUS_INVALID+"' WHERE full_odin=? and validity='"+Config.ODIN_UPDATE_STATUS_RECEIPTING+"';");
                        ps.setString(1, full_odin);
                        ps.execute();
                     }else{
                        if(updateOdinRecordByUpdateSet( source,destination,oldOdinInfo,update_set))
-                          validity = "valid";
+                          validity = Config.ODIN_STATUS_VALID;
                     }
                   }
                 } catch (Exception e) {  
@@ -203,22 +199,23 @@ public class OdinUpdate {
     
     try{
       String cmd=update_set.getString("cmd");
+      update_set.remove("cmd"); //移走不再需要的cmd字段，方便与旧设置数据进行合并处理
       if(cmd.equals(Config.ODIN_CMD_TRANS_REGISTER)){ //transfer register
-        PreparedStatement ps = db.connection.prepareStatement("UPDATE odins SET register='"+destination+"' WHERE full_odin=?;");
+        //转移注册者确认生效时，管理权限将自动重置为默认的0（即注册者和管理者都可以修改），这样方便新注册者可以根据需要自行调整
+        new_odin_set.put(Config.ODIN_BASE_SET_AUTH,"0");
+        PreparedStatement ps = db.connection.prepareStatement("UPDATE odins SET register='"+destination+"',odin_set=? WHERE full_odin=?;");
 
-        ps.setString(1, full_odin);
+        ps.setString(1, new_odin_set.toString());
+        ps.setString(2, full_odin);
         ps.execute();
         return true;
       }else{ 
         if(cmd.equals(Config.ODIN_CMD_UPDATE_BASE_INFO)){
-          if(!update_set.isNull("title"))
-            new_odin_set.put("title",update_set.get("title"));
-          
-          if(!update_set.isNull("email"))
-            new_odin_set.put("email",update_set.get("email"));
-          
-          if(!update_set.isNull("auth"))
-            new_odin_set.put("auth",update_set.get("auth"));
+          for(Iterator it = update_set.keys(); it!=null && it.hasNext(); ) { 
+              // 获得新设置的字段取值进行更新
+              String update_key = (String)it.next(); 
+              new_odin_set.put(update_key,update_set.get(update_key));
+          }
           
         }else if(cmd.equals(Config.ODIN_CMD_UPDATE_AP_SET)){
           if(!update_set.isNull("ap_set")){
@@ -240,21 +237,35 @@ public class OdinUpdate {
           }
         }else if(cmd.equals(Config.ODIN_CMD_UPDATE_VD_SET)){
           if(!update_set.isNull("vd_set")){
+            JSONObject  new_vd_set_obj = new JSONObject();
+              
             JSONObject  update_vd_set = update_set.getJSONObject("vd_set");
-            String vd_set_algo=update_vd_set.optString(Config.JSON_KEY_PPK_ALGO,RSACoder.DEFAULT_SIGNATURE_ALGORITHM);
-            String vd_set_cert_uri=update_vd_set.optString(Config.JSON_KEY_PPK_CERT_URI);
             
-            String tmp_str=Util.fetchURI(vd_set_cert_uri);
-            try{
-              JSONObject  vd_set_obj = new JSONObject();
-              vd_set_obj.put(Config.JSON_KEY_PPK_ALGO, vd_set_algo);
-              vd_set_obj.put(Config.JSON_KEY_PPK_CERT_URI, vd_set_cert_uri);
-              vd_set_obj.put(Config.JSON_KEY_PPK_PUBKEY, RSACoder.parseValidPubKey(vd_set_algo,tmp_str)); //需完善适配从不同类型的证书中提取公钥
-
-              new_odin_set.put("vd_set",vd_set_obj);
-            }catch(Exception e){
-              logger.error("Meet invalid vd_set_cert_uri:"+vd_set_cert_uri);
+            for(Iterator it = update_vd_set.keys(); it!=null && it.hasNext(); ) { 
+              // 获得新设置的字段取值进行更新
+              String update_key = (String)it.next(); 
+              new_vd_set_obj.put(update_key,update_vd_set.get(update_key));
             }
+            
+            String pubkey=update_vd_set.optString(Config.ODIN_SET_VD_PUBKEY);
+            if(pubkey!=null){//pubkey字段有更新
+              try{
+                if( Util.isURI(pubkey) ){
+                  //尝试按URI取值来获取实际的公钥
+                  //如果出错则忽略，保存原值
+                  String tmp_str=Util.fetchUriContent(pubkey);
+                  if(tmp_str!=null && tmp_str.length()>0){
+                      new_vd_set_obj.put(Config.ODIN_SET_VD_CERT_URI, pubkey);  //保留字段，记录原始链接，以便测试
+                      new_vd_set_obj.put(Config.ODIN_SET_VD_PUBKEY, tmp_str); 
+                  }
+                }
+              }catch(Exception e){
+                logger.error("Meet invalid pubkey:"+pubkey);
+              }
+            }
+           
+            
+            new_odin_set.put("vd_set",new_vd_set_obj);
           }
         }
         
@@ -262,9 +273,9 @@ public class OdinUpdate {
         
         PreparedStatement ps;
         if(destination.length()==0)
-          ps = db.connection.prepareStatement("UPDATE odins SET odin_set=?,validity='valid' WHERE full_odin=?;");
+          ps = db.connection.prepareStatement("UPDATE odins SET odin_set=?,validity='"+Config.ODIN_STATUS_VALID+"' WHERE full_odin=?;");
         else
-          ps = db.connection.prepareStatement("UPDATE odins SET admin='"+destination+"',odin_set=?,validity='valid'  WHERE full_odin=?;");
+          ps = db.connection.prepareStatement("UPDATE odins SET admin='"+destination+"',odin_set=?,validity='"+Config.ODIN_STATUS_VALID+"'  WHERE full_odin=?;");
 
         ps.setString(1, new_odin_set.toString());
         ps.setString(2, full_odin);
@@ -351,18 +362,18 @@ public class OdinUpdate {
                   updateOdinInfo.updater = updater;
                   updateOdinInfo.destination = destination;
                   updateOdinInfo.fullOdin=full_odin;
-                  updateOdinInfo.shortOdin=Odin.getShortOdin(full_odin);
+                  updateOdinInfo.shortOdin=ODIN.getShortOdin(full_odin);
                   updateOdinInfo.updateSet = update_set;
                   updateOdinInfo.txIndex = txIndex;
                   updateOdinInfo.txHash = txHash;
                   updateOdinInfo.blockIndex = blockIndex;
                   updateOdinInfo.blockTime = blockTime;
-                  updateOdinInfo.validity="pending";
+                  updateOdinInfo.validity=Config.ODIN_STATUS_PENDING;
                   
                   /*
                   try{
                     if(Config.ODIN_CMD_TRANS_REGISTER.equals(update_set.optString("cmd"))){
-                        updateOdinInfo.updateSet.put("register",destination);
+                        updateOdinInfo.updateSet.put(Config.ODIN_BASE_SET_REGISTER,destination);
                     }else if(!destination.equals("")){
                         updateOdinInfo.updateSet.put("admin",destination);
                     }
@@ -426,7 +437,21 @@ public class OdinUpdate {
   public static OdinUpdateInfo getOdinUpdateInfo(String update_tx_index_or_hash_or_logid) { 
     Database db = Database.getInstance();
     
-    ResultSet rs = db.executeQuery("select l.log_id,l.tx_index, l.block_index,l.updater,l.destination,l.required_confirmer, l.update_set,l.validity,cp.full_odin,cp.short_odin,cp.register,cp.admin,transactions.block_time,transactions.tx_hash from odins cp,odin_update_logs l,transactions where (l.tx_index='"+update_tx_index_or_hash_or_logid+"' and l.full_odin=cp.full_odin and  l.tx_index=transactions.tx_index) or ( transactions.tx_hash='"+update_tx_index_or_hash_or_logid+"' and l.tx_index=transactions.tx_index and  l.full_odin=cp.full_odin ) or (l.log_id='"+update_tx_index_or_hash_or_logid+"' and l.full_odin=cp.full_odin and  l.tx_index=transactions.tx_index) ;");
+    String str_sql="select l.log_id,l.tx_index, l.block_index,l.updater,l.destination,l.required_confirmer, l.update_set,l.validity,cp.full_odin,cp.short_odin,cp.register,cp.admin,transactions.block_time,transactions.tx_hash from odins cp,odin_update_logs l,transactions where l.full_odin=cp.full_odin and  l.tx_index=transactions.tx_index and ";
+
+    //判断参数取值类型
+    if(update_tx_index_or_hash_or_logid.indexOf(".")>0){
+        //是类似xxxxx.xx的log_id
+        str_sql += " l.log_id='"+update_tx_index_or_hash_or_logid+"'";
+    }else if(update_tx_index_or_hash_or_logid.length()<64){
+        //是有效取值数字范围内的tx_index
+        str_sql += " l.tx_index='"+update_tx_index_or_hash_or_logid+"'";
+    }else{
+        //是tx_hash
+        str_sql += " transactions.tx_hash='"+update_tx_index_or_hash_or_logid+"'";
+    }
+    
+    ResultSet rs = db.executeQuery(str_sql);
 
     try {
       
@@ -618,14 +643,21 @@ public class OdinUpdate {
     */
     return tx;
   }
-
-  public static HashMap<String,Object> parseOdinUpdateSet(HashMap<String,Object> map,String updater,String destination,JSONObject update_set) throws Exception {
+// "+Language.getLangLabel("LANG_")+"
+  public static HashMap<String,Object> parseOdinUpdateSet(
+        HashMap<String,Object> map,
+        String updater,
+        String destination,
+        JSONObject update_set
+      )throws Exception
+  {
     String update_desc="<ul>";
     String cmd=update_set.optString("cmd");
+
     if(Config.ODIN_CMD_TRANS_REGISTER.equals(cmd)){
-      update_desc+="<li>Transfer register to "+HtmlRegexpUtil.filterHtml(destination)+"</li>";
+      update_desc+="<li>"+Language.getLangLabel("Transfer register to")+" "+HtmlRegexpUtil.filterHtml(destination)+"</li>";
     }else if(Config.ODIN_CMD_UPDATE_AP_SET.equals(update_set.optString("cmd"))){
-      update_desc+="<li>Access points</li>\n<ul>\n";
+      update_desc+="<li>"+Language.getLangLabel("Update Access Points")+"</li>\n<ul>\n";
       JSONObject  update_ap_set = update_set.optJSONObject("ap_set");
       if(update_ap_set!=null){
         for(Iterator it = update_ap_set.keys(); it!=null && it.hasNext(); ) { 
@@ -636,32 +668,38 @@ public class OdinUpdate {
       }
       update_desc+="</ul>";
     }else if(Config.ODIN_CMD_UPDATE_VD_SET.equals(cmd)){
-      update_desc+="<li>Validtion</li>\n<ul>\n";
+      update_desc+="<li>"+Language.getLangLabel("Update Validtion")+"</li>\n<ul>\n";
       JSONObject  update_vd_set = update_set.optJSONObject("vd_set");
       if(update_vd_set!=null){
-        update_desc+="<li>Algorithm: "+HtmlRegexpUtil.filterHtml(update_vd_set.optString(Config.JSON_KEY_PPK_ALGO,""))+"</li>\n";
-        update_desc+="<li>Certificate URI: "+HtmlRegexpUtil.filterHtml(update_vd_set.optString(Config.JSON_KEY_PPK_CERT_URI,""))+"</li>\n";
+        update_desc+="<li>"+Language.getLangLabel("Encode type")+": "+HtmlRegexpUtil.filterHtml(update_vd_set.optString(Config.ODIN_SET_VD_TYPE,""))+"</li>\n";
+        update_desc+="<li>"+Language.getLangLabel("Pubkey URI")+": "+HtmlRegexpUtil.filterHtml(update_vd_set.optString(Config.ODIN_SET_VD_PUBKEY,""))+"</li>\n";
       }
       update_desc+="</ul>";
     }else if(Config.ODIN_CMD_CONFIRM_UPDATE.equals(cmd)){
-       update_desc+="<li>Confirm below updates (TX_LIST:"+HtmlRegexpUtil.filterHtml(update_set.toString())+")</li>\n";
+       update_desc+="<li>"+Language.getLangLabel("Confirm below updates")+"<br>"+Language.getLangLabel("TX_LIST")+":"+HtmlRegexpUtil.filterHtml(update_set.toString())+"</li>\n";
     }else if(Config.ODIN_CMD_UPDATE_BASE_INFO.equals(cmd)){
       if(destination!=null && destination.length()>0)
-          update_desc+="<li>Transfer admin to "+HtmlRegexpUtil.filterHtml(destination)+"</li>\n";
+          update_desc+="<li>"+Language.getLangLabel("Update admin to")+" "+HtmlRegexpUtil.filterHtml(destination)+"</li>\n";
       
       if(!update_set.isNull("title"))
-          update_desc+="<li>Title:"+HtmlRegexpUtil.filterHtml(update_set.getString("title"))+"</li>\n";
+          update_desc+="<li>"+Language.getLangLabel("Title")+":"+HtmlRegexpUtil.filterHtml(update_set.getString("title"))+"</li>\n";
       
       if(!update_set.isNull("email"))
-          update_desc+="<li>Email:"+HtmlRegexpUtil.filterHtml(update_set.getString("email"))+"</li>\n";
+          update_desc+="<li>"+Language.getLangLabel("Email")+":"+HtmlRegexpUtil.filterHtml(update_set.getString("email"))+"</li>\n";
       
-      if(!update_set.isNull("auth"))
-          update_desc+="<li>Authorize:"+HtmlRegexpUtil.filterHtml(update_set.getString("auth"))+"</li>\n";
+      if(!update_set.isNull(Config.ODIN_BASE_SET_PNS_URL))
+          update_desc+="<li>"+Language.getLangLabel("Peer Naming Service")+":"+HtmlRegexpUtil.filterHtml(update_set.getString(Config.ODIN_BASE_SET_PNS_URL))+"</li>\n";
+      
+      if(!update_set.isNull(Config.ODIN_BASE_SET_AUTH))
+          update_desc+="<li>"+Language.getLangLabel("Authority")+":"
+                        +HtmlRegexpUtil.filterHtml( Util.getOdinAuthRightLabel("" + update_set.optInt(Config.ODIN_BASE_SET_AUTH,0) ) )
+                        +"</li>\n";
     }else{
       update_desc+="<li>"+HtmlRegexpUtil.filterHtml(update_set.toString())+"</li>\n";
     }
     update_desc+="</ul>";
     map.put("update_desc", update_desc);
+
     return map;
   }
 

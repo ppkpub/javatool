@@ -23,7 +23,7 @@ public class APoverETH {
     try {
         //just for demo
         JSONObject objInterest=new JSONObject(interest);
-        interest=objInterest.getJSONObject("interest").getString("uri");
+        interest=objInterest.getString("uri");
     }catch (Exception e) {
 
     }

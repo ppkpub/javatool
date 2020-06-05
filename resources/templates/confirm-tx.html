@@ -28,7 +28,7 @@
     
     <div class="form-group" align="center">
     <div class="col-sm-offset-2 col-sm-10">
-        <button class="btn btn-success btn-lg" type="submit" id="confirm_btn"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" disabled="disabled">${LANG_CONFIRM}</button>
+        <button class="btn btn-danger btn-lg" type="submit" id="confirm_btn"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" disabled="disabled">${LANG_CONFIRM_SEND_TX}</button>
      </div>
     </div>
 </form>
@@ -45,29 +45,37 @@ function init(){
     if(document.getElementById("signed_tx_hex").value.length>0){
         //已经过本地私钥签名的交易可以直接确认发送
         document.getElementById("confirm_btn").disabled=false;
-        document.getElementById("form_confirm").submit();
+        //document.getElementById("form_confirm").submit();
     }else{//需要钱包插件进行签名
         if(typeof(PeerWeb) !== 'undefined'){
             console.log("PeerWeb enabled");
             
-            PeerWeb.getSignedOdinBitcoinTX(
-                '${odin_tx_json_hex}',
-                'callback_getSignedOdinTX'
-            );
+            if(${has_odin_mark}){
+                PeerWeb.getSignedOdinBitcoinTX(
+                    '${odin_tx_json_hex}',
+                    'callback_getSignedTX'
+                );
+            }else{
+                PeerWeb.getSignedTX(
+                    'BITCOIN',
+                    '${odin_tx_json_hex}',
+                    'callback_getSignedTX'
+                );
+            }
         }else{
             console.log("PeerWeb not valid");
-            document.getElementById("signed_tx_hex").value="PeerWeb extension not valid. Please visit by PPk Browser For Android v0.2.6 above.";
+            document.getElementById("signed_tx_hex").value="${LANG_PEERWEB_NOT_VALID}";
         }
     }
 }
 
-function callback_getSignedOdinTX(status,obj_data){
+function callback_getSignedTX(status,obj_data){
     if('OK'==status){
         document.getElementById("signed_tx_hex").value=obj_data.signed_tx_hex;
         document.getElementById("form_confirm").submit();
     }else{
         if('CANCELED'!=status){
-            alert("生成注册ODIN标识的交易失败!\n(status="+status+")\n请确认当前帐户有效余额至少有 0.00003 BTC.");
+            alert("${LANG_FAILED_SIGN_TX}\n(status="+status+")\n${LANG_ENSURE_BALANCE_IS_ENOUGH}");
         }
     }
 }
