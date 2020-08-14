@@ -383,7 +383,7 @@ public class Util {
             tempObject=fetchBtcAPI(api_url);
             
             total_count=tempObject.getJSONObject("data").getInt("total_count");
-            int pagesize=tempObject.getJSONObject("data").getInt("pagesize");
+            int pagesize=tempObject.getJSONObject("data").getInt("page_size");
             JSONArray tempArray=tempObject.getJSONObject("data").getJSONArray("list");
             
             if( tempArray.length()<pagesize )
@@ -532,7 +532,7 @@ public class Util {
         tempObject=new JSONObject(result);
         
         Integer total_count=tempObject.getJSONObject("data").getInt("total_count");
-        Integer pagesize=tempObject.getJSONObject("data").getInt("pagesize");
+        Integer pagesize=tempObject.getJSONObject("data").getInt("page_size");
         
         int max_page=(int)(Math.round( Math.ceil((double)total_count/(double)pagesize) ));
         for(int pp=max_page;pp>0;pp--){

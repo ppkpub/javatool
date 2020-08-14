@@ -858,7 +858,6 @@ public class GuiServer implements Runnable {
     String balance_warning_info="";
     
     if(!Blocks.bRemoteWalletMode){ //本地钱包模式下，查询内部所有地址的信息
-        //Just for debug to show private&public keys
         String str_all_address="";
 
         ArrayList<HashMap<String, Object>> local_address_list=new ArrayList<HashMap<String, Object>>();
@@ -880,6 +879,7 @@ public class GuiServer implements Runnable {
           local_address_list.add(map);
           
           if (Config.debugKey && tmp_address.equals(address)) {
+            //Just for debug to show current private&public key
             attributes.put("testShowKey", "PrivateKey HEX:"+key.getPrivateKeyAsHex() + " WIF:"+  key.getPrivateKeyAsWiF(MainNetParams.get())+"  PubKey:"+key.getPublicKeyAsHex());
           }
         }
@@ -1793,9 +1793,16 @@ public class GuiServer implements Runnable {
       String pns_url = odin_set.optString(Config.ODIN_BASE_SET_PNS_URL,"").trim();
       if(pns_url.length()>0){
         //设置了有效的标识托管服务
+		//String tmp_href_ap_url=Config.ppkDefaultHrefApUrl+"?go="+Config.PPK_URI_PREFIX;
         String test_uri = "ppk:"+odinInfo.shortOdin+Config.PPK_URI_RESOURCE_MARK;
-        //attributes.put("test_pns_url", "/?go="+ test_uri );
-        attributes.put("test_pns_url", pns_url+"?pttp="+ test_uri );        
+		if(pns_url.startsWith("http")){
+			attributes.put("test_pns_url", pns_url+"?pttp="+ test_uri );        
+		}else if(pns_url.startsWith(Config.PPK_URI_PREFIX) && pns_url.endsWith("/")){
+			attributes.put("test_pns_url", "/?go="+ pns_url+"pttp("+Util.bytesToHexString(test_uri.getBytes(Config.PPK_TEXT_CHARSET))+")"+Config.PPK_URI_RESOURCE_MARK );  
+        }else{
+			attributes.put("test_pns_url", "/?go="+ pns_url );
+		}
+        
       }
       
       //get valid updates that awaiting my confirm or receipt 
