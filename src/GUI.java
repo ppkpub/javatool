@@ -119,7 +119,10 @@ public class GUI extends Application {
       }
     };
 
-    showSplash(initStage, preloaderTask);
+    if(Config.debugKey)
+        showMainStage();
+    else
+        showSplash(initStage, preloaderTask);
             
     new Thread(preloaderTask).start();
     //showMainStage();

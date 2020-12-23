@@ -23,9 +23,9 @@ public class ODIN {
   
   //格式化输入URI参数，使之符合ODIN标识定义规范，无效返回null
   //参数prior_add_resource_mark取值true时 优先追加资源标识符（主要用于ID使用时）， 否则根据常用网址规则自动判断添加缺少的"/"字符和资源标志
-  public static String formatPPkURI(String ppk_uri){
-  	  return formatPPkURI(ppk_uri,false);
-  }
+  //public static String formatPPkURI(String ppk_uri){
+  //	  return formatPPkURI(ppk_uri,true);
+  //}
   public static String formatPPkURI(String ppk_uri,boolean prior_add_resource_mark_for_id){
     if(ppk_uri==null)
         return null;
@@ -34,6 +34,9 @@ public class ODIN {
         //存在连续的/字符
         return null;
     }
+    
+    //替换可能的中文易输错字符
+    ppk_uri=ppk_uri.replaceFirst("：", ":");
     
     int scheme_posn=ppk_uri.indexOf(":");
     String main_part=null;
@@ -94,7 +97,7 @@ public class ODIN {
   {
     try{
       //检查URI格式符合要求
-      String format_ppk_uri = formatPPkURI(in_uri);
+      String format_ppk_uri = formatPPkURI(in_uri,true);
       
       if( format_ppk_uri==null ){
         logger.info("splitPPkURI() meet invalid ppk-uri:"+in_uri);
@@ -835,9 +838,10 @@ public class ODIN {
     JSONObject odinSet = odinInfo.odinSet;
     
     //判断如果没有设置pns和ap，则自动使用本地配置的默认的pns方便体验新版本功能,20200529
-    if(!odinSet.has(Config.ODIN_BASE_SET_PNS_URL) && !odinSet.has("ap_set") && Config.ppkDefaultPnsURI.length()>0 ){
+    String tmp_pns_url = odinSet.optString(Config.ODIN_BASE_SET_PNS_URL,"");
+    if( tmp_pns_url.length()==0 && Config.ppkDefaultPnsURI.length()>0 ){
        try{
-         odinSet.put(Config.ODIN_BASE_SET_PNS_URL,Config.ppkDefaultPnsURI); 
+          odinSet.put(Config.ODIN_BASE_SET_PNS_URL,Config.ppkDefaultPnsURI); 
        }catch (Exception e) {
           logger.error(e.toString());
        }

@@ -54,6 +54,15 @@ public class GenOdinDataByRequest {
   }
   
   public static OdinTransctionData genOdinDataOfAdd(String register,String admin,String titleStr,String emailStr,String pnsUrlStr,String authSet) throws Exception{
+      try{
+        //检查admin地址格式，如果是奥丁号则相应解析提取对应的BTC地址
+        if( admin.length()>0 && admin.length()<30 ){
+            admin = getBtcAddressOfODIN(admin);
+        }
+      } catch(Exception e){
+        admin="";
+      }
+    
       if(register.length()==0 || admin.length()==0 || authSet.length()==0 ){
         throw new Exception("invalid register, admin or authority");
       }
@@ -66,16 +75,16 @@ public class GenOdinDataByRequest {
       //mapOdinSet.put("x-tool", Config.appName+Config.version); //加上自定义的扩展信息：客户端和版本信息，用于临时调试,20181222
       mapOdinSet.put(Config.ODIN_BASE_SET_AUTH, authSet); 
 
-      if(register.equals(admin))
+      if( register.equals(admin))
          admin="";
     
-      if(titleStr.length()>0)
+      if( titleStr!=null && titleStr.length()>0)
          mapOdinSet.put("title", titleStr); 
      
-      if(emailStr.length()>0)
+      if( emailStr!=null && emailStr.length()>0)
          mapOdinSet.put("email", emailStr); 
      
-      if(pnsUrlStr.length()>0)
+      if( pnsUrlStr !=null && pnsUrlStr.length()>0)
          mapOdinSet.put(Config.ODIN_BASE_SET_PNS_URL, pnsUrlStr); 
        
       JSONObject odin_set = new JSONObject(mapOdinSet); 
@@ -97,6 +106,15 @@ public class GenOdinDataByRequest {
     String emailStr=request.queryParams("email");
     String pnsUrlStr=request.queryParams("pns_url");
     String authSet=request.queryParams("auth");
+    
+    try{
+        //检查admin地址格式，如果是奥丁号则相应解析提取对应的BTC地址
+        if( admin.length()>0 && admin.length()<30 ){
+            admin = getBtcAddressOfODIN(admin);
+        }
+    } catch(Exception e){
+        admin="";
+    }
 
     if(admin.length()==0 || authSet.length()==0 ){
         throw new Exception("invalid admin or authority");
@@ -267,6 +285,15 @@ public class GenOdinDataByRequest {
     String address=(String)attributes.get("address");
     
     String new_register = request.queryParams("new_register");
+    
+    try{
+        //检查admin地址格式，如果是奥丁号则相应解析提取对应的BTC地址
+        if( new_register.length()>0 && new_register.length()<30 ){
+            new_register = getBtcAddressOfODIN(new_register);
+        }
+    } catch(Exception e){
+        new_register="";
+    }
 
     if( new_register.length()==0 || new_register.equals(address) ){
         throw new Exception(Language.getLangLabel("Please input another valid register address."));
@@ -463,7 +490,10 @@ public class GenOdinDataByRequest {
     String feeStr=request.queryParams("fee");
 
     try{
-        Address.getParametersFromAddress(destination);
+        //检查地址格式，如果是奥丁号则相应解析提取对应的BTC地址
+        if( destination.length()>0 && destination.length()<30 ){
+            destination = getBtcAddressOfODIN(destination);
+        }
     } catch(Exception e){
         destination="";
     }
@@ -492,4 +522,36 @@ public class GenOdinDataByRequest {
     return odin_data;
   }
   
+  //尝试按奥丁号关联获取对应的实际钱包地址
+  protected static String getBtcAddressOfODIN(String destination) {
+  	  try{
+  	      if(destination!=null && destination.length()>0){
+                destination = ODIN.formatPPkURI(destination,true);
+                if(destination!=null){
+                    String ap_resp_content = Util.fetchUriContent(destination);
+                    System.out.println("************* getBtcAddressOfODIN() ap_resp_content=");
+                    System.out.println(ap_resp_content);
+                    JSONObject tmp_dest_info = new JSONObject(ap_resp_content);
+                    String register=tmp_dest_info.optString("register","");
+                    JSONObject x_wallet_list = tmp_dest_info.optJSONObject("x_wallets");
+                    if(x_wallet_list!=null){
+                        JSONObject tmp_address_set = x_wallet_list.optJSONObject("ppk:btc/");
+                        if(tmp_address_set!=null)
+                            destination = tmp_address_set.optString("address","");
+                        else
+                            destination = register;
+                    }else{
+                        destination = register;
+                    }
+                    
+                    System.out.println("getBtcAddressOfODIN() formated_destination="+destination);
+                }
+  	      }
+          Address.getParametersFromAddress(destination);
+  	  } catch(Exception e){
+  	      destination="";
+  	  }
+      
+      return destination;
+  }
 }

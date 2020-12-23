@@ -82,6 +82,7 @@ public class GuiServer implements Runnable {
     }
     
     /* DEBUG START */
+
     /* DEBUG END */
 
     get(new FreeMarkerRoute("/") {
@@ -707,6 +708,11 @@ public class GuiServer implements Runnable {
             }
             if(odin_tx_json_hex!=null){
                 attributes.put("odin_tx_source", odin_data.source);
+                attributes.put("odin_tx_dest", 
+                            odin_data.destination==null || odin_data.destination.length()==0 ? 
+                                Language.getLangLabel("Same to sender"):
+                                odin_data.destination
+                    );
                 attributes.put("odin_data_desc", odin_data.toString());
                 attributes.put("signed_tx_hex", odin_data.strSignedTxHex);
                 attributes.put("odin_tx_json_hex",odin_tx_json_hex );
@@ -723,6 +729,7 @@ public class GuiServer implements Runnable {
 
     attributes.put("GENERATING_ODIN_TX", Language.getLangLabel("Generating ODIN TX"));
     attributes.put("SENDER_ADDRESS", Language.getLangLabel("Sender Address"));
+    attributes.put("DEST_ADDRESS", Language.getLangLabel("Dest Address"));
     attributes.put("ODIN_DATA", Language.getLangLabel("ODIN Data"));
     attributes.put("SIGNED_BTC_TX", Language.getLangLabel("Signed BTC TX"));
     attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
@@ -962,6 +969,7 @@ public class GuiServer implements Runnable {
     attributes.put("LANG_YOUR_PRIVATE_KEY_SHOULD_BE", Language.getLangLabel("Your private key should be in WIF format. For more information about where to find this, see the Participate page."));
     attributes.put("LANG_SEND", Language.getLangLabel("Send"));
     attributes.put("LANG_MERGE_UTXO", Language.getLangLabel("Merge UTXO"));
+    attributes.put("LANG_INPUT_DEST_BTC_ADDRESS_OR_ODIN", Language.getLangLabel("Input dest BTC address or odin."));
     attributes.put("LANG_MAX_VALID_AMOUNT", Language.getLangLabel("Maximum available amount"));
     attributes.put("LANG_DESTINATION_ADDRESS", Language.getLangLabel("destination address"));
     attributes.put("LANG_QUANTITY_BTC", Language.getLangLabel("quantity (BTC)"));

@@ -310,9 +310,9 @@ public class PTTP {
             default_ap.put("url",default_url);
             ap_set.put("0",default_ap);
             
-            default_url = "https://"+root_odin+"/";
-            default_ap.put("url","http://"+root_odin+"/");
-            ap_set.put("1",default_ap);
+            JSONObject backup_ap = new JSONObject();
+            backup_ap.put("url","https://"+root_odin+"/");
+            ap_set.put("1",backup_ap);
             
             odin_set.put("ap_set",ap_set);
 
@@ -406,9 +406,8 @@ public class PTTP {
             }
         }
         
-        //将"pns_url"字段名改为"invoked_pns_url"表示已经调用pns解析处理，避免重复解析
-        obj_odin_local_set.put("invoked_pns_url", obj_odin_local_set.getString(Config.ODIN_BASE_SET_PNS_URL));
-        obj_odin_local_set.remove(Config.ODIN_BASE_SET_PNS_URL);
+        //增加"pns_parser"字段，填写当前服务节点的标识，表示已经调用pns解析处理，标识解析请求者可以相应判断，跳过自行处理pns解析
+        obj_odin_local_set.put("pns_parser", Config.ppkPttpServiceIP );
         
     }catch(Exception e){
         logger.info("resolvePeerNameServiceForRootODIN error: "+e.toString());
@@ -427,7 +426,7 @@ public class PTTP {
       try{
         String ap_resp_ppk_uri = obj_decoded_chunk.optString(Config.JSON_KEY_PPK_URI);
         
-        ap_resp_ppk_uri = ODIN.formatPPkURI(ap_resp_ppk_uri);
+        ap_resp_ppk_uri = ODIN.formatPPkURI(ap_resp_ppk_uri,true);
         if(ap_resp_ppk_uri==null) //不规范的URI将不被缓存
             return false;
         
@@ -441,7 +440,6 @@ public class PTTP {
             }
         }
         
-        //req_uri = ODIN.formatPPkURI(req_uri);
         String resource_ver = ODIN.getPPkResourceVer(ap_resp_ppk_uri);
         String latest_uri = ODIN.getLastestPPkURI(ap_resp_ppk_uri);
         
@@ -636,12 +634,10 @@ public class PTTP {
     String str_ap_resp_json=null;
     if( ap_url.toLowerCase().startsWith("http:") || ap_url.toLowerCase().startsWith("https:")){
       str_ap_resp_json = APoverHTTP.fetchInterest(ap_url,str_interest);
-    }else if( ap_url.toLowerCase().startsWith("ethap:")){
-      str_ap_resp_json = APoverETH.fetchInterest(ap_url,str_interest);
     }else if( ap_url.toLowerCase().startsWith(Config.PPK_URI_PREFIX)){
-      //对于ppk:  起始的ap的处理，需要先再解析到其指向ap节点，再请求
-      //存在循环锁的可能，暂时不支持
-      logger.info("fetchAndValidationAP( ) meet unsupported AP URL: "+ap_url);
+      str_ap_resp_json = APoverPTTP.fetchInterest(ap_url,str_interest);
+	}else if( ap_url.toLowerCase().startsWith("ethap:")){
+      str_ap_resp_json = APoverETH.fetchInterest(ap_url,str_interest);
     }else {
       str_ap_resp_json = Util.fetchUriContent(ap_url);
     }
@@ -887,7 +883,7 @@ public class PTTP {
         String str_original_ap_data_json
   ){
     try{
-        str_uri = ODIN.formatPPkURI(str_uri);
+        str_uri = ODIN.formatPPkURI(str_uri,true);
         
         JSONObject obj_decoded_chunk = new JSONObject();
         
